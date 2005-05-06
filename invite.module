@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.1 2005-04-20 23:00:14 tatonca Exp $
+// $Id: invite.module,v 1.2 2005-05-06 23:01:32 tatonca Exp $
 
 /** 
  * @file 
@@ -139,7 +139,7 @@ function invite_menu($may_cache) {
 *         insert - on successful insert, the user status is set active and the role is escalated
 */
 
-function invite_user($type, &$edit, &$user, $category) {
+function invite_user($type, &$edit, &$user, $category = NULL) {
 
     // What type of registration action are we taking?
     switch ($type) {
