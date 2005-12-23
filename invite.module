@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.3 2005-06-25 18:54:01 kbahey Exp $
+// $Id: invite.module,v 1.4 2005-12-23 01:44:49 kbahey Exp $
 
 /** 
  * @file 
@@ -198,8 +198,8 @@ function invite_user($type, &$edit, &$user, $category = NULL) {
              // If so escalate the users role 
               _invite_status_activate($user);
               _invite_role_escalate($user);
-              _invite_userpoints($user, 'register');
               _invite_set_timestamp($registration['email'],$user->uid);
+              _invite_userpoints('register', $registration['reg_code']);
               drupal_set_message("Your registration code has been accepted");
               
             } else {
@@ -247,7 +247,7 @@ function invite_page(){
        db_query("INSERT INTO {invite}(email, reg_code, uid, expiry) VALUES ('%s', '%s', %d, %d)",$edit["email"],$code,$user->uid, time()+(variable_get('invite_expiry', 30)*60*60*24));  
        //send email
        _invite_send_invite('mail',$user->name,$edit["email"],$code);
-       _invite_userpoints($user, 'invite');
+       _invite_userpoints('invite');
        drupal_set_message("Your invitation has been sent!");
      } else {
        form_set_error("invite_email", t('Email address is not valid!'));
@@ -391,11 +391,22 @@ function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient
  * If userpoints is installed, then the user gets points for inviting
  * someone, as well as when that someone actually registers
  */
-function _invite_userpoints($user, $op = 'invite')
+function _invite_userpoints($op = 'invite', $code = '')
 {
+  global $user;
+
   if (module_exist('userpoints'))
   {
-    userpoints_invite($user, $op);
+    switch($op)
+    {
+      case 'invite':
+        userpoints_invite($user->uid, $op);
+        break;
+      case 'register':
+        $uid = db_result(db_query("SELECT uid FROM {invite} WHERE reg_code = '%s'", $code));
+        userpoints_invite($uid, $op);
+        break;
+    }
   }
 }
 
