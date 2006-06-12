@@ -1,0 +1,141 @@
+# LANGUAGE translation of Drupal (invite.module)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from file: invite.module,v 1.4 2005/12/23 01:44:49 kbahey
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2006-06-12 15:24+0200\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: invite.module:31
+msgid "Allows users to send GMail style invitations, and automatically escalates new users who use them to a role of your designation"
+msgstr ""
+
+#: invite.module:72
+msgid "Target role"
+msgstr ""
+
+#: invite.module:74
+msgid "(Please add a target role.)"
+msgstr ""
+
+#: invite.module:75
+msgid "Choose the role that invited users will be added to. For example, <i>Member</i>."
+msgstr ""
+
+#: invite.module:77
+msgid "Invitation Expiry"
+msgstr ""
+
+#: invite.module:80
+msgid "Set the expiry period for user invitations, in days"
+msgstr ""
+
+#: invite.module:83
+msgid "Number of invitations per user"
+msgstr ""
+
+#: invite.module:86
+msgid "Maximum number of invitations a user may send"
+msgstr ""
+
+#: invite.module:89
+msgid "User settings"
+msgstr ""
+
+#: invite.module:92
+msgid "Subject"
+msgstr ""
+
+#: invite.module:93;363
+msgid "You've been invited"
+msgstr ""
+
+#: invite.module:94
+msgid "Type the subject of the invitation email"
+msgstr ""
+
+#: invite.module:98
+msgid "Include Features"
+msgstr ""
+
+#: invite.module:101
+msgid "Include the Features module output as part of the email"
+msgstr ""
+
+#: invite.module:105
+msgid "Email settings"
+msgstr ""
+
+#: invite.module:106
+msgid "Sample Email"
+msgstr ""
+
+#: invite.module:123
+msgid "Invite"
+msgstr ""
+
+#: invite.module:146
+msgid "login"
+msgstr ""
+
+#: invite.module:147;150
+msgid "view"
+msgstr ""
+
+#: invite.module:156
+msgid "register"
+msgstr ""
+
+#: invite.module:164
+msgid "Registration Code"
+msgstr ""
+
+#: invite.module:167
+msgid "validate"
+msgstr ""
+
+#: invite.module:170
+msgid "You must enter the email address where you received your invitation or remove the registration code from the signup form. "
+msgstr ""
+
+#: invite.module:173
+msgid "Did you forget to input your registration code? If not, leave both Registration Code fields blank."
+msgstr ""
+
+#: invite.module:181;186
+msgid "The registration email or registration code you have entered could not be found.  Please check you invitation email and try again, or leave the Registration code fields blank to submit your application for review"
+msgstr ""
+
+#: invite.module:183
+msgid "The registration code you have entered has already been used or has expired.  Please check you invitation email and try again, or leave the Registration code fields blank to submit your application for review"
+msgstr ""
+
+#: invite.module:190
+msgid "insert"
+msgstr ""
+
+#: invite.module:253
+msgid "Email address is not valid!"
+msgstr ""
+
+#: invite.module:206;210
+msgid "user"
+msgstr ""
+
+#: invite.module:44
+msgid "send invitations"
+msgstr ""
+
+#: invite.module:0
+msgid "invite"
+msgstr ""
+
