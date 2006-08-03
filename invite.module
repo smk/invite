@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.7 2006-08-03 12:54:28 nickw Exp $
+// $Id: invite.module,v 1.8 2006-08-03 23:10:02 nickw Exp $
 
 /** 
  * @file 
@@ -73,7 +73,7 @@ function invite_settings() {
     '#title' => t('Target role (default)'),
     '#default_value' => variable_get('invite_target_role_default', '2'),
     '#options' => ($target_roles ? $target_roles : array('-1'=>t('(Please add a target role.)'))),
-    '#description' => t('Choose the role that invited users will be added to. For example, <i>Member</i>.'),
+    '#description' => t('Choose the role that invited users will be added to. For example, <em>Member</em>.'),
   );
   
   foreach ($roles as $key => $role) {
@@ -139,19 +139,23 @@ function invite_settings() {
     '#description' => t('Use the following placeholders; %site, %homepage, %join_link, %message, %inviter'),
   );
 
-  $form['email_settings']['invite_from'] = array(
-    '#type' => 'textfield', 
-    '#title' => t('From address'), 
-    '#default_value' => variable_get('invite_from', variable_get('site_mail', ini_get('sendmail_from'))), 
-    '#description' => t('The email address the email is sent from')
+  // configure settings for the email
+  $form['email_settings']['invite_use_users_email'] = array(
+    '#type' => 'radios',
+    '#title' => t('From: email address'),
+    '#description' => t('Choose which email address will be in the From: header for the invitation mails sent; <em>site</em> or </em>inviter</em>. <em>Site</em> will use the default email address of the site, whereas <em>inviter</em> will use the email address of the person who is sending the invitation. Alternatively, you can set this value manually by clicking on <em>advanced settings</em> below.'),
+    '#options' => array(t('site'), t('inviter')),
+    '#default_value' => variable_get('invite_use_users_email', 0),
   );
 
-  $form['email_settings']['invite_reply_to'] = array(
-    '#type' => 'textfield', 
-    '#title' => t('Reply address'), 
-    '#default_value' => variable_get('invite_reply_to', variable_get('site_mail', ini_get('sendmail_from'))), 
-    '#description' => t('The email address you want recipients to reply to')
+  $form['email_settings']['invite_use_users_email_replyto'] = array(
+    '#type' => 'radios',
+    '#title' => t('Reply-To: email address'),
+    '#description' => t('Choose which email address will be in the Reply-To: header for the invitation mails sent; <em>site</em> or </em>inviter</em>. <em>Site</em> will use the default email address of the site, whereas <em>inviter</em> will use the email address of the person who is sending the invitation. Alternatively, you can set this value manually by clicking  on <em>advanced settings</em> below.'),
+    '#options' => array(t('site'), t('inviter')),
+    '#default_value' => variable_get('invite_use_users_email_replyto', 0),
   );
+
 
   $form['invite_page'] = array(
     '#type' => 'fieldset',
@@ -182,10 +186,32 @@ function invite_settings() {
     '#description' => t('Customize the text that appears above the email form on the invite page for users'),
   );
 
+  $form['advanced'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Advanced settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#description' => t('<strong>Note:</strong> unless these fields are blank, they will override the radio button choices above.')
+  );
+
+  $form['advanced']['invite_manual_from'] = array(
+    '#type' => 'textfield', 
+    '#title' => t('Manually set the <em>From</em> address'), 
+    '#default_value' => variable_get('invite_manual_from', variable_get('site_mail', ini_get('sendmail_from'))), 
+    '#description' => t('The email address the email is sent from')
+  );
+
+  $form['advanced']['invite_manual_reply_to'] = array(
+    '#type' => 'textfield', 
+    '#title' => t('Manually set the <em>Reply</em> address'), 
+    '#default_value' => variable_get('invite_manual_reply_to', variable_get('site_mail', ini_get('sendmail_from'))), 
+    '#description' => t('The email address you want recipients to reply to')
+  );
 
 
   return $form;
 }
+
 
 /*
 * Implementation of hook_menu
@@ -464,7 +490,6 @@ function _invite_role_escalate($invitee) {
 
 function _invite_set_timestamp($email, $uid, $regcode){
   db_query("UPDATE {invite} SET timestamp = %d, mid = %d, email = '%s' WHERE reg_code = '%s'", time(), $uid, $email, $regcode);
-        watchdog('invite', 'User '.$user->name.' ' . mysql_error());
 }
 
 function _invite_check_msgs($uid){
@@ -478,25 +503,43 @@ function _invite_check_msgs($uid){
 function _invite_create_regcode(){
   return substr(md5(rand()), 0, 8);
 }
-
 function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient-email]", $code = "registration-code", $message = '[your message]'){
-  global $base_url;
-  
-  $from = variable_get('invite_from', variable_get('site_mail', ini_get('sendmail_from')));
-  $reply_to = variable_get('invite_reply_to', variable_get('site_mail', ini_get('sendmail_from')));
+  global $base_url, $user;
+
+  /*
+  ** this next bit sets from and reply-to headers to the manually 
+  ** configured ones if they exist, or whatever the user choose 
+  ** with the radio buttons if not.
+  */
+  if(!$from = variable_get('invite_manual_from', NULL)) {
+    if (variable_get('invite_use_users_email', t('inviter'))) {
+      $from = $user->mail;
+    }
+    else {
+      $from = variable_get('site_mail', ini_get('sendmail_from'));
+    }
+  }
+  if(!$replyto = variable_get('invite_manual_reply_to', NULL)) {
+    if (variable_get('invite_use_users_email_replyto', t('inviter'))) {
+      $replyto = $user->mail;
+    }
+    else {
+      $replyto = variable_get('site_mail', ini_get('sendmail_from'));
+    }
+  }
   $subject = variable_get('invite_subject',t("You've been invited"));
 
-  $template = invite_get_mail_template();  
+  $template = invite_get_mail_template();
   $site = variable_get('site_name', t('their favorite website'));
   $join_link = url('user/register/'.$code, NULL, NULL, TRUE);
   $homepage = $base_url;
   $inviter = $user_name;
-  
-  $body = t(wordwrap($template, 72), array('%site' => $site, '%join_link' => $join_link, '%homepage' => $homepage, '%message' => wordwrap($message, 72), '%inviter' => $inviter));
+
+  $body = t($template, array('%site' => $site, '%join_link' => $join_link, '%homepage' => $homepage, '%message' => $message, '%inviter' => $inviter));
 
   switch ($op){
     case "mail":
-      if ($success = mail($email, $subject, $body, "From: $from\r\nReply-To: $reply_to")) {
+      if ($success = mail($email, $subject, wordwrap($body, 72), "From: $from\r\nReply-To: $replyto")) {
       	drupal_set_message(t('Your invitation was sent successfully.'));
       }
       else {
@@ -506,14 +549,15 @@ function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient
       return $success;
 
     case "display":
-      $output =  "TO : $email <br />";
-      $output .= "FROM : $from <br />";
-      $output .= "REPLY TO : $reply_to <br />";
-      $output .= "SUBJECT : $subject<br />";
+      $output =  "To: $email <br>";
+      $output .= "From: $from <br>";
+      $output .= "Reply-To: $from <br>";
+      $output .= "Subject: $subject<br>";
       $output .= "<p> $body </p>";
       return $output;
   }
 }
+
 
 function invite_get_mail_template() {
   $template = <<<_MAIL_
