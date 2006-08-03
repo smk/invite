@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.6 2006-08-03 12:42:41 nickw Exp $
+// $Id: invite.module,v 1.7 2006-08-03 12:54:28 nickw Exp $
 
 /** 
  * @file 
@@ -301,7 +301,7 @@ function invite_page(){
   $inc = 0;
   $result = db_query("SELECT * from {invite} WHERE uid = %d",$user->uid);
   while ($invite = db_fetch_object($result)){
-    $items[] = array($invite->email, (($invite->expiry + (variable_get('invite_expiry', '30')* 24 * 60 * 60))< time()) ? "Expired" :($invite->timestamp ? "Joined" : "Pending"),$invite->timestamp ? "delete" : l("delete",'invite/delete/'.urlencode($invite->email)));
+    $items[] = array($invite->email, (($invite->expiry + (variable_get('invite_expiry', '30')* 24 * 60 * 60))< time()) ? "Expired" :($invite->timestamp ? t('Joined') : t('Pending')),$invite->timestamp ? "delete" : l("delete",'invite/delete/'.urlencode($invite->email)));
     $inc++;
   }
   
