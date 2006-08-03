@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.5 2006-08-03 12:29:43 nickw Exp $
+// $Id: invite.module,v 1.6 2006-08-03 12:42:41 nickw Exp $
 
 /** 
  * @file 
@@ -250,7 +250,7 @@ function invite_form_alter($form_id, &$form) {
 function invite_user($op, &$edit, &$user, $category = NULL) { 
   switch ($op) {
     case 'insert':
-      $result = db_query("SELECT * FROM {invite} WHERE reg_code = %d", $edit['invite_code']);
+      $result = db_query("SELECT * FROM {invite} WHERE reg_code = '%s'", $edit['invite_code']);
       if ($registration = db_fetch_object($result)) {
         $targetrole = variable_get('invite_target_role', '2');
         _invite_role_escalate($user);
@@ -261,8 +261,9 @@ function invite_user($op, &$edit, &$user, $category = NULL) {
         ** this bit fixes that
         */
         $userRegMail = $_POST[edit][mail];
-
         _invite_set_timestamp($userRegMail, $user->uid, $edit['invite_code']);
+
+        _invite_unblock($user->uid);
       } else {
         watchdog('invite', 'User '.$user->name.' registration code failed', $link = NULL);
       }
@@ -528,3 +529,14 @@ To become a member of %site, click the link below or paste it into the address b
 _MAIL_;
   return variable_get('invite_default_mail_template', $template);
 }
+
+function _invite_unblock($uid) {
+ 
+   if (ctype_digit($uid)) {
+     db_query("UPDATE {users} SET status = 1 WHERE uid = %d", $uid);
+     return TRUE;
+   }
+ 
+   return FALSE;
+}
+
