@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.1 2005-04-20 23:00:14 tatonca Exp $ */
+/* $Id: README.txt,v 1.2 2006-08-03 11:38:07 nickw Exp $ */
 
 INTRO
 -----
@@ -73,4 +73,3 @@ http://www.blogtown.ca/node/718
 
 Module Author:
 David Hill a.k.a. Tatonca  <tatonca_@hotmail.com>
-
