@@ -1,0 +1,584 @@
+<?php
+/** 
+ * @file 
+ *
+ * invite.module gives users the opportunity to send gmail style invites to new users.  A random code is generated for
+ * the invitation, and a link to the registration form.  The new user can then input the code when submiting thier
+ * registration.  Registration successfully completed in this way will automatically be set active, and escalated to 
+ * a new role as designated by the administrator.
+ * 
+ * This module is meant to be used when user registration settings have been set to: 
+ * 
+ *    'Visitors can create accounts but administrator approval is required.' 
+ */ 
+
+/** 
+ * Implementation of hook_help(). 
+ * 
+ * This is the explanatory text that appears in your administer - modules page 
+ * where you switch modules on and off 
+ */ 
+
+function invite_help($section) {
+
+  switch ($section) {
+    case 'admin/modules#description':
+      return t('Allows users to send GMail style invitations, and automatically escalates new users who use them to a role of your designation');
+      
+    case 'invite':
+      return variable_get('invite_help_text', t("<p>This is an overview of the invitations you have sent. The status of each invitation is shown: 
+   <ul>
+     <li><strong>Joined</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the email address to take you to their profile page.</li>
+     <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation. You may send a reminder, by clicking the 'Remind Me' link.</li>
+     <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>
+   </ul>
+   </p>
+   <p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>"));
+
+  }
+}
+
+/*
+* Implementation of hook_perm
+*
+* Returns 'send invitations'
+*/
+
+function invite_perm() {
+  return array('send invitations');
+} 
+
+/*
+* Implementation of hook_settings
+*/
+
+function invite_settings() {
+  // Build an array of all roles
+  $result = db_query('SELECT * FROM {role}');
+  while ($t = db_fetch_object($result)) {
+    $t->rid != 1 && $target_roles[$t->rid] = $t->name;
+  }
+
+  $form['user_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('User settings'),
+  );
+
+  // configure settings for the new members
+  $roles = user_roles();
+  $form['user_settings']['invite_target_role_default'] = array(
+    '#type' => 'select',
+    '#title' => t('Target role (default)'),
+    '#default_value' => variable_get('invite_target_role_default', '2'),
+    '#options' => ($target_roles ? $target_roles : array('-1'=>t('(Please add a target role.)'))),
+    '#description' => t('Choose the role that invited users will be added to. For example, <em>Member</em>.'),
+  );
+  
+  foreach ($roles as $key => $role) {
+    $form['user_settings']['invite_target_role_'. $role] = array(
+      '#type' => 'select',
+      '#title' => t('Target role for %role', array('%role' => $role)),
+      '#default_value' => variable_get('invite_target_role_'.$role, '2'),
+      '#options' => ($target_roles ? $target_roles : array('-1'=>t('(Please add a target role.)'))),
+      '#description' => t('Choose the role that invited users will be added to if invited by someone who has the %role role.', array('%role' => $role)),
+    );
+  }
+
+  $form['user_settings']['invite_expiry'] = array(
+    '#type' => 'select',
+    '#title' => t('Invitation Expiry'),
+    '#default_value' => variable_get('invite_expiry', 30),
+    '#options' => drupal_map_assoc(array(5, 10, 15, 20, 25, 30, 45, 60)),
+    '#description' => t('Set the expiry period for user invitations, in days'),
+    '#extra' => $extra = 0,
+    '#multiple' => $multiple = FALSE,
+    '#required' => $required = TRUE,
+  );  
+
+  $form['user_roles'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Role limitations'),
+  );
+  
+  foreach ($roles as $role) {
+    $form['user_roles']['invite_maxnum_'.$role] = array(
+      '#type' => 'select',
+      '#title' => t($role),
+      '#default_value' => variable_get('invite_maxnum_'. $role, 0),
+      '#options' => drupal_map_assoc(array(0 => t('unlimited'), 5, 10, 20, 50, 100, 300, 500, 1000)),
+      '#extra' => $extra = 0,
+      '#multiple' => $multiple = FALSE,
+      '#required' => $required = TRUE,
+    );
+  }
+  
+  $form['email_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Email settings'),
+  );
+
+  // configure settings for the email
+  $form['email_settings']['invite_subject'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Subject'),
+    '#default_value' => variable_get('invite_subject',t("You've been invited")),
+    '#size' => 20,
+    '#maxlength' => 64,
+    '#description' => t('Type the subject of the invitation email'),
+    '#attributes' => $attributes = NULL,
+    '#required' => $required = FALSE,
+  );
+  
+  $form['email_settings']['invite_default_mail_template'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Default mail template'),
+    '#default_value' => invite_get_mail_template(),
+    '#required' => TRUE,
+    '#description' => t('Use the following placeholders; %site, %homepage, %join_link, %message, %inviter'),
+  );
+
+  // configure settings for the email
+  $form['email_settings']['invite_use_users_email'] = array(
+    '#type' => 'radios',
+    '#title' => t('From: email address'),
+    '#description' => t('Choose which email address will be in the From: header for the invitation mails sent; <em>site</em> or </em>inviter</em>. <em>Site</em> will use the default email address of the site, whereas <em>inviter</em> will use the email address of the person who is sending the invitation. Alternatively, you can set this value manually by clicking on <em>advanced settings</em> below.'),
+    '#options' => array(t('site'), t('inviter')),
+    '#default_value' => variable_get('invite_use_users_email', 0),
+  );
+
+  $form['email_settings']['invite_use_users_email_replyto'] = array(
+    '#type' => 'radios',
+    '#title' => t('Reply-To: email address'),
+    '#description' => t('Choose which email address will be in the Reply-To: header for the invitation mails sent; <em>site</em> or </em>inviter</em>. <em>Site</em> will use the default email address of the site, whereas <em>inviter</em> will use the email address of the person who is sending the invitation. Alternatively, you can set this value manually by clicking  on <em>advanced settings</em> below.'),
+    '#options' => array(t('site'), t('inviter')),
+    '#default_value' => variable_get('invite_use_users_email_replyto', 0),
+  );
+
+
+  $form['invite_page'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Invite page cutomization'),
+  );
+
+  $form['invite_page']['invite_page_title'] = array(
+    '#type' => 'textfield', 
+    '#title' => t('Invite page title'), 
+    '#default_value' => variable_get('invite_page_title', t('Invite your friends and colleagues')), 
+    '#description' => t('The title of the page where users invite friends'),
+    '#required' => TRUE
+  );
+
+
+  $form['invite_page']['invite_help_text'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Invite help text'),
+    '#default_value' => variable_get('invite_help_text', t("<p>This is an overview of the invitations you have sent. The status of each invitation is shown: 
+   <ul>
+     <li><strong>Joined</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the email address to take you to their profile page.</li>
+     <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation. You may send a reminder, by clicking the 'Remind Me' link.</li>
+     <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>
+   </ul>
+   </p>
+   <p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>")), 
+    '#required' => TRUE,
+    '#description' => t('Customize the text that appears above the email form on the invite page for users'),
+  );
+
+  $form['advanced'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Advanced settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#description' => t('<strong>Note:</strong> unless these fields are blank, they will override the radio button choices above.')
+  );
+
+  $form['advanced']['invite_manual_from'] = array(
+    '#type' => 'textfield', 
+    '#title' => t('Manually set the <em>From</em> address'), 
+    '#default_value' => variable_get('invite_manual_from', variable_get('site_mail', ini_get('sendmail_from'))), 
+    '#description' => t('The email address the email is sent from')
+  );
+
+  $form['advanced']['invite_manual_reply_to'] = array(
+    '#type' => 'textfield', 
+    '#title' => t('Manually set the <em>Reply</em> address'), 
+    '#default_value' => variable_get('invite_manual_reply_to', variable_get('site_mail', ini_get('sendmail_from'))), 
+    '#description' => t('The email address you want recipients to reply to')
+  );
+
+
+  return $form;
+}
+
+
+/*
+* Implementation of hook_menu
+*
+*/
+
+function invite_menu($may_cache) {
+  global $user;
+  $items = array();
+
+  if ($may_cache) {
+
+    $items[] = array('path' => 'invite',
+                    'title' => variable_get('invite_page_title', t('Invite your friends and colleagues')),
+                 'callback' => 'invite_page',
+                   'access' => user_access('send invitations'),
+                     'type' => MENU_SUGGESTED_ITEM);
+
+    $items[] = array('path' => 'invite/delete', 
+                 'callback' => 'invite_delete',
+                   'access' => user_access('send invitations'),
+                     'type' => MENU_CALLBACK);
+  }
+  return $items;
+}
+
+/*
+* Implementation of hook_user
+*
+* Types : login / view  - checks for user perm then does drupal_set_message 
+*                         if a users invitee has joined the site
+*         register - displays the registration code fields
+*         validate - checks against the {invite} table if the code and email are valid.  
+*                    If the fields are left blank they are ignored, and the default register events are processed  
+*         insert - on successful insert, the user status is set active and the role is escalated
+*/
+  
+/**
+ * Implementation of hook_form_alter()
+ */
+function invite_form_alter($form_id, &$form) {
+  global $form_values;
+  switch ($form_id) {
+    case 'user_register':
+      if ($code = arg(2)) {
+      	$invite = db_fetch_object(db_query("SELECT COUNT(reg_code) AS count, uid AS referrer FROM {invite} WHERE reg_code = %d GROUP BY referrer", $code));
+        if ($invite->count > 0) {
+          $form['invite_code'] = array(
+            '#type' => 'value',
+            '#value' => $code,
+          );
+          $form['invite_referrer'] = array(
+            '#type' => 'value',
+            '#value' => $invite->referrer,
+          );
+        }
+      }
+      break;
+  }
+}
+
+function invite_user($op, &$edit, &$user, $category = NULL) { 
+  switch ($op) {
+    case 'insert':
+      $result = db_query("SELECT * FROM {invite} WHERE reg_code = '%s'", $edit['invite_code']);
+      if ($registration = db_fetch_object($result)) {
+        $targetrole = variable_get('invite_target_role', '2');
+        _invite_role_escalate($user);
+
+        /*
+        ** if they sign up as a different email to the one sent to them, they do 
+        ** not get "joined" properly in the invitee's invite screen.
+        ** this bit fixes that
+        */
+        $userRegMail = $_POST[edit][mail];
+        _invite_set_timestamp($userRegMail, $user->uid, $edit['invite_code']);
+
+        _invite_unblock($user->uid);
+      } else {
+        watchdog('invite', 'User '.$user->name.' registration code failed', $link = NULL);
+      }
+      break;
+  }   
+}
+
+/**
+ * hook cron. 
+ */
+function invite_cron() {
+	// TODO: cron should check which invitations are expired and possibly send a follow up mail
+	// This should also trigger a module_invoke_all('invite', 'expire', $args) call so that other modules can 
+	// react to the expired invitation.
+}
+
+  
+/*
+* function invite_page(NULL)
+*
+* Purpose : main function and page display
+* 
+* Description : displays the Invite form for users with appropriate perms and 
+*               processes and validates the form, sending an email to the invitee
+*
+*/
+function invite_page(){
+  global $user;
+  //this displays all invites for a user, and counts how many invites they have left to give
+  $form['invitations'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Your invitations'),
+  );
+
+  $inc = 0;
+  $result = db_query("SELECT * from {invite} WHERE uid = %d",$user->uid);
+  while ($invite = db_fetch_object($result)){
+    $items[] = array($invite->email, (($invite->expiry + (variable_get('invite_expiry', '30')* 24 * 60 * 60))< time()) ? "Expired" :($invite->timestamp ? t('Joined') : t('Pending')),$invite->timestamp ? "delete" : l("delete",'invite/delete/'.urlencode($invite->email)));
+    $inc++;
+  }
+  
+  if (count($items) > 0) {
+    $headers = array(t('Email'), t('Status'), '');
+    $table = theme('table', $headers, $items, array('id' => 'invite_table'));
+  }
+  else {
+  	$table = t('You have not sent any invitations yet.');
+  }
+  $form['invitations']['table'] = array(
+    '#type' => 'markup',
+    '#value' => $table,
+  );
+  
+  $form['invite_form'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Invite a friend'),
+  );      
+  
+  $maximum_invites = _invite_check_remaining_invites($user);
+  if ($maximum_invites > 0) {
+    $invites_left =  $maximum_invites - $inc;
+    $form['invite_form']['remaining_invites'] = array(
+      '#type' => 'markup',
+      '#value' => t('You have %invites invites left', array('%invites' => $invites_left)),
+    );
+  }
+  
+  //the invitation form
+  if ($inc < $maximum_invites  || $maximum_invites == 0){
+    $form['invite_form']['email'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Email'),
+      '#default_value' => '',
+      '#size' => 20,
+      '#maxlength' => 64,
+      '#description' => t('Type the email of the person you would like to invite'),
+      '#required' => TRUE,
+    );
+    $form['invite_form']['message'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Your message'),
+      '#default_value' => '',
+      '#required' => FALSE,
+      '#description' => t('This message will be added to the mail sent to the person you are inviting.'),
+    );        
+    $form['invite_form']['submit'] = array(
+      '#type' => 'submit',
+      '#value' => t('Submit'),
+    );
+  } else {
+    drupal_set_message(t('Maximum number (%max) of invitations reached', array('%max' => $maximum_invites)));
+  }
+
+  $output .= drupal_get_form('invite_form', $form);
+  return $output;
+}
+
+function invite_form_validate($form_id, &$edit) {
+  global $user;
+  if (!_invite_check_invited($edit["email"],$user->uid) || !valid_email_address($edit["email"])) {
+    form_set_error("invite_email", t('Email address is not valid!'));
+  }
+}
+
+function invite_form_submit($form_id, $edit) {
+  global $user;
+  // generate code
+  $code = _invite_create_regcode();
+  //send email
+  if ($success = _invite_send_invite('mail', $user->name, $edit['email'], $code, $edit['message'])) {
+    //update database
+    db_query("INSERT INTO {invite}(email, reg_code, uid, expiry) VALUES ('%s', '%s', %d, %d)",$edit["email"],$code,$user->uid, time()+(variable_get('invite_expiry', 30)*60*60*24));  
+  }
+}
+
+
+function invite_delete($email) {
+  global $user;
+  $email = urldecode($email);
+  if ($email){
+    db_query("DELETE from {invite} WHERE email = '%s'",$email);
+    drupal_set_message("Invitation to $email has been deleted");
+    $args = array('email' => $email);
+    module_invoke_all('invite', 'cancel', $args);
+    drupal_goto('invite');
+  }
+}
+
+/*
+* Module Specific Helper functions
+*/
+
+function _invite_check_invited($email, $uid){
+	global $user;
+	
+  $already_invited = 1;
+
+  //check if the email has already been used to invite someone
+  $result = db_query('SELECT * FROM {invite}');
+  while ($t = db_fetch_object($result)) {
+    if ($t->email == $email){
+      drupal_set_message("The user you are trying to invite has already been invited"); 
+      $already_invited = 0;
+    }
+  }
+  
+  $maximum_invites = _invite_check_remaining_invites($user);
+  if ($maximum_invites > 0) {
+    //check if the user has exceed their allowed invitations
+    $result = db_query("SELECT COUNT(*) from {invite} WHERE uid = %d", $uid);
+
+    if (db_result($result) >= $maximum_invites){
+      drupal_set_message("You have exceeded your allowed invitations"); 
+      $already_invited = 0;
+    }
+  }
+
+ return $already_invited;
+  
+}
+
+function _invite_check_remaining_invites($user) {
+  $roles = user_roles();
+  $limit = 0;
+  foreach ($roles as $role) {
+    if (in_array($role, $user->roles)) {
+      $set = variable_get('invite_maxnum_'. $role, 0);
+      if ($set == t('unlimited')) {
+      	return 0;
+      }
+      if ($set > $limit) {
+        $limit = $set;
+      }
+    }
+  }
+  return $limit;
+}
+
+function _invite_role_escalate($invitee) {
+	$inviter_uid = db_result(db_query("SELECT uid FROM {invite} WHERE mid = %d", $user->uid));
+  if ($inviter = user_load(array('uid' => $inviter_uid))) {
+    $roles = user_roles();
+    $targets = array();
+    foreach ($inviter->roles as $key => $role) {
+    	$targets[] = variable_get('invite_target_role_'.$role, '2');
+    }
+  }
+  $targets[] = variable_get('invite_target_role_default', '2');
+  foreach ($targets as $target) {
+    db_lock_table('users_roles');
+    db_query("DELETE FROM {users_roles} WHERE uid = %d AND rid = %d", $invitee->uid, $target);
+    db_query("INSERT INTO {users_roles} (uid, rid) VALUES (%d, %d)", $invitee->uid, $target);
+    db_unlock_tables();
+  }
+  $args = array('invitee' => $invitee, 'inviter' => $inviter, 'roles' => $targets);
+  module_invoke_all('invite', 'escalate', $args);
+}
+
+function _invite_set_timestamp($email, $uid, $regcode){
+  db_query("UPDATE {invite} SET timestamp = %d, mid = %d, email = '%s' WHERE reg_code = '%s'", time(), $uid, $email, $regcode);
+}
+
+function _invite_check_msgs($uid){
+  $result = db_query('SELECT i.email, i.mid, u.name FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid WHERE i.timestamp != 0 AND i.uid = %d AND i.received = 0', $uid);
+  while ($rec = db_fetch_object($result)) {
+      drupal_set_message(l($rec->name, 'user/'. $rec->mid) .' ( '.$rec->email.') has joined '.variable_get('site_name', 'this site').'!');
+      db_query('UPDATE {invite} SET received = 1 WHERE timestamp != 0 AND uid = %d AND received = 0', $uid);
+  }
+}
+
+function _invite_create_regcode(){
+  return substr(md5(rand()), 0, 8);
+}
+function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient-email]", $code = "registration-code", $message = '[your message]'){
+  global $base_url, $user;
+
+  /*
+  ** this next bit sets from and reply-to headers to the manually 
+  ** configured ones if they exist, or whatever the user choose 
+  ** with the radio buttons if not.
+  */
+  if(!$from = variable_get('invite_manual_from', NULL)) {
+    if (variable_get('invite_use_users_email', t('inviter'))) {
+      $from = $user->mail;
+    }
+    else {
+      $from = variable_get('site_mail', ini_get('sendmail_from'));
+    }
+  }
+  if(!$replyto = variable_get('invite_manual_reply_to', NULL)) {
+    if (variable_get('invite_use_users_email_replyto', t('inviter'))) {
+      $replyto = $user->mail;
+    }
+    else {
+      $replyto = variable_get('site_mail', ini_get('sendmail_from'));
+    }
+  }
+  $subject = variable_get('invite_subject',t("You've been invited"));
+
+  $template = invite_get_mail_template();
+  $site = variable_get('site_name', t('their favorite website'));
+  $join_link = url('user/register/'.$code, NULL, NULL, TRUE);
+  $homepage = $base_url;
+  $inviter = $user_name;
+
+  $body = t($template, array('%site' => $site, '%join_link' => $join_link, '%homepage' => $homepage, '%message' => $message, '%inviter' => $inviter));
+
+  switch ($op){
+    case "mail":
+      if ($success = user_mail($email, $subject, wordwrap($body, 72), "From: $from\r\nReply-To: $replyto")) {
+      	drupal_set_message(t('Your invitation was sent successfully.'));
+      }
+      else {
+      	drupal_set_message(t('Problems occurred sending the invitation. Please contact the site administrator.'));
+      	watchdog('invite', t("Invitation sending failed. Email: $email Subject: $subject Body: $body From: $from"));
+      }
+      return $success;
+
+    case "display":
+      $output =  "To: $email <br>";
+      $output .= "From: $from <br>";
+      $output .= "Reply-To: $from <br>";
+      $output .= "Subject: $subject<br>";
+      $output .= "<p> $body </p>";
+      return $output;
+  }
+}
+
+
+function invite_get_mail_template() {
+  $template = <<<_MAIL_
+Your friend, %inviter has invited you to join %site [%homepage].
+
+To become a member of %site, click the link below or paste it into the address bar of your browser. 
+
+%join_link
+
+----------
+
+%message
+_MAIL_;
+  return variable_get('invite_default_mail_template', $template);
+}
+
+function _invite_unblock($uid) {
+ 
+   if (ctype_digit($uid)) {
+     db_query("UPDATE {users} SET status = 1 WHERE uid = %d", $uid);
+     return TRUE;
+   }
+ 
+   return FALSE;
+}
+

@@ -1,0 +1,10 @@
+$Id: INSTALL.txt,v 1.1.4.2 2006-09-09 13:06:48 nickw Exp $
+
+To install: 
+
+1)add the include table schema to your database
+2)put the module in your modules directory and activate the module on the admin/modules page.
+
+
+
+
