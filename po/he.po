@@ -1,0 +1,237 @@
+# Hebrew translation of Drupal (invite.module)
+# Copyright Amnon Levav <amnon@levavie.com>
+# Generated from file: invite.module,v 1.4 2005/12/23 01:44:49 kbahey
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2006-06-12 15:24+0200\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Last-Translator: Amnon Levav <amnon@levavie.com>\n"
+"Language-Team: Hebrew (he) <amnon@levavie.com>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: invite.module:26
+msgid "Allows users to send GMail style invitations, and automatically escalates new users who use them to a role of your designation"
+msgstr "מאפשר לחברים לשלוח הזמנות בסגנון GMAIL, ומעביר אוטומטית חברים חדשים שנענים להזמנה לתפקיד לבחירתך"
+
+#: invite.module:29;175
+msgid "<p>This is an overview of the invitations you have sent. The status of each invitation is shown: \r\n   <ul>\r\n     <li><strong>Joined</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the email address to take you to their profile page.</li>\r\n     <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation. You may send a reminder, by clicking the 'Remind Me' link.</li>\r\n     <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>\r\n   </ul>\r\n   </p>\r\n   <p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>"
+msgstr "<p>זוהי סקירה של ההזמנות ששלחת. לכל הזמנה אפשר לראות מהו מצבה: \r\n   <ul>\r\n     <li><strong>הצטרף</strong>: מציין שהמוזמן השתמש בהזמנה כדי להצטרף לאתר. לחץ על כתובת הדואר אלקטרוני שלו כדי לגשת לדף החבר שלו באתר.</li>\r\n     <li><strong>בתהליך</strong>: ההזמנה נשלחה, אך החבר\ה שלך עדיין לא קיבל או אישר את ההזמנה. אפשר לשלוח תזכורת, על ידי לחיצה על הקישור המתאים.</li>\r\n     <li><strong>פג תוקף</strong>: לא נעשה שימוש בהזמנה כדי להצטרף לאתר בתקופה שבה היא היתה בתוקף.</li>\r\n   </ul>\r\n   </p>\r\n   <p>בכל זמן, אפשר למחוק הזמנות 'בתהליך' או 'פג תוקף'. לא ניתן למחוק הזמנות מסוג 'הצטרף' והן נספרות לעד כחלק מכמות ההזמנות המותרת שלך. </p>"
+
+#: invite.module:64
+msgid "User settings"
+msgstr "הגדרות משתמש"
+
+#: invite.module:71
+msgid "Target role (default)"
+msgstr "תפקיד מטרה (ברירת מחדל)"
+
+#: invite.module:73;82
+msgid "(Please add a target role.)"
+msgstr "(בבקשה להכניס תפקיד מטרה)"
+
+#: invite.module:74
+msgid "Choose the role that invited users will be added to. For example, <em>Member</em>."
+msgstr "תפקיד שאליו ישוייכו המוזמנים עם ההצטרפות לאתר."
+
+#: invite.module:80
+msgid "Target role for %role"
+msgstr "תפקיד מטרה עבור %role"
+
+#: invite.module:83
+msgid "Choose the role that invited users will be added to if invited by someone who has the %role role."
+msgstr "כאן אפשר לבחור את התפקיד שהמוזמנים יתווספו אליו אם הם הוזמנו על ידי מישהו בעל תפקיד %role."
+
+#: invite.module:89
+msgid "Invitation Expiry"
+msgstr "תוקף הזמנה"
+
+#: invite.module:92
+msgid "Set the expiry period for user invitations, in days"
+msgstr "קביעת התקופה שבה ההזמנה בתוקף, בימים. לאחר תקופה זו פג תוקף ההזמנה"
+
+#: invite.module:100
+msgid "Role limitations"
+msgstr "הגבלות לפי תפקיד"
+
+#: invite.module:108;458
+msgid "unlimited"
+msgstr "ללא הגבלה"
+
+#: invite.module:117
+msgid "Email settings"
+msgstr "הגדרות דואר אלקטרוני"
+
+#: invite.module:123
+msgid "Subject"
+msgstr "נושא"
+
+#: invite.module:124;528
+msgid "You've been invited"
+msgstr "הזמנה"
+
+#: invite.module:127
+msgid "Type the subject of the invitation email"
+msgstr "רשום את נושא של הודעת ההזמנה"
+
+#: invite.module:134
+msgid "Default mail template"
+msgstr "תבנית ברירת המחדל לדואר אלקטרוני"
+
+#: invite.module:137
+msgid "Use the following placeholders; %site, %homepage, %join_link, %message, %inviter"
+msgstr "ניתן להשתמש בשדות הבאים: %site, %homepage, %join_link, %message, %inviter"
+
+#: invite.module:143
+msgid "From: email address"
+msgstr "מאת: כתובת דואר אלקטרוני"
+
+#: invite.module:144
+msgid "Choose which email address will be in the From: header for the invitation mails sent; <em>site</em> or </em>inviter</em>. <em>Site</em> will use the default email address of the site, whereas <em>inviter</em> will use the email address of the person who is sending the invitation. Alternatively, you can set this value manually by clicking on <em>advanced settings</em> below."
+msgstr ""
+
+#: invite.module:145;153
+msgid "site"
+msgstr "אתר"
+
+#: invite.module:145;153;513;521
+msgid "inviter"
+msgstr "מזמין"
+
+#: invite.module:151
+msgid "Reply-To: email address"
+msgstr "השב אל: כתובת דואר אלקטרוני"
+
+#: invite.module:152
+msgid "Choose which email address will be in the Reply-To: header for the invitation mails sent; <em>site</em> or </em>inviter</em>. <em>Site</em> will use the default email address of the site, whereas <em>inviter</em> will use the email address of the person who is sending the invitation. Alternatively, you can set this value manually by clicking  on <em>advanced settings</em> below."
+msgstr ""
+
+#: invite.module:160
+msgid "Invite page cutomization"
+msgstr "התאמה אישית של עמוד ההזמנה"
+
+#: invite.module:165
+msgid "Invite page title"
+msgstr "כותרת עמוד ההזמנה"
+
+#: invite.module:166;226
+msgid "Invite your friends and colleagues"
+msgstr "הזמנת חבר"
+
+#: invite.module:167
+msgid "The title of the page where users invite friends"
+msgstr "כותרת העמוד שבו חברים באתר מזמינים את חבריהם וידידיהם להצטרף לאתר"
+
+#: invite.module:174
+msgid "Invite help text"
+msgstr "טקסט העזרה להזמנה"
+
+#: invite.module:184
+msgid "Customize the text that appears above the email form on the invite page for users"
+msgstr "התאם את ההודעה שאותה מקבלים חברי האתר מעל טופס ההזמנה בעמוד ההזמנה למשתמשים"
+
+#: invite.module:189
+msgid "Advanced settings"
+msgstr "הגדרות מתקדמות"
+
+#: invite.module:192
+msgid "<strong>Note:</strong> unless these fields are blank, they will override the radio button choices above."
+msgstr "<strong>הערה:</strong> מילוי שדות אלו יבטל את הגדרות הבחירה ש"
+
+#: invite.module:197
+msgid "Manually set the <em>From</em> address"
+msgstr "התאמה ידנית של כתובת השולח שתופיע בשדה <em>From</em>"
+
+#: invite.module:199
+msgid "The email address the email is sent from"
+msgstr "הכתובת שממנה תישלח ההזמנה"
+
+#: invite.module:204
+msgid "Manually set the <em>Reply</em> address"
+msgstr "התאמה ידנית של הכתובת שתופיע בשדה <em>Reply</em>"
+
+#: invite.module:206
+msgid "The email address you want recipients to reply to"
+msgstr "הכתובת שאליה ברצונך לקבל תשובות ממקבלי ההזמנה"
+
+#: invite.module:322
+msgid "Your invitations"
+msgstr "ההזמנות שלך"
+
+#: invite.module:328
+msgid "Joined"
+msgstr "הצטרפו"
+
+#: invite.module:328
+msgid "Pending"
+msgstr "בתהליך"
+
+#: invite.module:333;362
+msgid "Email"
+msgstr "דואר אלקטרוני"
+
+#: invite.module:333
+msgid "Status"
+msgstr "מצב"
+
+#: invite.module:337
+msgid "You have not sent any invitations yet."
+msgstr "לא שלחת עדיין שום הזמנות."
+
+#: invite.module:346
+msgid "Invite a friend"
+msgstr "הזמנת חברים"
+
+#: invite.module:354
+msgid "You have %invites invites left"
+msgstr "נותרו לך %invites הזמנות"
+
+#: invite.module:366
+msgid "Type the email of the person you would like to invite"
+msgstr "רשום את הדואר האלקטרוני של האדם שברצונך להזמין"
+
+#: invite.module:371
+msgid "Your message"
+msgstr "ההודעה שלך"
+
+#: invite.module:374
+msgid "This message will be added to the mail sent to the person you are inviting."
+msgstr "הודעה זו תתווסף לדואר האלקטרוני שיישלח למקבל\ת ההזמנה."
+
+#: invite.module:378
+msgid "Submit"
+msgstr "הגש"
+
+#: invite.module:381
+msgid "Maximum number (%max) of invitations reached"
+msgstr "הגעת למספר המקסימלי (%max) של הזמנות."
+
+#: invite.module:391
+msgid "Email address is not valid!"
+msgstr "כתובת הדואר האלקטרוני אינה תקינה!"
+
+#: invite.module:531
+msgid "their favorite website"
+msgstr "האתר החביב עליהם"
+
+#: invite.module:541
+msgid "Your invitation was sent successfully."
+msgstr "ההזמנות שלך נשלחו בהצלחה."
+
+#: invite.module:544
+msgid "Problems occurred sending the invitation. Please contact the site administrator."
+msgstr "היו בעיות במשלוח ההזמנה. לפרטים נוספים ניתן ליצור קשר עם מנהל האתר."
+
+#: invite.module:292;545;0
+msgid "invite"
+msgstr "הזמנת חברים"
+
+#: invite.module:48
+msgid "send invitations"
+msgstr "משלוח הזמנות"
+
