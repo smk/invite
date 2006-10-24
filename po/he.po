@@ -5,7 +5,7 @@
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: PROJECT VERSION\n"
+"Project-Id-Version: 4.7.0\n"
 "POT-Creation-Date: 2006-06-12 15:24+0200\n"
 "PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
 "Last-Translator: Amnon Levav <amnon@levavie.com>\n"
@@ -141,7 +141,7 @@ msgstr "הגדרות מתקדמות"
 
 #: invite.module:192
 msgid "<strong>Note:</strong> unless these fields are blank, they will override the radio button choices above."
-msgstr "<strong>הערה:</strong> מילוי שדות אלו יבטל את הגדרות הבחירה ש"
+msgstr "<strong>הערה:</strong> מילוי שדות אלו יבטל את הגדרות הדואר האלקטרוני שהגדרת בכפתורי הרדיו למעלה."
 
 #: invite.module:197
 msgid "Manually set the <em>From</em> address"
