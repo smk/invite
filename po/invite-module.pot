@@ -1,12 +1,12 @@
 # LANGUAGE translation of Drupal (invite.module)
 # Copyright YEAR NAME <EMAIL@ADDRESS>
-# Generated from file: invite.module,v 1.4 2005/12/23 01:44:49 kbahey
+# No version information was available in the source files.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"POT-Creation-Date: 2006-06-12 15:24+0200\n"
+"POT-Creation-Date: 2006-10-23 20:08+0200\n"
 "PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
 "Last-Translator: NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
@@ -15,127 +15,223 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
-#: invite.module:31
+#: invite.module:26
 msgid "Allows users to send GMail style invitations, and automatically escalates new users who use them to a role of your designation"
 msgstr ""
 
-#: invite.module:72
-msgid "Target role"
+#: invite.module:29;175
+msgid "<p>This is an overview of the invitations you have sent. The status of each invitation is shown: \r\n   <ul>\r\n     <li><strong>Joined</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the email address to take you to their profile page.</li>\r\n     <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation. You may send a reminder, by clicking the 'Remind Me' link.</li>\r\n     <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>\r\n   </ul>\r\n   </p>\r\n   <p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>"
 msgstr ""
 
-#: invite.module:74
-msgid "(Please add a target role.)"
-msgstr ""
-
-#: invite.module:75
-msgid "Choose the role that invited users will be added to. For example, <i>Member</i>."
-msgstr ""
-
-#: invite.module:77
-msgid "Invitation Expiry"
-msgstr ""
-
-#: invite.module:80
-msgid "Set the expiry period for user invitations, in days"
-msgstr ""
-
-#: invite.module:83
-msgid "Number of invitations per user"
-msgstr ""
-
-#: invite.module:86
-msgid "Maximum number of invitations a user may send"
-msgstr ""
-
-#: invite.module:89
+#: invite.module:64
 msgid "User settings"
 msgstr ""
 
+#: invite.module:71
+msgid "Target role (default)"
+msgstr ""
+
+#: invite.module:73;82
+msgid "(Please add a target role.)"
+msgstr ""
+
+#: invite.module:74
+msgid "Choose the role that invited users will be added to. For example, <em>Member</em>."
+msgstr ""
+
+#: invite.module:80
+msgid "Target role for %role"
+msgstr ""
+
+#: invite.module:83
+msgid "Choose the role that invited users will be added to if invited by someone who has the %role role."
+msgstr ""
+
+#: invite.module:89
+msgid "Invitation Expiry"
+msgstr ""
+
 #: invite.module:92
-msgid "Subject"
+msgid "Set the expiry period for user invitations, in days"
 msgstr ""
 
-#: invite.module:93;363
-msgid "You've been invited"
+#: invite.module:100
+msgid "Role limitations"
 msgstr ""
 
-#: invite.module:94
-msgid "Type the subject of the invitation email"
+#: invite.module:108;458
+msgid "unlimited"
 msgstr ""
 
-#: invite.module:98
-msgid "Include Features"
-msgstr ""
-
-#: invite.module:101
-msgid "Include the Features module output as part of the email"
-msgstr ""
-
-#: invite.module:105
+#: invite.module:117
 msgid "Email settings"
 msgstr ""
 
-#: invite.module:106
-msgid "Sample Email"
-msgstr ""
-
 #: invite.module:123
-msgid "Invite"
+msgid "Subject"
 msgstr ""
 
-#: invite.module:146
-msgid "login"
+#: invite.module:124;528
+msgid "You've been invited"
 msgstr ""
 
-#: invite.module:147;150
-msgid "view"
+#: invite.module:127
+msgid "Type the subject of the invitation email"
 msgstr ""
 
-#: invite.module:156
-msgid "register"
+#: invite.module:134
+msgid "Default mail template"
 msgstr ""
 
-#: invite.module:164
-msgid "Registration Code"
+#: invite.module:137
+msgid "Use the following placeholders; %site, %homepage, %join_link, %message, %inviter"
+msgstr ""
+
+#: invite.module:143
+msgid "From: email address"
+msgstr ""
+
+#: invite.module:144
+msgid "Choose which email address will be in the From: header for the invitation mails sent; <em>site</em> or </em>inviter</em>. <em>Site</em> will use the default email address of the site, whereas <em>inviter</em> will use the email address of the person who is sending the invitation. Alternatively, you can set this value manually by clicking on <em>advanced settings</em> below."
+msgstr ""
+
+#: invite.module:145;153
+msgid "site"
+msgstr ""
+
+#: invite.module:145;153;513;521
+msgid "inviter"
+msgstr ""
+
+#: invite.module:151
+msgid "Reply-To: email address"
+msgstr ""
+
+#: invite.module:152
+msgid "Choose which email address will be in the Reply-To: header for the invitation mails sent; <em>site</em> or </em>inviter</em>. <em>Site</em> will use the default email address of the site, whereas <em>inviter</em> will use the email address of the person who is sending the invitation. Alternatively, you can set this value manually by clicking  on <em>advanced settings</em> below."
+msgstr ""
+
+#: invite.module:160
+msgid "Invite page cutomization"
+msgstr ""
+
+#: invite.module:165
+msgid "Invite page title"
+msgstr ""
+
+#: invite.module:166;226
+msgid "Invite your friends and colleagues"
 msgstr ""
 
 #: invite.module:167
-msgid "validate"
+msgid "The title of the page where users invite friends"
 msgstr ""
 
-#: invite.module:170
-msgid "You must enter the email address where you received your invitation or remove the registration code from the signup form. "
+#: invite.module:174
+msgid "Invite help text"
 msgstr ""
 
-#: invite.module:173
-msgid "Did you forget to input your registration code? If not, leave both Registration Code fields blank."
+#: invite.module:184
+msgid "Customize the text that appears above the email form on the invite page for users"
 msgstr ""
 
-#: invite.module:181;186
-msgid "The registration email or registration code you have entered could not be found.  Please check you invitation email and try again, or leave the Registration code fields blank to submit your application for review"
+#: invite.module:189
+msgid "Advanced settings"
 msgstr ""
 
-#: invite.module:183
-msgid "The registration code you have entered has already been used or has expired.  Please check you invitation email and try again, or leave the Registration code fields blank to submit your application for review"
+#: invite.module:192
+msgid "<strong>Note:</strong> unless these fields are blank, they will override the radio button choices above."
 msgstr ""
 
-#: invite.module:190
-msgid "insert"
+#: invite.module:197
+msgid "Manually set the <em>From</em> address"
 msgstr ""
 
-#: invite.module:253
+#: invite.module:199
+msgid "The email address the email is sent from"
+msgstr ""
+
+#: invite.module:204
+msgid "Manually set the <em>Reply</em> address"
+msgstr ""
+
+#: invite.module:206
+msgid "The email address you want recipients to reply to"
+msgstr ""
+
+#: invite.module:322
+msgid "Your invitations"
+msgstr ""
+
+#: invite.module:328
+msgid "Joined"
+msgstr ""
+
+#: invite.module:328
+msgid "Pending"
+msgstr ""
+
+#: invite.module:333;362
+msgid "Email"
+msgstr ""
+
+#: invite.module:333
+msgid "Status"
+msgstr ""
+
+#: invite.module:337
+msgid "You have not sent any invitations yet."
+msgstr ""
+
+#: invite.module:346
+msgid "Invite a friend"
+msgstr ""
+
+#: invite.module:354
+msgid "You have %invites invites left"
+msgstr ""
+
+#: invite.module:366
+msgid "Type the email of the person you would like to invite"
+msgstr ""
+
+#: invite.module:371
+msgid "Your message"
+msgstr ""
+
+#: invite.module:374
+msgid "This message will be added to the mail sent to the person you are inviting."
+msgstr ""
+
+#: invite.module:378
+msgid "Submit"
+msgstr ""
+
+#: invite.module:381
+msgid "Maximum number (%max) of invitations reached"
+msgstr ""
+
+#: invite.module:391
 msgid "Email address is not valid!"
 msgstr ""
 
-#: invite.module:206;210
-msgid "user"
+#: invite.module:531
+msgid "their favorite website"
 msgstr ""
 
-#: invite.module:44
-msgid "send invitations"
+#: invite.module:541
+msgid "Your invitation was sent successfully."
 msgstr ""
 
-#: invite.module:0
+#: invite.module:544
+msgid "Problems occurred sending the invitation. Please contact the site administrator."
+msgstr ""
+
+#: invite.module:292;545;0
 msgid "invite"
+msgstr ""
+
+#: invite.module:48
+msgid "send invitations"
 msgstr ""
 
