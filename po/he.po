@@ -1,6 +1,6 @@
-# Hebrew translation of Drupal (invite.module)
+# LANGUAGE translation of Drupal (invite.module)
 # Copyright Amnon Levav <amnon@levavie.com>
-# Generated from file: invite.module,v 1.4 2005/12/23 01:44:49 kbahey
+# Generated from file: invite.module,v 1.4 2006/10/23 01:44:49 levavie
 #
 #, fuzzy
 msgid ""
@@ -13,15 +13,30 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: invite.module:26
 msgid "Allows users to send GMail style invitations, and automatically escalates new users who use them to a role of your designation"
 msgstr "מאפשר לחברים לשלוח הזמנות בסגנון GMAIL, ומעביר אוטומטית חברים חדשים שנענים להזמנה לתפקיד לבחירתך"
 
 #: invite.module:29;175
-msgid "<p>This is an overview of the invitations you have sent. The status of each invitation is shown: \r\n   <ul>\r\n     <li><strong>Joined</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the email address to take you to their profile page.</li>\r\n     <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation. You may send a reminder, by clicking the 'Remind Me' link.</li>\r\n     <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>\r\n   </ul>\r\n   </p>\r\n   <p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>"
-msgstr "<p>זוהי סקירה של ההזמנות ששלחת. לכל הזמנה אפשר לראות מהו מצבה: \r\n   <ul>\r\n     <li><strong>הצטרף</strong>: מציין שהמוזמן השתמש בהזמנה כדי להצטרף לאתר. לחץ על כתובת הדואר אלקטרוני שלו כדי לגשת לדף החבר שלו באתר.</li>\r\n     <li><strong>בתהליך</strong>: ההזמנה נשלחה, אך החבר\ה שלך עדיין לא קיבל או אישר את ההזמנה. אפשר לשלוח תזכורת, על ידי לחיצה על הקישור המתאים.</li>\r\n     <li><strong>פג תוקף</strong>: לא נעשה שימוש בהזמנה כדי להצטרף לאתר בתקופה שבה היא היתה בתוקף.</li>\r\n   </ul>\r\n   </p>\r\n   <p>בכל זמן, אפשר למחוק הזמנות 'בתהליך' או 'פג תוקף'. לא ניתן למחוק הזמנות מסוג 'הצטרף' והן נספרות לעד כחלק מכמות ההזמנות המותרת שלך. </p>"
+msgid ""
+"<p>This is an overview of the invitations you have sent. The status of "
+"each invitation is shown: \n"
+"   <ul>\n"
+"     <li><strong>Joined</strong>: Shows that the person you have "
+"invited has used your invitation to join the site. Click on the email "
+"address to take you to their profile page.</li>\n"
+"     <li><strong>Pending</strong>: The invitation has been sent, but "
+"your friend has still not accepted the invitation. You may send a "
+"reminder, by clicking the 'Remind Me' link.</li>\n"
+"     <li><strong>Expired</strong>: The invitation has not been used to "
+"register on the site within the expiration period.</li>\n"
+"   </ul>\n"
+"   </p>\n"
+"   <p>At any time, you may delete either 'Pending' or 'Expired' "
+"invitations. 'Joined' invitation cannot be deleted and count "
+"permanently toward your invitation allotment.</p>"
+msgstr "<p>זוהי סקירה של ההזמנות ששלחת. לכל הזמנה אפשר לראות מהו מצבה: \r\n   <ul>\r\n     <li><strong>הצטרף</strong>: מציין שהמוזמן השתמש בהזמנה כדי להצטרף לאתר. לחץ על כתובת הדואר אלקטרוני שלו כדי לגשת לדף החבר שלו באתר.</li>\r\n <li><strong>בתהליך</strong>: ההזמנה נשלחה, אך החבר\ה שלך עדיין לא קיבל או אישר את ההזמנה. אפשר לשלוח תזכורת, על ידי לחיצה על הקישור המתאים.</li>\r\n     <li><strong>פג תוקף</strong>: לא נעשה שימוש בהזמנה כדי להצטרף לאתר בתקופה שבה היא היתה בתוקף.</li>\r\n   </ul>\r\n   </p>\r\n   <p>בכל זמן, אפשר למחוק הזמנות 'בתהליך' או 'פג תוקף'. לא ניתן למחוק הזמנות מסוג 'הצטרף' והן נספרות לעד כחלק מכמות ההזמנות המותרת שלך. </p>"
 
 #: invite.module:64
 msgid "User settings"
@@ -85,7 +100,7 @@ msgstr "תבנית ברירת המחדל לדואר אלקטרוני"
 
 #: invite.module:137
 msgid "Use the following placeholders; %site, %homepage, %join_link, %message, %inviter"
-msgstr "ניתן להשתמש בשדות הבאים: %site, %homepage, %join_link, %message, %inviter"
+msgstr "ניתן להשתמש בשדות הבאים: %site, %homepage, %join_link, %message, %inviter."
 
 #: invite.module:143
 msgid "From: email address"
@@ -121,11 +136,11 @@ msgstr "כותרת עמוד ההזמנה"
 
 #: invite.module:166;226
 msgid "Invite your friends and colleagues"
-msgstr "הזמנת חבר"
+msgstr "הזמנת חבר'ה"
 
 #: invite.module:167
 msgid "The title of the page where users invite friends"
-msgstr "כותרת העמוד שבו חברים באתר מזמינים את חבריהם וידידיהם להצטרף לאתר"
+msgstr "כותרת העמוד שבו חברים באתר מזמינים את החבר'ה שלהם להצטרף לאתר"
 
 #: invite.module:174
 msgid "Invite help text"
@@ -157,7 +172,7 @@ msgstr "התאמה ידנית של הכתובת שתופיע בשדה <em>Reply<
 
 #: invite.module:206
 msgid "The email address you want recipients to reply to"
-msgstr "הכתובת שאליה ברצונך לקבל תשובות ממקבלי ההזמנה"
+msgstr "הכתובת שאליה ברצונך לקבל תשובות מהחבר'ה שהוזמנו"
 
 #: invite.module:322
 msgid "Your invitations"
@@ -165,7 +180,7 @@ msgstr "ההזמנות שלך"
 
 #: invite.module:328
 msgid "Joined"
-msgstr "הצטרפו"
+msgstr "הצטרפ\\ה"
 
 #: invite.module:328
 msgid "Pending"
@@ -185,7 +200,7 @@ msgstr "לא שלחת עדיין שום הזמנות."
 
 #: invite.module:346
 msgid "Invite a friend"
-msgstr "הזמנת חברים"
+msgstr "הזמנת חבר'ה"
 
 #: invite.module:354
 msgid "You have %invites invites left"
@@ -193,7 +208,7 @@ msgstr "נותרו לך %invites הזמנות"
 
 #: invite.module:366
 msgid "Type the email of the person you would like to invite"
-msgstr "רשום את הדואר האלקטרוני של האדם שברצונך להזמין"
+msgstr "רשום את הדואר האלקטרוני של מי שברצונך להזמין"
 
 #: invite.module:371
 msgid "Your message"
@@ -229,9 +244,31 @@ msgstr "היו בעיות במשלוח ההזמנה. לפרטים נוספים �
 
 #: invite.module:292;545;0
 msgid "invite"
-msgstr "הזמנת חברים"
+msgstr "הזמנת חבר'ה"
 
 #: invite.module:48
 msgid "send invitations"
 msgstr "משלוח הזמנות"
+
+#: invite.module:616
+msgid "Your friend, %inviter has invited you to join %site [%homepage].\n\nTo become a member of %site, click the link below or paste it into the address bar of your browser. \n\n%join_link\n\n----------\n\n%message"
+msgstr "אחד מהחבר'ה שלך, %inviter, הזמין אותך להצטרף לאתר %site [%homepage].\n\nכדי להצטרף כחבר של %site, יש ללחוץ על הקישור שלמטה או להעתיק אותו לתוך שדה הכתובת של הדפדפן שלך.\n\n%join_link\n\n----------\n\n%message"
+
+#: invite.module
+msgid "Invitation to %email has been deleted"
+msgstr "ההזמנה שנשלחה אל %email נמחקה"
+
+#: invite.module
+msgid "The user you are trying to invite has already been invited"
+msgstr "החבר שאת\\ה מבקש\\ת לצרף לרשימת החבר'ה שלך כבר הוזמנ\\ה"
+
+#: invite.module
+msgid "Number of invitations"
+msgstr "מספר מוזמנים"
+
+#: invite.module
+msgid "Enter the number of people you would like to allow users to invite on one form submission. Must be numeric and equal to 1 or more."
+msgstr "מספר האנשים שברצונך לאפשר לחברי האתר להזמין בהגשת טופס אחת. חייב להיות מספר וחייב להיות 1 או יותר."
+
+
 
