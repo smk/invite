@@ -235,6 +235,82 @@ function invite_menu($may_cache) {
   }
   return $items;
 }
+ 
+/**
+ * Implementation of hook_form_alter()
+ */
+
+function invite_form_alter($form_id, &$form) {
+  global $form_values;
+  switch ($form_id) {
+    case 'user_configure_settings':
+      $form['registration']['user_register']['#options']['inviteonly'] = t('New user registration by invitation only.');
+      break;
+    case 'user_register': 
+      $user_admin = user_access('administer users');
+      $invite_only = (variable_get('user_register',1) == 'inviteonly');
+      if ($code = arg(2)) {
+        $invite = _invite_fetch_invite($code);
+        if ($invite->count > 0) {
+          $valid_invite = TRUE;
+          $form['invite_code'] = array(
+            '#type' => 'value',
+            '#value' => $code,
+          );
+          $form['invite_referrer'] = array(
+            '#type' => 'value',
+            '#value' => $invite->referrer,
+          );
+        }
+      }
+
+      if ((!$user_admin) && $invite_only) {
+        if (!$valid_invite) {
+          // Redirect to the standard login form if in invite only mode and a valid invite is not present
+          drupal_set_message('Sorry, new user registration by invite only.');
+          drupal_goto('user/');
+        }
+
+        if (isset($form['#submit']['user_register_submit'])) {
+          // If we are in invite only mode, hijack the usual user registration submission
+          $form['#submit'] = array('invite_register_submit' => array());
+        }
+      }
+      break;
+
+    case 'user_login_block':
+      // Remove temptation for non members to try and register
+      if (variable_get('user_register',1) == 'inviteonly') {
+        $new_items = array();
+        $new_items[] = l(t('Request new password'), 'user/password', array('title' => t('Request new password via e-mail.')));
+        $form['links']['#value'] = theme('item_list', $new_items);
+      }
+      break;
+  } 
+}
+
+/*
+* function invite_register_submit($form_id, $form_values)
+*
+* Purpose : perform invite validation on user registration submission
+* 
+* Description : checks for a valid invitation before passing control back to the
+*               core user registration. If the invitation is invalid, the user is
+*               informed, watchdog notified and user registration terminated.
+*/
+
+function invite_register_submit($form_id, $form_values) {
+  // Don't need to check for invite only mode as invite_form_alter has already done that for us
+  $invite = _invite_fetch_invite($form_values['invite_code']);
+  if ($invite->count > 0) {
+    return user_register_submit($form_id, $form_values);
+  } else {
+    // Do some watchdog stuff
+    drupal_set_message('You have not been invited to join this site');
+    watchdog('invite', 'Uninvited user registration attempt', $link = NULL);
+  }
+}
+
 
 /*
 * Implementation of hook_user
@@ -246,31 +322,7 @@ function invite_menu($may_cache) {
 *                    If the fields are left blank they are ignored, and the default register events are processed  
 *         insert - on successful insert, the user status is set active and the role is escalated
 */
-  
-/**
- * Implementation of hook_form_alter()
- */
-function invite_form_alter($form_id, &$form) {
-  global $form_values;
-  switch ($form_id) {
-    case 'user_register':
-      if ($code = arg(2)) {
-      	$invite = db_fetch_object(db_query("SELECT COUNT(reg_code) AS count, uid AS referrer FROM {invite} WHERE reg_code = %d GROUP BY referrer", $code));
-        if ($invite->count > 0) {
-          $form['invite_code'] = array(
-            '#type' => 'value',
-            '#value' => $code,
-          );
-          $form['invite_referrer'] = array(
-            '#type' => 'value',
-            '#value' => $invite->referrer,
-          );
-        }
-      }
-      break;
-  }
-}
-
+ 
 function invite_user($op, &$edit, &$user, $category = NULL) { 
   switch ($op) {
     case 'insert':
@@ -580,5 +632,10 @@ function _invite_unblock($uid) {
    }
  
    return FALSE;
+}
+
+function _invite_fetch_invite($invite_code) {
+  return db_fetch_object(db_query("SELECT COUNT(reg_code) AS count, uid AS referrer FROM {invite}
+                                   WHERE reg_code = %d GROUP BY referrer", $invite_code));
 }
 
