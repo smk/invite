@@ -226,7 +226,7 @@ function invite_menu($may_cache) {
                     'title' => variable_get('invite_page_title', t('Invite your friends and colleagues')),
                  'callback' => 'invite_page',
                    'access' => user_access('send invitations'),
-                     'type' => MENU_SUGGESTED_ITEM);
+                     'type' => MENU_NORMAL_ITEM);
 
     $items[] = array('path' => 'invite/delete', 
                  'callback' => 'invite_delete',
