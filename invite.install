@@ -8,10 +8,10 @@ function invite_install() {
   switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
-      $result = db_query("
+      $result1 = db_query("
         CREATE TABLE {invite} (
           email varchar(64) NOT NULL default '',
-          reg_code varchar(64) NOT NULL default '',
+          reg_code varchar(64) UNIQUE NOT NULL,
           uid int(10) unsigned NOT NULL default '0',
           mid int(11) unsigned NOT NULL default '0',
           expiry int(11) NOT NULL default '0',
@@ -20,8 +20,9 @@ function invite_install() {
           PRIMARY KEY  (email)
         ) /*!40100 DEFAULT CHARACTER SET utf8 */;"
       );
+      $result2 = db_query("CREATE INDEX reg_code_idx ON {invite} (reg_code)");
       
-      if ($result) {
+      if ($result1 && result2) {
       	drupal_set_message(t('The database schema for the invite module has been successfully updated'));
       }
       else {
@@ -30,3 +31,16 @@ function invite_install() {
       break;
   }
 }
+
+function invite_update_1() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $items[] = update_sql("ALTER TABLE {invite} CHANGE reg_code reg_code VARCHAR(64) UNIQUE NOT NULL");
+      db_query("CREATE INDEX reg_code_idx ON {invite} (reg_code)");
+      break;
+  }
+  return $items;
+}
+
+

@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.3 2006-08-03 11:52:23 nickw Exp $ */
+/* $Id: README.txt,v 1.4 2007-01-16 09:21:34 karpuz Exp $ */
 
 INTRO
 -----
