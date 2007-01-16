@@ -1,6 +1,9 @@
 CHANGELOG.txt
 =============
 
+http://drupal.org/node/101208
+        Fixed by http://drupal.org/cvs?commit=51560
+
 http://drupal.org/node/76740
         Fixed by commit http://drupal.org/cvs?commit=51557 
 

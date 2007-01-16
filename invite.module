@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.2 2007-01-16 10:41:18 karpuz Exp $
+// $Id: invite.module,v 1.10.2.3 2007-01-16 10:47:46 karpuz Exp $
 /** 
  * @file 
  *
@@ -400,11 +400,11 @@ function _invite_form() {
       $email_cell = $invite->email;
       if ($expiry < time()) {
         $status_cell = t('Expired');
-        $action_cell = l("Delete invitation",'invite/delete/'.urlencode($invite->email));
+        $action_cell = l(t("Delete invitation"),'invite/delete/'.urlencode($invite->email));
       }
       else {
         $status_cell = t('Pending');
-        $action_cell = l("Delete invitation",'invite/delete/'.urlencode($invite->email));
+        $action_cell = l(t("Delete invitation"),'invite/delete/'.urlencode($invite->email));
       }
     }
     else {
