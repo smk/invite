@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.8 2007-01-16 10:47:28 karpuz Exp $
+// $Id: invite.module,v 1.9.2.9 2007-01-16 12:45:19 karpuz Exp $
 /** 
  * @file 
  *
@@ -48,9 +48,8 @@ function invite_perm() {
 
 /*
  * Implementation of hook_settings
- * Drupal 5 does away with hook_settings()
  */
-function _invite_settings() {
+function invite_settings() {
   // Build an array of all roles
   $result = db_query('SELECT * FROM {role}');
   while ($t = db_fetch_object($result)) {
@@ -213,8 +212,7 @@ function _invite_settings() {
     '#description' => t('The email address you want recipients to reply to')
   );
 
-
-  return system_settings_form($form);
+  return $form;
 }
 
 /*
@@ -225,15 +223,6 @@ function invite_menu($may_cache) {
   $items = array();
 
   if ($may_cache) {
-    $items[] = array(
-      'path' => 'admin/user/invite',
-      'title' => 'Invite settings',
-      'description' => t('Manage Invite settings'), 
-      'callback' => 'drupal_get_form',
-      'callback arguments' => '_invite_settings',
-      'access' => user_access('send invitations'),
-      'type' => MENU_NORMAL_ITEM
-    );
     $items[] = array(
       'path' => 'invite',
       'title' => variable_get('invite_page_title', t('Invite your friends and colleagues')),
@@ -380,10 +369,6 @@ function invite_cron() {
  *
  */
 function invite_page(){
-  return drupal_get_form('_invite_form');
-}
-
-function _invite_form() {
   global $user;
   
   //this displays all invites for a user, and counts how many invites they have left to give
@@ -469,7 +454,7 @@ function _invite_form() {
     drupal_set_message(t('Maximum number (%max) of invitations reached.', array('%max' => $maximum_invites)));
   }
 
-  return $form;
+  return drupal_get_form('_invite_form', $form);
 }
 
 function _invite_form_validate($form_id, &$edit) {
@@ -491,10 +476,9 @@ function _invite_form_submit($form_id, $edit) {
   //send email
   if ($success = _invite_send_invite('mail', $user->name, $edit['email'], $code, $edit['message'])) {
     //update database
-    db_query("INSERT INTO {invite}(email, reg_code, uid, expiry) VALUES ('%s', '%s', %d, %d)",$edit['email'], $code,$user->uid, time()+(variable_get('invite_expiry', 30)*60*60*24));  
+    db_query("INSERT INTO {invite} (email, reg_code, uid, expiry) VALUES ('%s', '%s', %d, %d)",$edit['email'], $code,$user->uid, time()+(variable_get('invite_expiry', 30)*60*60*24));  
   }
 }
-
 
 function invite_delete($email) {
   global $user;
@@ -511,10 +495,10 @@ function invite_delete($email) {
 /*
 * Module Specific Helper functions
 */
-function _invite_check_invited($email, $uid){
-	global $user;
+function _invite_check_invited($email, $uid) {
+  global $user;
 	
-	$rtn = array('is_invited' => 0, 'message' => '');
+  $rtn = array('is_invited' => 0, 'message' => '');
 	
   if ((int)db_result(db_query('SELECT COUNT(*) AS count FROM {invite} WHERE email = "%s"', $email)) > 0) {
     $rtn['message'] = 'The user you are trying to invite has already been invited.'; 

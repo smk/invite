@@ -1,6 +1,13 @@
 CHANGELOG.txt
 =============
 
+Fixed a bad commit.
+
+Fixed bug in _invite_form_submit() function.
+
+http://drupal.org/node/100590
+	Fixed by http://drupal.org/cvs?commit=51571
+
 http://drupal.org/node/101208
 	Fixed by http://drupal.org/cvs?commit=51559
 
