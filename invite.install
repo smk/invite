@@ -1,5 +1,5 @@
 <?php
-// $ID$
+// $Id: invite.install,v 1.3.2.1 2007-01-16 10:13:03 karpuz Exp $
 
 /**
  * Install the initial schema.
@@ -21,14 +21,28 @@ function invite_install() {
         ) /*!40100 DEFAULT CHARACTER SET utf8 */;"
       );
       $result2 = db_query("CREATE INDEX reg_code_idx ON {invite} (reg_code)");
-      
-      if ($result1 && result2) {
-      	drupal_set_message(t('The database schema for the invite module has been successfully updated'));
-      }
-      else {
-      	drupal_set_message(t('Problems occurred while updating the database schema for the invite module.'));
-      }
       break;
+    case 'pgsql':
+      $result1 = db_query("
+        CREATE TABLE {invite} (
+          email VARCHAR(64) NOT NULL PRIMARY KEY,
+          reg_code VARCHAR(64) UNIQUE NOT NULL,
+          uid INTEGER NOT NULL DEFAULT 0,
+          mid INTEGER NOT NULL DEFAULT 0,
+          expiry INTEGER NOT NULL DEFAULT 0,
+          timestamp INTEGER NOT NULL DEFAULT 0,
+          received INTEGER NOT NULL DEFAULT 0
+        );"
+      );
+      $result2 = db_query("CREATE INDEX reg_code_idx ON {invite} (reg_code)");
+      break;
+    }
+
+  if ($result1 && result2) {
+    drupal_set_message(t('The database schema for the invite module has been successfully updated'));
+  }
+  else {
+    drupal_set_message(t('Problems occurred while updating the database schema for the invite module.'));
   }
 }
 
