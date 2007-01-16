@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.7 2007-01-16 10:41:02 karpuz Exp $
+// $Id: invite.module,v 1.9.2.8 2007-01-16 10:47:28 karpuz Exp $
 /** 
  * @file 
  *
@@ -400,18 +400,18 @@ function _invite_form() {
       $email_cell = $invite->email;
       if ($expiry < time()) {
         $status_cell = t('Expired');
-        $action_cell = l("Delete invitation",'invite/delete/'.urlencode($invite->email));
+        $action_cell = l(t("Delete invitation"),'invite/delete/'.urlencode($invite->email));
       }
       else {
         $status_cell = t('Pending');
-        $action_cell = l("Delete invitation",'invite/delete/'.urlencode($invite->email));
+        $action_cell = l(t("Delete invitation"),'invite/delete/'.urlencode($invite->email));
       }
     }
     else {
       $account = user_load(array('mail' => $invite->email));
       $email_cell = isset($account->uid) ? l($invite->email, 'user/'.$account->uid) : "<i>{$invite->email}</i>";
       $status_cell = t('Joined');
-      $action_cell = (variable_get('invite_allow_join_delete', 0) && isset($account->uid)) ? l("Delete invitation",'invite/delete/'.urlencode($invite->email)) : '&nbsp;';
+      $action_cell = (variable_get('invite_allow_join_delete', 0) && isset($account->uid)) ? l(t("Delete invitation"),'invite/delete/'.urlencode($invite->email)) : '&nbsp;';
     }
     $items[] = array($email_cell, $status_cell, $action_cell);
     $inc++;
