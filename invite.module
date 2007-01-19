@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.10 2007-01-19 12:58:24 karpuz Exp $
+// $Id: invite.module,v 1.10.2.11 2007-01-19 19:55:23 karpuz Exp $
 /** 
  * @file 
  *
@@ -231,7 +231,7 @@ function invite_menu($may_cache) {
       'description' => t('Manage Invite settings'), 
       'callback' => 'drupal_get_form',
       'callback arguments' => '_invite_settings',
-      'access' => user_access('send invitations'),
+      'access' => user_access('administer site configuration'),
       'type' => MENU_NORMAL_ITEM
     );
     $items[] = array(
