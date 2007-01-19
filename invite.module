@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.9 2007-01-16 12:45:19 karpuz Exp $
+// $Id: invite.module,v 1.9.2.10 2007-01-19 01:44:05 karpuz Exp $
 /** 
  * @file 
  *
@@ -460,9 +460,13 @@ function invite_page(){
 function _invite_form_validate($form_id, &$edit) {
   global $user;
   
+  if (!valid_email_address($edit['email'])) {
+    form_set_error('email', t('The email address does not appear to be valid syntax.'));
+  }
+
   $x =  _invite_check_invited($edit['email'], $user->uid);
-  if (!valid_email_address($edit['email']) || $x['is_invited']) {
-    form_set_error("invite_email", t($x['message']));
+  if ($x['is_invited']) {
+    form_set_error('email', t($x['message']));
   }
 }
 
@@ -615,16 +619,16 @@ function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient
   $homepage = $base_url;
   $inviter = $user_name;
 
-  $body = t($template, array('%site' => $site, '%join_link' => $join_link, '%homepage' => $homepage, '%message' => $message, '%inviter' => $inviter));
+  $body = t($template, array('%site' => $site, '%join_link' => $join_link, '%homepage' => $homepage, '%message' => check_plain($message), '%inviter' => $inviter));
 
   switch ($op){
     case "mail":
-      if ($success = drupal_mail('invite_email', $email, $subject, wordwrap($body, 72), $from)) {
+      if ($success = user_mail($email, $subject, wordwrap($body, 72), "From: $from\r\nReply-To: $replyto")) {
       	drupal_set_message(t('Your invitation was sent successfully.'));
       }
       else {
-      	drupal_set_message(t('Problems occurred sending the invitation. Please contact the site administrator.'));
-      	watchdog('invite', t("Invitation sending failed. Email: $email Subject: $subject Body: $body From: $from"));
+      	drupal_set_message(t('Problems occurred sending the invitation. Please contact the site administrator.'), 'error');
+      	watchdog('invite', t("Invitation sending failed. Email: %email Subject: $subject Body: %body From: $from", array('%email' => check_plain($email), '%body' => check_plain($body))));
       }
       return $success;
 
