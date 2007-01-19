@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.7 2007-01-19 09:23:27 karpuz Exp $
+// $Id: invite.module,v 1.10.2.8 2007-01-19 11:49:57 karpuz Exp $
 /** 
  * @file 
  *
@@ -677,6 +677,6 @@ function _invite_unblock($uid) {
 }
 
 function _invite_fetch_invite($invite_code) {
-  return db_fetch_object(db_query('SELECT COUNT(reg_code) AS count, uid AS referrer FROM {invite} WHERE reg_code = "%s" GROUP BY referrer', $invite_code));
+  return db_fetch_object(db_query('SELECT COUNT(reg_code) AS count, uid AS referrer FROM {invite} WHERE reg_code = "%s" AND timestamp = 0 GROUP BY referrer', $invite_code));
 }
 
