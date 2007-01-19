@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.15 2007-01-19 12:31:35 karpuz Exp $
+// $Id: invite.module,v 1.9.2.16 2007-01-19 12:57:40 karpuz Exp $
 /** 
  * @file 
  *
@@ -582,9 +582,10 @@ function _invite_create_regcode(){
   do {
     $reg_code = substr(md5((string)rand(). date('YmdHis', time())), 0, 8);
     $r = db_query('SELECT COUNT(*) FROM {invite} WHERE reg_code = "%s"', $reg_code);
-  } while ((int)db_result($result) > 0);
+  } while ((int)db_result($r) > 0);
   return $reg_code;
 }
+
 function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient-email]", $code = "registration-code", $message = '[your message]'){
   global $base_url, $user;
 
