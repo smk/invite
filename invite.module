@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.13 2007-01-19 09:22:19 karpuz Exp $
+// $Id: invite.module,v 1.9.2.14 2007-01-19 11:49:03 karpuz Exp $
 /** 
  * @file 
  *
@@ -569,7 +569,7 @@ function _invite_role_escalate($invitee) {
 }
 
 function _invite_set_timestamp($email, $uid, $regcode){
-  db_query("UPDATE {invite} SET timestamp = %d, mid = %d, email = '%s' WHERE reg_code = '%s'", time(), $uid, $email, $regcode);
+  db_query('UPDATE {invite} SET timestamp = %d, mid = %d, email = "%s" WHERE reg_code = "%s"', time(), $uid, $email, $regcode);
 }
 
 function _invite_check_msgs($uid){
@@ -661,6 +661,6 @@ function _invite_unblock($uid) {
 }
 
 function _invite_fetch_invite($invite_code) {
-  return db_fetch_object(db_query('SELECT COUNT(reg_code) AS count, uid AS referrer FROM {invite} WHERE reg_code = "%s" GROUP BY referrer', $invite_code));
+  return db_fetch_object(db_query('SELECT COUNT(reg_code) AS count, uid AS referrer FROM {invite} WHERE reg_code = "%s" AND timestamp = 0 GROUP BY referrer', $invite_code));
 }
 
