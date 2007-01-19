@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.11 2007-01-19 09:16:20 karpuz Exp $
+// $Id: invite.module,v 1.9.2.12 2007-01-19 09:18:14 karpuz Exp $
 /** 
  * @file 
  *
@@ -343,7 +343,7 @@ function invite_user($op, &$edit, &$user, $category = NULL) {
         _invite_unblock($user->uid);
       } 
       else {
-        watchdog('invite', 'User '.$user->name.' registration code failed', $link = NULL);
+        watchdog('invite', 'User '. check_plain($user->name) .' registration code failed', $link = NULL);
       }
       break;
   }   
