@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.12 2007-01-19 09:18:14 karpuz Exp $
+// $Id: invite.module,v 1.9.2.13 2007-01-19 09:22:19 karpuz Exp $
 /** 
  * @file 
  *
@@ -631,14 +631,6 @@ function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient
       	watchdog('invite', t("Invitation sending failed. Email: %email Subject: $subject Body: %body From: $from", array('%email' => check_plain($email), '%body' => check_plain($body))));
       }
       return $success;
-
-    case "display":
-      $output =  "To: $email <br>";
-      $output .= "From: $from <br>";
-      $output .= "Reply-To: $from <br>";
-      $output .= "Subject: $subject<br>";
-      $output .= "<p> $body </p>";
-      return $output;
   }
 }
 
