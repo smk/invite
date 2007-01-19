@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.5 2007-01-19 01:58:13 karpuz Exp $
+// $Id: invite.module,v 1.10.2.6 2007-01-19 09:17:29 karpuz Exp $
 /** 
  * @file 
  *
@@ -354,7 +354,7 @@ function invite_user($op, &$edit, &$user, $category = NULL) {
         _invite_unblock($user->uid);
       } 
       else {
-        watchdog('invite', 'User '.$user->name.' registration code failed', $link = NULL);
+        watchdog('invite', 'User '. check_plain($user->name) .' registration code failed', $link = NULL);
       }
       break;
   }   
@@ -505,7 +505,7 @@ function invite_delete($email) {
   $email = rawurldecode(urlencode($email));
   if ($email){
     db_query("DELETE from {invite} WHERE email = '%s'",$email);
-    drupal_set_message(t('Invitation to %email has been deleted.', array('%email' => $email)));
+    drupal_set_message(t('Invitation to @email has been deleted.', array('@email' => $email)));
     $args = array('email' => $email);
     module_invoke_all('invite', 'cancel', $args);
     drupal_goto('invite');
