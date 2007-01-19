@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.4 2007-01-16 12:42:06 karpuz Exp $
+// $Id: invite.module,v 1.10.2.5 2007-01-19 01:58:13 karpuz Exp $
 /** 
  * @file 
  *
@@ -475,8 +475,12 @@ function _invite_form() {
 function _invite_form_validate($form_id, &$edit) {
   global $user;
   
+  if (!valid_email_address($edit['email'])) {
+    form_set_error("email", t('The email address does not appear to be valid syntax.'));
+  }
+
   $x =  _invite_check_invited($edit['email'], $user->uid);
-  if (!valid_email_address($edit['email']) || $x['is_invited']) {
+  if ($x['is_invited']) {
     form_set_error("invite_email", t($x['message']));
   }
 }
@@ -640,7 +644,7 @@ function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient
       }
       else {
       	drupal_set_message(t('Problems occurred sending the invitation. Please contact the site administrator.'));
-      	watchdog('invite', t("Invitation sending failed. Email: $email Subject: $subject Body: $body From: $from"));
+      	watchdog('invite', t("Invitation sending failed. Email: @email Subject: $subject Body: @body From: $from", array('@email' => $email, '@body' => $body)));
       }
       return $success;
 
