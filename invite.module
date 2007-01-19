@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.8 2007-01-19 11:49:57 karpuz Exp $
+// $Id: invite.module,v 1.10.2.9 2007-01-19 12:34:07 karpuz Exp $
 /** 
  * @file 
  *
@@ -434,7 +434,7 @@ function _invite_form() {
     '#title' => t('Invite a friend'),
   );      
   
-  $maximum_invites = _invite_check_remaining_invites($user);
+  $maximum_invites = _invite_max_invites_by_role();
   if ($maximum_invites > 0) {
     $invites_left =  $maximum_invites - $inc;
     $form['invite_form']['remaining_invites'] = array(
@@ -531,32 +531,30 @@ function _invite_check_invited($email, $uid){
     $rtn['is_invited']++;
     return $rtn;
   }
-  
-  if (_invite_check_remaining_invites($user) > 0 && db_result(db_query("SELECT COUNT(*) from {invite} WHERE uid = %d", $uid)) >= $maximum_invites) {
-      $rtn['message'] = 'You have exceeded your allowed invitations.'; 
-      $rtn['is_invited']++;
-      return $rtn;
-  }
 
+  $max_invites = _invite_max_invites_by_role();
+  if ($max_invites > 0 && $max_invites <= db_result(db_query("SELECT COUNT(*) from {invite} WHERE uid = %d", $uid))) {
+    $rtn['message'] = 'You have exceeded your allowed invitations.'; 
+    $rtn['is_invited']++;
+    return $rtn;
+  }
+  
  return $rtn;
 }
-
-function _invite_check_remaining_invites($user) {
-  $roles = user_roles();
-  $limit = 0;
-  foreach ($roles as $role) {
+  
+function _invite_max_invites_by_role($uid = NULL, $default_max = 0) {
+  global $user;
+  
+  $account = (is_null($uid)) ? $user : user_load(array('uid' => $uid));
+  foreach (user_roles() as $role) {
     $role_no_space = str_replace(' ', '_', $role);
-    if (in_array($role, $user->roles)) {
-      $set = variable_get('invite_maxnum_'. $role_no_space, 0);
-      if ($set == 0) {
-      	return 0;
-      }
-      if ($set > $limit) {
-        $limit = $set;
-      }
+    if (in_array($role, $account->roles)) {
+      if (($max_by_role = variable_get('invite_maxnum_'. $role_no_space, 0)) == 0) { return 0; }
+      if ($max_by_role > $default_max) $default_max = $max_by_role;
     }
   }
-  return $limit;
+  
+  return $default_max;
 }
 
 function _invite_role_escalate($invitee) {
