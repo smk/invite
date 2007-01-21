@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.12 2007-01-21 13:48:13 karpuz Exp $
+// $Id: invite.module,v 1.10.2.13 2007-01-21 15:17:44 karpuz Exp $
 /** 
  * @file 
  *
@@ -652,7 +652,7 @@ function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient
 
 function invite_get_mail_template() {
   $template = <<<_MAIL_
-Your friend, @inviter has invited you to join @site [%homepage].
+Your friend, @inviter has invited you to join @site [@homepage].
 
 To become a member of @site, click the link below or paste it into the address bar of your browser. 
 
