@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.13 2007-01-21 15:17:44 karpuz Exp $
+// $Id: invite.module,v 1.10.2.14 2007-01-25 15:35:39 karpuz Exp $
 /** 
  * @file 
  *
@@ -475,7 +475,7 @@ function _invite_form() {
 function _invite_form_validate($form_id, &$edit) {
   global $user;
   
-  if (!valid_email_address($edit['email'])) {
+  if (!valid_email_address(trim($edit['email']))) {
     form_set_error("email", t('The email address does not appear to be valid syntax.'));
   }
 
@@ -493,9 +493,9 @@ function _invite_form_submit($form_id, $edit) {
   $args = array('inviter' => $user);
   module_invoke_all('invite', 'invite', $args);
   //send email
-  if ($success = _invite_send_invite('mail', $user->name, $edit['email'], $code, $edit['message'])) {
+  if ($success = _invite_send_invite('mail', $user->name, trim($edit['email']), $code, $edit['message'])) {
     //update database
-    db_query("INSERT INTO {invite} (email, reg_code, uid, expiry) VALUES ('%s', '%s', %d, %d)",$edit['email'], $code,$user->uid, time()+(variable_get('invite_expiry', 30)*60*60*24));  
+    db_query("INSERT INTO {invite} (email, reg_code, uid, expiry) VALUES ('%s', '%s', %d, %d)", trim($edit['email']), $code,$user->uid, time()+(variable_get('invite_expiry', 30)*60*60*24));  
   }
 }
 
