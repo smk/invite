@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.14 2007-01-25 15:35:39 karpuz Exp $
+// $Id: invite.module,v 1.10.2.15 2007-01-31 13:18:56 karpuz Exp $
 /** 
  * @file 
  *
@@ -141,7 +141,7 @@ function _invite_settings() {
     '#title' => t('Default mail template'),
     '#default_value' => invite_get_mail_template(),
     '#required' => TRUE,
-    '#description' => t('Use the following placeholders; %site, %homepage, %join_link, %message, %inviter'),
+    '#description' => t('Use the following placeholders; @site, @homepage, @join_link, @message, @inviter'),
   );
 
   // configure settings for the email
@@ -502,7 +502,7 @@ function _invite_form_submit($form_id, $edit) {
 
 function invite_delete($email) {
   global $user;
-  $email = rawurldecode(urlencode($email));
+  $email = urldecode($email); // $email = rawurldecode(urlencode($email));
   if ($email){
     db_query("DELETE from {invite} WHERE email = '%s'",$email);
     drupal_set_message(t('Invitation to @email has been deleted.', array('@email' => $email)));
