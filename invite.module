@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.17 2007-01-25 15:34:00 karpuz Exp $
+// $Id: invite.module,v 1.9.2.18 2007-01-31 13:23:55 karpuz Exp $
 /** 
  * @file 
  *
@@ -486,7 +486,7 @@ function _invite_form_submit($form_id, $edit) {
 
 function invite_delete($email) {
   global $user;
-  $email = rawurldecode(urlencode($email));
+  $email = urldecode($email); // $email = rawurldecode(urlencode($email));
   if ($email){
     db_query("DELETE from {invite} WHERE email = '%s'",$email);
     drupal_set_message(t('Invitation to %email has been deleted.', array('%email' => check_plain($email))));
