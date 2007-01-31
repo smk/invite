@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.18 2007-01-31 13:23:55 karpuz Exp $
+// $Id: invite.module,v 1.9.2.19 2007-01-31 23:54:01 karpuz Exp $
 /** 
  * @file 
  *
@@ -510,7 +510,7 @@ function _invite_check_invited($email, $uid) {
     return $rtn;
   }
 
-  if ((int)db_result(db_query('SELECT COUNT(*) AS count FROM users WHERE mail = "%s"', $email)) > 0) {
+  if ((int)db_result(db_query('SELECT COUNT(*) AS count FROM {users} WHERE mail = "%s"', $email)) > 0) {
     $rtn['message'] = 'The user you are trying to invite has already registered.'; 
     $rtn['is_invited']++;
     return $rtn;
