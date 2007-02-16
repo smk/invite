@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.19 2007-01-31 23:54:01 karpuz Exp $
+// $Id: invite.module,v 1.9.2.20 2007-02-16 02:09:30 smk Exp $
 /** 
  * @file 
  *
@@ -353,9 +353,9 @@ function invite_user($op, &$edit, &$user, $category = NULL) {
  * hook cron. 
  */
 function invite_cron() {
-	// TODO: cron should check which invitations are expired and possibly send a follow up mail
-	// This should also trigger a module_invoke_all('invite', 'expire', $args) call so that other modules can 
-	// react to the expired invitation.
+  // TODO: cron should check which invitations are expired and possibly send a follow up mail
+  // This should also trigger a module_invoke_all('invite', 'expire', $args) call so that other modules can 
+  // react to the expired invitation.
 }
 
   
@@ -407,7 +407,7 @@ function invite_page(){
     $table = theme('table', $headers, $items, array('id' => 'invite_table'));
   }
   else {
-  	$table = t('You have not sent any invitations yet.');
+    $table = t('You have not sent any invitations yet.');
   }
   $form['invitations']['table'] = array(
     '#type' => 'markup',
@@ -487,13 +487,19 @@ function _invite_form_submit($form_id, $edit) {
 function invite_delete($email) {
   global $user;
   $email = urldecode($email); // $email = rawurldecode(urlencode($email));
-  if ($email){
-    db_query("DELETE from {invite} WHERE email = '%s'",$email);
-    drupal_set_message(t('Invitation to %email has been deleted.', array('%email' => check_plain($email))));
-    $args = array('email' => $email);
-    module_invoke_all('invite', 'cancel', $args);
-    drupal_goto('invite');
+  if ($email) {
+    $account = user_load(array('mail' => $email));
+    if (!isset($account->uid) || variable_get('invite_allow_join_delete', 0)) {
+      db_query("DELETE from {invite} WHERE email = '%s'", $email);
+      drupal_set_message(t('Invitation to %email has been deleted.', array('%email' => check_plain($email))));
+      $args = array('inviter' => $user, 'email' => $email);
+      module_invoke_all('invite', 'cancel', $args);
+    }
+    else {
+      drupal_set_message(t('Could not delete invitation, because %email already joined the site.', array('%email' => check_plain($email))));
+    }
   }
+  drupal_goto('invite');
 }
 
 /*
@@ -501,9 +507,9 @@ function invite_delete($email) {
 */
 function _invite_check_invited($email, $uid) {
   global $user;
-	
+  
   $rtn = array('is_invited' => 0, 'message' => '');
-	
+  
   if ((int)db_result(db_query('SELECT COUNT(*) AS count FROM {invite} WHERE email = "%s"', $email)) > 0) {
     $rtn['message'] = 'The user you are trying to invite has already been invited.'; 
     $rtn['is_invited']++;
@@ -542,15 +548,15 @@ function _invite_max_invites_by_role($uid = NULL, $default_max = 0) {
 }
 
 function _invite_role_escalate($invitee) {
-	$inviter_uid = db_result(db_query("SELECT uid FROM {invite} WHERE mid = %d", $user->uid));
+  $inviter_uid = db_result(db_query("SELECT uid FROM {invite} WHERE mid = %d", $user->uid));
   if ($inviter = user_load(array('uid' => $inviter_uid))) {
     $roles = user_roles();
     $targets = array();
     foreach ($inviter->roles as $key => $role) {
       $role_no_space = str_replace(' ', '_', $role);
       if (($target = variable_get('invite_target_role_'. $role_no_space, DRUPAL_AUTHENTICATED_RID)) != DRUPAL_AUTHENTICATED_RID) {
-    	  $targets[] = $target;
-    	}
+        $targets[] = $target;
+      }
     }
   }
   if (($target_role_default = variable_get('invite_target_role_default', DRUPAL_AUTHENTICATED_RID)) != DRUPAL_AUTHENTICATED_RID) {
@@ -623,11 +629,11 @@ function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient
   switch ($op){
     case "mail":
       if ($success = user_mail($email, $subject, wordwrap($body, 72), "From: $from\r\nReply-To: $replyto")) {
-      	drupal_set_message(t('Your invitation was sent successfully.'));
+        drupal_set_message(t('Your invitation was sent successfully.'));
       }
       else {
-      	drupal_set_message(t('Problems occurred sending the invitation. Please contact the site administrator.'), 'error');
-      	watchdog('invite', t("Invitation sending failed. Email: %email Subject: $subject Body: %body From: $from", array('%email' => check_plain($email), '%body' => check_plain($body))));
+        drupal_set_message(t('Problems occurred sending the invitation. Please contact the site administrator.'), 'error');
+        watchdog('invite', t("Invitation sending failed. Email: %email Subject: $subject Body: %body From: $from", array('%email' => check_plain($email), '%body' => check_plain($body))));
       }
       return $success;
   }
