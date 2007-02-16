@@ -1,0 +1,285 @@
+# LANGUAGE translation of Drupal (invite.module)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# Generated from file: invite.module,v 1.10.2.16 2007/01/31 23:55:35 karpuz
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2007-02-16 02:56+0100\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: invite.module:27
+msgid "Allows users to send GMail style invitations, and automatically escalates new users who use them to a role of your designation"
+msgstr ""
+
+#: invite.module:30;182
+msgid "<p>This is an overview of the invitations you have sent. The status of each invitation is shown: \n   <ul>\n     <li><strong>Joined</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the email address to take you to their profile page.</li>\n     <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation. You may send a reminder, by clicking the 'Remind Me' link.</li>\n     <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>\n   </ul>\n   </p>\n   <p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>"
+msgstr ""
+
+#: invite.module:62
+msgid "User settings"
+msgstr ""
+
+#: invite.module:69
+msgid "Target role (default)"
+msgstr ""
+
+#: invite.module:71;81
+msgid "(Please add a target role.)"
+msgstr ""
+
+#: invite.module:72
+msgid "Choose the role that invited users will be added to. For example, <em>Member</em>."
+msgstr ""
+
+#: invite.module:79
+msgid "Target role for %role"
+msgstr ""
+
+#: invite.module:82
+msgid "Choose the role that invited users will be added to if invited by someone who has the %role role."
+msgstr ""
+
+#: invite.module:88
+msgid "Invitation Expiry"
+msgstr ""
+
+#: invite.module:91
+msgid "Set the expiry period for user invitations, in days"
+msgstr ""
+
+#: invite.module:98
+msgid "Allow deletion of joined users"
+msgstr ""
+
+#: invite.module:100
+msgid "After an invitee has registered, this option allows a site administrator the option to delete the invitations marked as joined. Useful for users who delete their account to be re-invited or for users who change their email address"
+msgstr ""
+
+#: invite.module:105
+msgid "Role limitations"
+msgstr ""
+
+#: invite.module:115
+msgid "unlimited"
+msgstr ""
+
+#: invite.module:124
+msgid "Email settings"
+msgstr ""
+
+#: invite.module:130
+msgid "Subject"
+msgstr ""
+
+#: invite.module:131;634
+msgid "You've been invited"
+msgstr ""
+
+#: invite.module:134
+msgid "Type the subject of the invitation email"
+msgstr ""
+
+#: invite.module:141
+msgid "Default mail template"
+msgstr ""
+
+#: invite.module:144
+msgid "Use the following placeholders; @site, @homepage, @join_link, @message, @inviter"
+msgstr ""
+
+#: invite.module:150
+msgid "From: email address"
+msgstr ""
+
+#: invite.module:151
+msgid "Choose which email address will be in the From: header for the invitation mails sent; <em>site</em> or </em>inviter</em>. <em>Site</em> will use the default email address of the site, whereas <em>inviter</em> will use the email address of the person who is sending the invitation. Alternatively, you can set this value manually by clicking on <em>advanced settings</em> below."
+msgstr ""
+
+#: invite.module:152;160
+msgid "site"
+msgstr ""
+
+#: invite.module:152;160;619;627
+msgid "inviter"
+msgstr ""
+
+#: invite.module:158
+msgid "Reply-To: email address"
+msgstr ""
+
+#: invite.module:159
+msgid "Choose which email address will be in the Reply-To: header for the invitation mails sent; <em>site</em> or </em>inviter</em>. <em>Site</em> will use the default email address of the site, whereas <em>inviter</em> will use the email address of the person who is sending the invitation. Alternatively, you can set this value manually by clicking  on <em>advanced settings</em> below."
+msgstr ""
+
+#: invite.module:167
+msgid "Invite page cutomization"
+msgstr ""
+
+#: invite.module:172
+msgid "Invite page title"
+msgstr ""
+
+#: invite.module:173;239
+msgid "Invite your friends and colleagues"
+msgstr ""
+
+#: invite.module:174
+msgid "The title of the page where users invite friends"
+msgstr ""
+
+#: invite.module:181
+msgid "Invite help text"
+msgstr ""
+
+#: invite.module:191
+msgid "Customize the text that appears above the email form on the invite page for users"
+msgstr ""
+
+#: invite.module:196
+msgid "Advanced settings"
+msgstr ""
+
+#: invite.module:199
+msgid "<strong>Note:</strong> unless these fields are blank, they will override the radio button choices above."
+msgstr ""
+
+#: invite.module:204
+msgid "Manually set the <em>From</em> address"
+msgstr ""
+
+#: invite.module:206
+msgid "The email address the email is sent from"
+msgstr ""
+
+#: invite.module:211
+msgid "Manually set the <em>Reply</em> address"
+msgstr ""
+
+#: invite.module:213
+msgid "The email address you want recipients to reply to"
+msgstr ""
+
+#: invite.module:231
+msgid "Manage Invite settings"
+msgstr ""
+
+#: invite.module:260
+msgid "New user registration by invitation only."
+msgstr ""
+
+#: invite.module:283
+msgid "Sorry, new user registration by invite only."
+msgstr ""
+
+#: invite.module:298
+msgid "Request new password"
+msgstr ""
+
+#: invite.module:298
+msgid "Request new password via e-mail."
+msgstr ""
+
+#: invite.module:322
+msgid "You have not been invited to join this site."
+msgstr ""
+
+#: invite.module:392
+msgid "Your invitations"
+msgstr ""
+
+#: invite.module:402
+msgid "Expired"
+msgstr ""
+
+#: invite.module:403;407
+msgid "Delete invitation"
+msgstr ""
+
+#: invite.module:406
+msgid "Pending"
+msgstr ""
+
+#: invite.module:413
+msgid "Joined"
+msgstr ""
+
+#: invite.module:421;450
+msgid "Email"
+msgstr ""
+
+#: invite.module:421
+msgid "Status"
+msgstr ""
+
+#: invite.module:425
+msgid "You have not sent any invitations yet."
+msgstr ""
+
+#: invite.module:434
+msgid "Invite a friend"
+msgstr ""
+
+#: invite.module:442
+msgid "You have %invites invites left"
+msgstr ""
+
+#: invite.module:454
+msgid "Type the email of the person you would like to invite"
+msgstr ""
+
+#: invite.module:459
+msgid "Your message"
+msgstr ""
+
+#: invite.module:462
+msgid "This message will be added to the mail sent to the person you are inviting."
+msgstr ""
+
+#: invite.module:466
+msgid "Submit"
+msgstr ""
+
+#: invite.module:469
+msgid "Maximum number (%max) of invitations reached."
+msgstr ""
+
+#: invite.module:479
+msgid "The email address does not appear to be valid syntax."
+msgstr ""
+
+#: invite.module:509
+msgid "Invitation to @email has been deleted."
+msgstr ""
+
+#: invite.module:514
+msgid "Could not delete invitation, because @email already joined the site."
+msgstr ""
+
+#: invite.module:637
+msgid "their favorite website"
+msgstr ""
+
+#: invite.module:647
+msgid "Your invitation was sent successfully."
+msgstr ""
+
+#: invite.module:650
+msgid "Problems occurred sending the invitation. Please contact the site administrator."
+msgstr ""
+
+#: invite.module:323;357;651;0
+msgid "invite"
+msgstr ""
+
+#: invite.module:46
+msgid "send invitations"
+msgstr ""
+
