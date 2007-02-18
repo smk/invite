@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.17 2007-02-16 02:07:04 smk Exp $
+// $Id: invite.module,v 1.10.2.18 2007-02-18 22:03:07 smk Exp $
 /** 
  * @file 
  *
@@ -256,7 +256,7 @@ function invite_menu($may_cache) {
 function invite_form_alter($form_id, &$form) {
   global $form_values;
   switch ($form_id) {
-    case 'user_configure_settings':
+    case 'user_admin_settings':
       $form['registration']['user_register']['#options']['inviteonly'] = t('New user registration by invitation only.');
       break;
     case 'user_register': 
