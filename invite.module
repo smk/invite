@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.19 2007-03-03 02:38:33 smk Exp $
+// $Id: invite.module,v 1.10.2.20 2007-03-03 22:43:35 smk Exp $
 /** 
  * @file 
  *
@@ -67,7 +67,7 @@ function _invite_settings() {
   $form['user_settings']['invite_target_role_default'] = array(
     '#type' => 'select',
     '#title' => t('Target role (default)'),
-    '#default_value' => variable_get('invite_target_role_default', '2'),
+    '#default_value' => variable_get('invite_target_role_default', DRUPAL_AUTHENTICATED_RID),
     '#options' => ($target_roles ? $target_roles : array('-1'=>t('(Please add a target role.)'))),
     '#description' => t('Choose the role that invited users will be added to. For example, <em>Member</em>.'),
   );
@@ -77,7 +77,7 @@ function _invite_settings() {
     $form['user_settings']['invite_target_role_'. $role_no_space] = array(
       '#type' => 'select',
       '#title' => t('Target role for %role', array('%role' => $role)),
-      '#default_value' => variable_get('invite_target_role_'. $role_no_space, '2'),
+      '#default_value' => variable_get('invite_target_role_'. $role_no_space, DRUPAL_AUTHENTICATED_RID),
       '#options' => ($target_roles ? $target_roles : array('-1'=>t('(Please add a target role.)'))),
       '#description' => t('Choose the role that invited users will be added to if invited by someone who has the %role role.', array('%role' => $role)),
     );
@@ -559,9 +559,8 @@ function _invite_max_invites_by_role($uid = NULL, $default_max = 0) {
 function _invite_role_escalate($invitee) {
   $inviter_uid = db_result(db_query("SELECT uid FROM {invite} WHERE mid = %d", $invitee->uid));
   if ($inviter = user_load(array('uid' => $inviter_uid))) {
-    $roles = user_roles();
     $targets = array();
-    foreach ($inviter->roles as $key => $role) {
+    foreach ($inviter->roles as $role) {
       $role_no_space = str_replace(' ', '_', $role);
       if (($target = variable_get('invite_target_role_'. $role_no_space, DRUPAL_AUTHENTICATED_RID)) != DRUPAL_AUTHENTICATED_RID) {
         $targets[] = $target;
