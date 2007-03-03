@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.20 2007-03-03 22:43:35 smk Exp $
+// $Id: invite.module,v 1.10.2.21 2007-03-03 23:56:30 smk Exp $
 /** 
  * @file 
  *
@@ -519,20 +519,20 @@ function _invite_check_invited($email, $uid){
   
   $rtn = array('is_invited' => 0, 'message' => '');
   
-  if ((int)db_result(db_query('SELECT COUNT(*) AS count FROM {invite} WHERE email = "%s"', $email)) > 0) {
+  if ((int)db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE email = '%s'", $email)) > 0) {
     $rtn['message'] = 'The user you are trying to invite has already been invited.'; 
     $rtn['is_invited']++;
     return $rtn;
   }
 
-  if ((int)db_result(db_query('SELECT COUNT(*) AS count FROM {users} WHERE mail = "%s"', $email)) > 0) {
+  if ((int)db_result(db_query("SELECT COUNT(*) FROM {users} WHERE mail = '%s'", $email)) > 0) {
     $rtn['message'] = 'The user you are trying to invite has already registered.'; 
     $rtn['is_invited']++;
     return $rtn;
   }
 
   $max_invites = _invite_max_invites_by_role();
-  if ($max_invites > 0 && $max_invites <= db_result(db_query("SELECT COUNT(*) from {invite} WHERE uid = %d", $uid))) {
+  if ($max_invites > 0 && $max_invites <= db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d", $uid))) {
     $rtn['message'] = 'You have exceeded your allowed invitations.'; 
     $rtn['is_invited']++;
     return $rtn;
@@ -595,7 +595,7 @@ function _invite_check_msgs($uid){
 function _invite_create_regcode(){
   do {
     $reg_code = substr(md5((string)rand(). date('YmdHis', time())), 0, 8);
-    $r = db_query('SELECT COUNT(*) FROM {invite} WHERE reg_code = "%s"', $reg_code);
+    $r = db_query("SELECT COUNT(*) FROM {invite} WHERE reg_code = '%s'", $reg_code);
   } while ((int)db_result($r) > 0);
   return $reg_code;
 }
@@ -674,6 +674,6 @@ function _invite_unblock($uid) {
 }
 
 function _invite_fetch_invite($invite_code) {
-  return db_fetch_object(db_query('SELECT COUNT(reg_code) AS count, uid AS referrer FROM {invite} WHERE reg_code = "%s" AND timestamp = 0 GROUP BY referrer', $invite_code));
+  return db_fetch_object(db_query("SELECT COUNT(reg_code) AS count, uid AS referrer FROM {invite} WHERE reg_code = '%s' AND timestamp = 0 GROUP BY referrer", $invite_code));
 }
 
