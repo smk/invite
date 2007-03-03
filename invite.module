@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.18 2007-02-18 22:03:07 smk Exp $
+// $Id: invite.module,v 1.10.2.19 2007-03-03 02:38:33 smk Exp $
 /** 
  * @file 
  *
@@ -336,25 +336,19 @@ function invite_register_submit($form_id, $form_values) {
 *         insert - on successful insert, the user status is set active and the role is escalated
 */
  
-function invite_user($op, &$edit, &$user, $category = NULL) { 
+function invite_user($op, &$edit, &$account, $category = NULL) { 
   switch ($op) {
     case 'insert':
       $result = db_query("SELECT * FROM {invite} WHERE reg_code = '%s'", $edit['invite_code']);
       if ($registration = db_fetch_object($result)) {
-        $targetrole = variable_get('invite_target_role', '2');
-        _invite_role_escalate($user);
-
-        /*
-        ** if they sign up as a different email to the one sent to them, they do 
-        ** not get "joined" properly in the invitee's invite screen.
-        ** this bit fixes that
-        */
-        
-        _invite_set_timestamp($edit['mail'], $user->uid, $edit['invite_code']);
-        _invite_unblock($user->uid);
+        // Update invitation status
+        _invite_set_timestamp($edit['mail'], $account->uid, $edit['invite_code']);
+        // Escalate user role
+        _invite_role_escalate($account);
+        _invite_unblock($account->uid);
       } 
       else {
-        watchdog('invite', 'User '. check_plain($user->name) .' registration code failed', $link = NULL);
+        watchdog('invite', t('Registration code failed for %name %email.', array('%name' => $account->name, '%email' => '<'. $account->mail .'>')), WATCHDOG_NOTICE, l(t('view'), 'user/'. $account->uid));
       }
       break;
   }   
@@ -563,7 +557,7 @@ function _invite_max_invites_by_role($uid = NULL, $default_max = 0) {
 }
 
 function _invite_role_escalate($invitee) {
-  $inviter_uid = db_result(db_query("SELECT uid FROM {invite} WHERE mid = %d", $user->uid));
+  $inviter_uid = db_result(db_query("SELECT uid FROM {invite} WHERE mid = %d", $invitee->uid));
   if ($inviter = user_load(array('uid' => $inviter_uid))) {
     $roles = user_roles();
     $targets = array();
