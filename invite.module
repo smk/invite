@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.23 2007-03-04 02:00:22 smk Exp $
+// $Id: invite.module,v 1.10.2.24 2007-03-04 02:39:58 smk Exp $
 /** 
  * @file 
  *
@@ -27,15 +27,7 @@ function invite_help($section) {
       return t('Allows users to send GMail style invitations, and automatically escalates new users who use them to a role of your designation');
       
     case 'invite':
-      return variable_get('invite_help_text', t("<p>This is an overview of the invitations you have sent. The status of each invitation is shown: 
-   <ul>
-     <li><strong>Joined</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the email address to take you to their profile page.</li>
-     <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation. You may send a reminder, by clicking the 'Remind Me' link.</li>
-     <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>
-   </ul>
-   </p>
-   <p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>"));
-
+      return _invite_get_help_text();
   }
 }
 
@@ -179,14 +171,7 @@ function _invite_settings() {
   $form['invite_page']['invite_help_text'] = array(
     '#type' => 'textarea',
     '#title' => t('Invite help text'),
-    '#default_value' => variable_get('invite_help_text', t("<p>This is an overview of the invitations you have sent. The status of each invitation is shown: 
-   <ul>
-     <li><strong>Joined</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the email address to take you to their profile page.</li>
-     <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation. You may send a reminder, by clicking the 'Remind Me' link.</li>
-     <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>
-   </ul>
-   </p>
-   <p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>")), 
+    '#default_value' => _invite_get_help_text(),
     '#required' => TRUE,
     '#description' => t('Customize the text that appears above the email form on the invite page for users'),
   );
@@ -668,6 +653,20 @@ To become a member of @site, click the link below or paste it into the address b
 @message
 _MAIL_;
   return variable_get('invite_default_mail_template', $template);
+}
+
+function _invite_get_help_text() {
+  $help = <<<_HELP_
+<p>This is an overview of the invitations you have sent. The status of each invitation is shown:
+<ul>
+  <li><strong>Joined</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the email address to take you to their profile page.</li>
+  <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation. You may send a reminder, by clicking the 'Remind Me' link.</li>
+  <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>
+</ul>
+</p>
+<p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>
+_HELP_;
+  return variable_get('invite_help_text', $help);
 }
 
 function _invite_unblock($uid) {
