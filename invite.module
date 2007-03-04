@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.26 2007-03-04 02:40:37 smk Exp $
+// $Id: invite.module,v 1.9.2.27 2007-03-04 03:14:00 smk Exp $
 /** 
  * @file 
  *
@@ -370,11 +370,11 @@ function invite_page(){
   );
 
   $inc = 0;
-  $result = db_query("SELECT * from {invite} WHERE uid = %d",$user->uid);
+  $result = db_query("SELECT * FROM {invite} WHERE uid = %d", $user->uid);
   while ($invite = db_fetch_object($result)){
     $delete_link = l(t('Delete invitation'), 'invite/delete/'. urlencode($invite->email));
     if (!$invite->timestamp) {
-      $email_cell = $invite->email;
+      $email_cell = check_plain($invite->email);
       $status_cell = ($invite->expiry < time()) ? t('Expired') : t('Pending');
       $action_cell = $delete_link;
     }
@@ -382,7 +382,7 @@ function invite_page(){
       $account = user_load(array('mail' => $invite->email));
       $email_cell = isset($account->uid) ? l($invite->email, 'user/'.$account->uid) : "<i>{$invite->email}</i>";
       $status_cell = t('Joined');
-      $action_cell = (variable_get('invite_allow_join_delete', 0) && isset($account->uid)) ? $delete_link : '&nbsp;';
+      $action_cell = variable_get('invite_allow_join_delete', 0) ? $delete_link : '&nbsp;';
     }
     $items[] = array($email_cell, $status_cell, $action_cell);
     $inc++;
