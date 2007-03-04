@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.22 2007-03-04 00:13:45 smk Exp $
+// $Id: invite.module,v 1.10.2.23 2007-03-04 02:00:22 smk Exp $
 /** 
  * @file 
  *
@@ -254,18 +254,18 @@ function invite_menu($may_cache) {
  */
 
 function invite_form_alter($form_id, &$form) {
-  global $form_values;
   switch ($form_id) {
     case 'user_admin_settings':
       $form['registration']['user_register']['#options']['inviteonly'] = t('New user registration by invitation only.');
       break;
+
     case 'user_register': 
       $user_admin = user_access('administer users');
       $invite_only = (variable_get('user_register',1) == 'inviteonly');
+      $valid_invite = FALSE;
       if ($code = arg(2)) {
-        $invite = _invite_fetch_invite($code);
-        if ($invite->count > 0) {
-          $valid_invite = TRUE;
+        if ($invite = _invite_fetch_invite($code)) {
+          $valid_invite = (!$invite->expired);
           $form['invite_code'] = array(
             '#type' => 'value',
             '#value' => $code,
@@ -279,12 +279,16 @@ function invite_form_alter($form_id, &$form) {
 
       if ((!$user_admin) && $invite_only) {
         if (!$valid_invite) {
-          // Redirect to the standard login form if in invite only mode and a valid invite is not present
-          drupal_set_message(t('Sorry, new user registration by invite only.'));
-          drupal_goto('user/');
+          if ($invite->expired) {
+            drupal_set_message(t('Sorry, this invitation code has expired.'));
+          }
+          else {
+            // Redirect to the standard login form if in invite only mode and a valid invite is not present
+            drupal_set_message(t('Sorry, new user registration by invite only.'));
+          }
+          drupal_goto('user');
         }
-
-        if (isset($form['#submit']['user_register_submit'])) {
+        else if (isset($form['#submit']['user_register_submit'])) {
           // If we are in invite only mode, hijack the usual user registration submission
           $form['#submit'] = array('invite_register_submit' => array());
         }
@@ -314,14 +318,20 @@ function invite_form_alter($form_id, &$form) {
 
 function invite_register_submit($form_id, $form_values) {
   // Don't need to check for invite only mode as invite_form_alter has already done that for us
-  $invite = _invite_fetch_invite($form_values['invite_code']);
-  if ($invite->count > 0) {
-    return user_register_submit($form_id, $form_values);
-  } else {
+  if ($invite = _invite_fetch_invite($form_values['invite_code'])) {
+    if (!$invite->expired) {
+      return user_register_submit($form_id, $form_values);
+    }
+    else {
+      drupal_set_message(t('Sorry, this invitation code has expired.'));
+    }
+  }
+  else {
     // Do some watchdog stuff
     drupal_set_message(t('You have not been invited to join this site.'));
-    watchdog('invite', 'Uninvited user registration attempt', $link = NULL);
+    watchdog('invite', t('Uninvited user registration attempt.'), WATCHDOG_WARNING);
   }
+  return '<front>';
 }
 
 
@@ -340,13 +350,14 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
     case 'insert':
       if (isset($edit['invite_code'])) {
-        $result = db_query("SELECT * FROM {invite} WHERE reg_code = '%s'", $edit['invite_code']);
-        if ($registration = db_fetch_object($result)) {
-          // Update invitation status
-          _invite_set_timestamp($edit['mail'], $account->uid, $edit['invite_code']);
-          // Escalate user role
-          _invite_role_escalate($account);
-          _invite_unblock($account->uid);
+        if ($invite = _invite_fetch_invite($edit['invite_code'])) {
+          if (!$invite->expired) {
+            // Update invitation status
+            _invite_set_timestamp($edit['mail'], $account->uid, $edit['invite_code']);
+            // Escalate user role
+            _invite_role_escalate($account);
+            _invite_unblock($account->uid);
+          }
         } 
         else {
           watchdog('invite', t('Registration code failed for %name %email.', array('%name' => $account->name, '%email' => '<'. $account->mail .'>')), WATCHDOG_NOTICE, l(t('view'), 'user/'. $account->uid));
@@ -391,23 +402,17 @@ function _invite_form() {
   $inc = 0;
   $result = db_query("SELECT * from {invite} WHERE uid = %d",$user->uid);
   while ($invite = db_fetch_object($result)){
-    $expiry = $invite->expiry + (variable_get('invite_expiry', '30') * 24 * 60 * 60);
+    $delete_link = l(t('Delete invitation'), 'invite/delete/'. urlencode($invite->email));
     if (!$invite->timestamp) {
       $email_cell = $invite->email;
-      if ($expiry < time()) {
-        $status_cell = t('Expired');
-        $action_cell = l(t("Delete invitation"),'invite/delete/'.urlencode($invite->email));
-      }
-      else {
-        $status_cell = t('Pending');
-        $action_cell = l(t("Delete invitation"),'invite/delete/'.urlencode($invite->email));
-      }
+      $status_cell = ($invite->expiry < time()) ? t('Expired') : t('Pending');
+      $action_cell = $delete_link;
     }
     else {
       $account = user_load(array('mail' => $invite->email));
       $email_cell = isset($account->uid) ? l($invite->email, 'user/'.$account->uid) : "<i>{$invite->email}</i>";
       $status_cell = t('Joined');
-      $action_cell = (variable_get('invite_allow_join_delete', 0) && isset($account->uid)) ? l("Delete invitation",'invite/delete/'.urlencode($invite->email)) : '&nbsp;';
+      $action_cell = (variable_get('invite_allow_join_delete', 0) && isset($account->uid)) ? $delete_link : '&nbsp;';
     }
     $items[] = array($email_cell, $status_cell, $action_cell);
     $inc++;
@@ -596,7 +601,7 @@ function _invite_check_msgs($uid){
 
 function _invite_create_regcode(){
   do {
-    $reg_code = substr(md5((string)rand(). date('YmdHis', time())), 0, 8);
+    $reg_code = user_password(8);
     $r = db_query("SELECT COUNT(*) FROM {invite} WHERE reg_code = '%s'", $reg_code);
   } while ((int)db_result($r) > 0);
   return $reg_code;
@@ -676,6 +681,6 @@ function _invite_unblock($uid) {
 }
 
 function _invite_fetch_invite($invite_code) {
-  return db_fetch_object(db_query("SELECT COUNT(reg_code) AS count, uid AS referrer FROM {invite} WHERE reg_code = '%s' AND timestamp = 0 GROUP BY referrer", $invite_code));
+  return db_fetch_object(db_query("SELECT uid AS referrer, (expiry < %d) AS expired FROM {invite} WHERE reg_code = '%s' AND timestamp = 0", time(), $invite_code));
 }
 
