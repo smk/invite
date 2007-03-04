@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.21 2007-03-03 23:56:30 smk Exp $
+// $Id: invite.module,v 1.10.2.22 2007-03-04 00:13:45 smk Exp $
 /** 
  * @file 
  *
@@ -339,16 +339,18 @@ function invite_register_submit($form_id, $form_values) {
 function invite_user($op, &$edit, &$account, $category = NULL) { 
   switch ($op) {
     case 'insert':
-      $result = db_query("SELECT * FROM {invite} WHERE reg_code = '%s'", $edit['invite_code']);
-      if ($registration = db_fetch_object($result)) {
-        // Update invitation status
-        _invite_set_timestamp($edit['mail'], $account->uid, $edit['invite_code']);
-        // Escalate user role
-        _invite_role_escalate($account);
-        _invite_unblock($account->uid);
-      } 
-      else {
-        watchdog('invite', t('Registration code failed for %name %email.', array('%name' => $account->name, '%email' => '<'. $account->mail .'>')), WATCHDOG_NOTICE, l(t('view'), 'user/'. $account->uid));
+      if (isset($edit['invite_code'])) {
+        $result = db_query("SELECT * FROM {invite} WHERE reg_code = '%s'", $edit['invite_code']);
+        if ($registration = db_fetch_object($result)) {
+          // Update invitation status
+          _invite_set_timestamp($edit['mail'], $account->uid, $edit['invite_code']);
+          // Escalate user role
+          _invite_role_escalate($account);
+          _invite_unblock($account->uid);
+        } 
+        else {
+          watchdog('invite', t('Registration code failed for %name %email.', array('%name' => $account->name, '%email' => '<'. $account->mail .'>')), WATCHDOG_NOTICE, l(t('view'), 'user/'. $account->uid));
+        }
       }
       break;
   }   
