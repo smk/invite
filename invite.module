@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.29 2007-03-06 22:01:00 smk Exp $
+// $Id: invite.module,v 1.9.2.30 2007-03-06 22:14:31 smk Exp $
 /** 
  * @file 
  * The invite.module provides an 'Invite a friend' feature. It allows your
@@ -426,11 +426,14 @@ function _invite_form_submit($form_id, $edit) {
   
   // generate code
   $code = _invite_create_regcode();
-  $args = array('inviter' => $user);
-  module_invoke_all('invite', 'invite', $args);
+
   // send email
   if ($success = _invite_send_invite('mail', $user->name, trim($edit['email']), $code, $edit['message'])) {
     db_query("INSERT INTO {invite} (email, reg_code, uid, expiry) VALUES ('%s', '%s', %d, %d)", trim($edit['email']), $code,$user->uid, time()+(variable_get('invite_expiry', 30)*60*60*24));  
+
+    // notify other modules
+    $args = array('inviter' => $user);
+    module_invoke_all('invite', 'invite', $args);
   }
 }
 
