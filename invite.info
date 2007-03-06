@@ -1,5 +1,4 @@
-; $Id: invite.info,v 1.1.2.1 2007-03-06 21:05:39 smk Exp $
+; $Id: invite.info,v 1.1.2.2 2007-03-06 21:59:08 smk Exp $
 name = Invite
 description = Allows users to send GMail style invitations, and automatically escalates new users who use them to a role of your designation.
 package = Mail
-version = "$Name:  $"
