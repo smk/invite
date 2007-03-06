@@ -1,25 +1,14 @@
 <?php
-// $Id: invite.module,v 1.9.2.27 2007-03-04 03:14:00 smk Exp $
+// $Id: invite.module,v 1.9.2.28 2007-03-06 21:08:27 smk Exp $
 /** 
  * @file 
- *
- * invite.module gives users the opportunity to send gmail style invites to new users.  A random code is generated for
- * the invitation, and a link to the registration form.  The new user can then input the code when submiting thier
- * registration.  Registration successfully completed in this way will automatically be set active, and escalated to 
- * a new role as designated by the administrator.
- * 
- * This module is meant to be used when user registration settings have been set to: 
- * 
- *    'Visitors can create accounts but administrator approval is required.' 
+ * The invite.module provides an 'Invite a friend' feature. It allows your
+ * users to send and track invitations to join your site.
  */ 
 
 /** 
  * Implementation of hook_help(). 
- * 
- * This is the explanatory text that appears in your administer - modules page 
- * where you switch modules on and off 
  */ 
-
 function invite_help($section) {
 
   switch ($section) {
@@ -31,15 +20,15 @@ function invite_help($section) {
   }
 }
 
-/*
- * Implementation of hook_perm
+/**
+ * Implementation of hook_perm().
  */
 function invite_perm() {
   return array('send invitations');
 } 
 
-/*
- * Implementation of hook_settings
+/**
+ * Implementation of hook_settings().
  */
 function invite_settings() {
   // Build an array of all roles
@@ -53,7 +42,7 @@ function invite_settings() {
     '#title' => t('User settings'),
   );
 
-  // configure settings for the new members
+  // settings for new members
   $roles = user_roles();
   $form['user_settings']['invite_target_role_default'] = array(
     '#type' => 'select',
@@ -80,7 +69,6 @@ function invite_settings() {
     '#default_value' => variable_get('invite_expiry', 30),
     '#options' => drupal_map_assoc(array(5, 10, 15, 20, 25, 30, 45, 60)),
     '#description' => t('Set the expiry period for user invitations, in days'),
-    '#extra' => $extra = 0,
     '#multiple' => FALSE,
     '#required' => TRUE,
   );  
@@ -103,19 +91,18 @@ function invite_settings() {
       '#type' => 'select',
       '#title' => t($role),
       '#default_value' => variable_get('invite_maxnum_'. $role_no_space, 0),
-      '#options' => array(0 => t('unlimited'), 5 => 5, 10 => 10, 20 => 20, 50 =>50, 100 => 100, 300 =>300, 500 => 500, 1000 => 1000),
-      '#extra' => $extra = 0,
+      '#options' => array(0 => t('unlimited'), 5 => 5, 10 => 10, 20 => 20, 50 => 50, 100 => 100, 300 => 300, 500 => 500, 1000 => 1000),
       '#multiple' => FALSE,
       '#required' => TRUE,
     );
   }
   
+  // email settings
   $form['email_settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('Email settings'),
   );
 
-  // configure settings for the email
   $form['email_settings']['invite_subject'] = array(
     '#type' => 'textfield',
     '#title' => t('Subject'),
@@ -123,8 +110,6 @@ function invite_settings() {
     '#size' => 20,
     '#maxlength' => 64,
     '#description' => t('Type the subject of the invitation email'),
-    '#attributes' => $attributes = NULL,
-    '#required' => $required = FALSE,
   );
   
   $form['email_settings']['invite_default_mail_template'] = array(
@@ -135,7 +120,6 @@ function invite_settings() {
     '#description' => t('Use the following placeholders; %site, %homepage, %join_link, %message, %inviter'),
   );
 
-  // configure settings for the email
   $form['email_settings']['invite_use_users_email'] = array(
     '#type' => 'radios',
     '#title' => t('From: email address'),
@@ -152,7 +136,7 @@ function invite_settings() {
     '#default_value' => variable_get('invite_use_users_email_replyto', 0),
   );
 
-
+  // invite page customization settings
   $form['invite_page'] = array(
     '#type' => 'fieldset',
     '#title' => t('Invite page cutomization'),
@@ -165,7 +149,6 @@ function invite_settings() {
     '#description' => t('The title of the page where users invite friends'),
     '#required' => TRUE
   );
-
 
   $form['invite_page']['invite_help_text'] = array(
     '#type' => 'textarea',
@@ -200,11 +183,10 @@ function invite_settings() {
   return $form;
 }
 
-/*
- * Implementation of hook_menu
+/**
+ * Implementation of hook_menu().
  */
 function invite_menu($may_cache) {
-  global $user;
   $items = array();
 
   if ($may_cache) {
@@ -224,9 +206,8 @@ function invite_menu($may_cache) {
 }
  
 /**
- * Implementation of hook_form_alter()
+ * Implementation of hook_form_alter().
  */
-
 function invite_form_alter($form_id, &$form) {
   switch ($form_id) {
     case 'user_configure_settings':
@@ -271,7 +252,7 @@ function invite_form_alter($form_id, &$form) {
 
     case 'user_login_block':
       // Remove temptation for non members to try and register
-      if (variable_get('user_register',1) == 'inviteonly') {
+      if (variable_get('user_register', 1) == 'inviteonly') {
         $new_items = array();
         $new_items[] = l(t('Request new password'), 'user/password', array('title' => t('Request new password via e-mail.')));
         $form['links']['#value'] = theme('item_list', $new_items);
@@ -280,16 +261,13 @@ function invite_form_alter($form_id, &$form) {
   } 
 }
 
-/*
-* function invite_register_submit($form_id, $form_values)
-*
-* Purpose : perform invite validation on user registration submission
-* 
-* Description : checks for a valid invitation before passing control back to the
-*               core user registration. If the invitation is invalid, the user is
-*               informed, watchdog notified and user registration terminated.
-*/
-
+/**
+ * Overrides user_register_submit().
+ *
+ * Perform invite validation on user registration submission for invite-only
+ * sites. Checks for a valid invitation before passing control back to the
+ * core user registration.
+ */
 function invite_register_submit($form_id, $form_values) {
   // Don't need to check for invite only mode as invite_form_alter has already done that for us
   if ($invite = _invite_fetch_invite($form_values['invite_code'])) {
@@ -308,18 +286,9 @@ function invite_register_submit($form_id, $form_values) {
   return '<front>';
 }
 
-
-/*
-* Implementation of hook_user
-*
-* Types : login / view  - checks for user perm then does drupal_set_message 
-*                         if a users invitee has joined the site
-*         register - displays the registration code fields
-*         validate - checks against the {invite} table if the code and email are valid.  
-*                    If the fields are left blank they are ignored, and the default register events are processed  
-*         insert - on successful insert, the user status is set active and the role is escalated
-*/
- 
+/**
+ * Implementation of hook_user().
+ */
 function invite_user($op, &$edit, &$account, $category = NULL) { 
   switch ($op) {
     case 'insert':
@@ -342,7 +311,7 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
 }
 
 /**
- * hook cron. 
+ * Implementation of hook_cron().
  */
 function invite_cron() {
   // TODO: cron should check which invitations are expired and possibly send a follow up mail
@@ -351,14 +320,11 @@ function invite_cron() {
 }
 
   
-/*
- * function invite_page(NULL)
+/**
+ * Menu callback.
  *
- * Purpose : main function and page display
- * 
- * Description : displays the Invite form for users with appropriate perms and 
- *               processes and validates the form, sending an email to the invitee
- *
+ * Displays the Invite form for users with appropriate permissions and
+ * processes and validates the form, sending an email to the invitee
  */
 function invite_page(){
   global $user;
@@ -380,7 +346,7 @@ function invite_page(){
     }
     else {
       $account = user_load(array('mail' => $invite->email));
-      $email_cell = isset($account->uid) ? l($invite->email, 'user/'.$account->uid) : "<i>{$invite->email}</i>";
+      $email_cell = isset($account->uid) ? l($invite->email, 'user/'. $account->uid) : "<i>{$invite->email}</i>";
       $status_cell = t('Joined');
       $action_cell = variable_get('invite_allow_join_delete', 0) ? $delete_link : '&nbsp;';
     }
@@ -407,7 +373,7 @@ function invite_page(){
   
   $maximum_invites = _invite_max_invites_by_role();
   if ($maximum_invites > 0) {
-    $invites_left =  $maximum_invites - $inc;
+    $invites_left = $maximum_invites - $inc;
     $form['invite_form']['remaining_invites'] = array(
       '#type' => 'markup',
       '#value' => t('You have %invites invites left', array('%invites' => $invites_left)),
@@ -420,8 +386,8 @@ function invite_page(){
       '#type' => 'textfield',
       '#title' => t('Email'),
       '#default_value' => '',
-      '#size' => '50',
-      '#maxlength' => '64',
+      '#size' => 20,
+      '#maxlength' => 64,
       '#description' => t('Type the email of the person you would like to invite'),
       '#required' => TRUE,
     );
@@ -450,9 +416,9 @@ function _invite_form_validate($form_id, &$edit) {
     form_set_error('email', t('The email address does not appear to be valid syntax.'));
   }
 
-  $x =  _invite_check_invited($edit['email'], $user->uid);
+  $x = _invite_check_invited($edit['email'], $user->uid);
   if ($x['is_invited']) {
-    form_set_error('email', t($x['message']));
+    form_set_error('invite_email', $x['message']);
   }
 }
 
@@ -463,9 +429,8 @@ function _invite_form_submit($form_id, $edit) {
   $code = _invite_create_regcode();
   $args = array('inviter' => $user);
   module_invoke_all('invite', 'invite', $args);
-  //send email
+  // send email
   if ($success = _invite_send_invite('mail', $user->name, trim($edit['email']), $code, $edit['message'])) {
-    //update database
     db_query("INSERT INTO {invite} (email, reg_code, uid, expiry) VALUES ('%s', '%s', %d, %d)", trim($edit['email']), $code,$user->uid, time()+(variable_get('invite_expiry', 30)*60*60*24));  
   }
 }
@@ -488,29 +453,30 @@ function invite_delete($email) {
   drupal_goto('invite');
 }
 
-/*
-* Module Specific Helper functions
-*/
+/**
+ * @{
+ * Module specific helper functions.
+ */
 function _invite_check_invited($email, $uid) {
   global $user;
   
   $rtn = array('is_invited' => 0, 'message' => '');
   
   if ((int)db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE email = '%s'", $email)) > 0) {
-    $rtn['message'] = 'The user you are trying to invite has already been invited.'; 
+    $rtn['message'] = t('The user you are trying to invite has already been invited.');
     $rtn['is_invited']++;
     return $rtn;
   }
 
   if ((int)db_result(db_query("SELECT COUNT(*) FROM {users} WHERE mail = '%s'", $email)) > 0) {
-    $rtn['message'] = 'The user you are trying to invite has already registered.'; 
+    $rtn['message'] = t('The user you are trying to invite has already registered.');
     $rtn['is_invited']++;
     return $rtn;
   }
   
   $max_invites = _invite_max_invites_by_role();
   if ($max_invites > 0 && $max_invites <= db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d", $uid))) {
-    $rtn['message'] = 'You have exceeded your allowed invitations.'; 
+    $rtn['message'] = t('You have exceeded your allowed invitations.');
     $rtn['is_invited']++;
     return $rtn;
   }
@@ -525,8 +491,13 @@ function _invite_max_invites_by_role($uid = NULL, $default_max = 0) {
   foreach (user_roles() as $role) {
     $role_no_space = str_replace(' ', '_', $role);
     if (in_array($role, $account->roles)) {
-      if (($max_by_role = variable_get('invite_maxnum_'. $role_no_space, 0)) == 0) { return 0; }
-      if ($max_by_role > $default_max) $default_max = $max_by_role;
+      $max_by_role = variable_get('invite_maxnum_'. $role_no_space, 0);
+      if ($max_by_role == 0) {
+        return 0;
+      }
+      if ($max_by_role > $default_max) {
+        $default_max = $max_by_role;
+      }
     }
   }
   
@@ -580,11 +551,7 @@ function _invite_create_regcode(){
 function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient-email]", $code = "registration-code", $message = '[your message]'){
   global $base_url, $user;
 
-  /*
-  ** this next bit sets from and reply-to headers to the manually 
-  ** configured ones if they exist, or whatever the user choose 
-  ** with the radio buttons if not.
-  */
+  // this next bit sets From and Reply-To headers
   if(!$from = variable_get('invite_manual_from', NULL)) {
     if (variable_get('invite_use_users_email', t('inviter'))) {
       $from = $user->mail;
@@ -603,7 +570,7 @@ function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient
   }
   $subject = variable_get('invite_subject',t("You've been invited"));
 
-  $template = invite_get_mail_template();
+  $template = _invite_get_mail_template();
   $site = variable_get('site_name', t('their favorite website'));
   $join_link = url('user/register/'.$code, NULL, NULL, TRUE);
   $homepage = $base_url;
@@ -624,10 +591,8 @@ function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient
   }
 }
 
-
-function invite_get_mail_template() {
-  $template = <<<_MAIL_
-Your friend, %inviter has invited you to join %site [%homepage].
+function _invite_get_mail_template() {
+  $template = t("Your friend, %inviter has invited you to join %site [%homepage].
 
 To become a member of %site, click the link below or paste it into the address bar of your browser. 
 
@@ -635,22 +600,21 @@ To become a member of %site, click the link below or paste it into the address b
 
 ----------
 
-%message
-_MAIL_;
+%message");
+
   return variable_get('invite_default_mail_template', $template);
 }
 
 function _invite_get_help_text() {
-  $help = <<<_HELP_
-<p>This is an overview of the invitations you have sent. The status of each invitation is shown:
+  $help = t("<p>This is an overview of the invitations you have sent. The status of each invitation is shown:
 <ul>
   <li><strong>Joined</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the email address to take you to their profile page.</li>
   <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation. You may send a reminder, by clicking the 'Remind Me' link.</li>
   <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>
 </ul>
 </p>
-<p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>
-_HELP_;
+<p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>");
+
   return variable_get('invite_help_text', $help);
 }
 
