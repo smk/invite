@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.30 2007-03-06 22:14:31 smk Exp $
+// $Id: invite.module,v 1.9.2.31 2007-03-06 22:27:38 smk Exp $
 /** 
  * @file 
  * The invite.module provides an 'Invite a friend' feature. It allows your
@@ -297,9 +297,14 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
           if (!$invite->expired) {
             // Update invitation status
             _invite_set_timestamp($edit['mail'], $account->uid, $edit['invite_code']);
+
             // Escalate user role
             _invite_role_escalate($account);
-            _invite_unblock($account->uid);
+
+            // Activate user account for invite-only sites
+            if (variable_get('user_register', 1) == 'inviteonly') {
+              _invite_unblock($account->uid);
+            }
           }
         } 
         else {
@@ -619,13 +624,7 @@ function _invite_get_help_text() {
 }
 
 function _invite_unblock($uid) {
- 
-   if (is_numeric($uid)) {
-     db_query("UPDATE {users} SET status = 1 WHERE uid = %d", $uid);
-     return TRUE;
-   }
- 
-   return FALSE;
+  db_query("UPDATE {users} SET status = 1 WHERE uid = %d", $uid);
 }
 
 function _invite_fetch_invite($invite_code) {
