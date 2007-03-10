@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.29 2007-03-06 22:27:09 smk Exp $
+// $Id: invite.module,v 1.10.2.30 2007-03-10 19:40:39 smk Exp $
 /** 
  * @file 
  * The invite.module provides an 'Invite a friend' feature. It allows your
@@ -322,7 +322,12 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
         }
       }
       break;
-  }   
+
+    case 'delete':
+      // delete invites from this user
+      db_query("DELETE FROM {invite} WHERE uid = %d", $account->uid);
+      break;
+  }
 }
 
 /**
@@ -348,7 +353,7 @@ function _invite_form() {
   );
 
   $inc = 0;
-  $result = db_query("SELECT * FROM {invite} WHERE uid = %d", $user->uid);
+  $result = db_query("SELECT i.*, (u.uid IS NOT NULL) AS account_exists FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid WHERE i.uid = %d ORDER BY i.expiry DESC", $user->uid);
   while ($invite = db_fetch_object($result)){
     $delete_link = l(t('Delete invitation'), 'invite/delete/'. urlencode($invite->email));
     if (!$invite->timestamp) {
@@ -357,9 +362,8 @@ function _invite_form() {
       $action_cell = $delete_link;
     }
     else {
-      $account = user_load(array('mail' => $invite->email));
-      $email_cell = isset($account->uid) ? l($invite->email, 'user/'. $account->uid) : "<i>{$invite->email}</i>";
-      $status_cell = t('Joined');
+      $email_cell = $invite->account_exists ? l($invite->email, 'user/'. $invite->mid) : '<em>'. check_plain($invite->email) .'</em>';
+      $status_cell = $invite->account_exists ? t('Joined') : t('Deleted');
       $action_cell = variable_get('invite_allow_join_delete', 0) ? $delete_link : '&nbsp;';
     }
     $items[] = array($email_cell, $status_cell, $action_cell);
@@ -452,17 +456,24 @@ function _invite_form_submit($form_id, $edit) {
 
 function invite_delete($email) {
   global $user;
-  $email = urldecode($email); // $email = rawurldecode(urlencode($email));
-  if ($email) {
-    $account = user_load(array('mail' => $email));
-    if (!isset($account->uid) || variable_get('invite_allow_join_delete', 0)) {
-      db_query("DELETE from {invite} WHERE email = '%s'", $email);
-      drupal_set_message(t('Invitation to @email has been deleted.', array('@email' => $email)));
-      $args = array('inviter' => $user, 'email' => $email);
-      module_invoke_all('invite', 'cancel', $args);
+
+  $email = urldecode($email);
+
+  if ($email != '') {
+    $invite = db_fetch_object(db_query("SELECT i.uid AS inviter, (u.uid IS NOT NULL) AS account_exists FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid WHERE i.email = '%s'", $email));
+    // Inviter must match current user
+    if ($invite->inviter == $user->uid) {
+      // Verify that invite may be deleted
+      if (!$invite->account_exists || variable_get('invite_allow_join_delete', 0)) {
+        _invite_delete($email, $user->uid);
+        drupal_set_message(t('Invitation to %email has been deleted.', array('%email' => $email)));
+      }
+      else {
+        drupal_set_message(t('Invitations to registered users cannot be deleted.'));
+      }
     }
     else {
-      drupal_set_message(t('Could not delete invitation, because @email already joined the site.', array('@email' => $email)));
+      watchdog('invite', t('Detected malicious attempt to delete an invitation.'), WATCHDOG_WARNING, l(t('view'), 'user/'. $user->uid));
     }
   }
   drupal_goto('invite');
@@ -639,3 +650,10 @@ function _invite_fetch_invite($invite_code) {
   return db_fetch_object(db_query("SELECT uid AS referrer, (expiry < %d) AS expired FROM {invite} WHERE reg_code = '%s' AND timestamp = 0", time(), $invite_code));
 }
 
+function _invite_delete($email, $inviter_uid) {
+  global $user;
+  db_query("DELETE FROM {invite} WHERE email = '%s'", $email);
+  $inviter = ($user->uid == $inviter_uid) ? $user : user_load(array('uid' => $inviter_uid));
+  $args = array('inviter' => $inviter, 'email' => $email);
+  module_invoke_all('invite', 'cancel', $args);
+}
