@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.2.2.5 2007-03-03 23:57:08 smk Exp $
+// $Id: invite.install,v 1.2.2.6 2007-03-10 19:42:30 smk Exp $
 
 /**
  * Install the initial schema.
@@ -23,6 +23,7 @@ function invite_install() {
       );
       $result2 = db_query("ALTER TABLE {invite} ADD INDEX (uid)");
       break;
+
     case 'pgsql':
       $result1 = db_query("
         CREATE TABLE {invite} (
@@ -80,3 +81,16 @@ function invite_update_2() {
   return $ret;
 }
 
+/**
+ * Clean up invitations for deleted users.
+ */
+function invite_update_3() {
+  $result = db_query("SELECT DISTINCT i.uid FROM {invite} i LEFT JOIN {users} u ON i.uid = u.uid WHERE u.uid IS NULL");
+  $num = db_num_rows($result);
+  while ($referrer = db_fetch_object($result)) {
+    db_query("DELETE FROM {invite} WHERE uid = %d", $referrer->uid);
+  }
+  if ($num) {
+    drupal_set_message(t('%num orphaned invites have been deleted.'), array('%num' => $num));
+  }
+}
