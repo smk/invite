@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.3.2.3 2007-03-10 19:40:35 smk Exp $
+// $Id: invite.install,v 1.3.2.4 2007-03-10 20:32:51 smk Exp $
 
 /**
  * Install the initial schema.
@@ -16,7 +16,7 @@ function invite_install() {
           mid int(11) unsigned NOT NULL default '0',
           expiry int(11) NOT NULL default '0',
           timestamp int(11) NOT NULL default '0',
-          received int(11) unsigned NOT NULL default '0',
+          received tinyint(3) unsigned NOT NULL default '0',
           PRIMARY KEY  (email),
           UNIQUE (reg_code)
         ) /*!40100 DEFAULT CHARACTER SET utf8 */;"
@@ -33,7 +33,7 @@ function invite_install() {
           mid INTEGER NOT NULL DEFAULT 0,
           expiry INTEGER NOT NULL DEFAULT 0,
           timestamp INTEGER NOT NULL DEFAULT 0,
-          received INTEGER NOT NULL DEFAULT 0,
+          received SMALLINT NOT NULL DEFAULT 0,
           PRIMARY KEY (email),
           UNIQUE (reg_code)
         );"
@@ -93,4 +93,23 @@ function invite_update_3() {
   if ($num) {
     drupal_set_message(t('@num orphaned invites have been deleted.'), array('@num' => $num));
   }
+}
+
+/**
+ * Notification after user registered.
+ */
+function invite_update_4() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {invite} CHANGE received received tinyint(3) unsigned NOT NULL default '0'");
+      break;
+    case 'pgsql':
+      db_change_column($ret, 'invite', 'received', 'received', 'SMALLINT', array('not null' => TRUE));
+      break;
+  }
+  // prevent displaying messages for old invites ;-)
+  $ret[] = update_sql("UPDATE {invite} SET received = 1 WHERE mid != 0");
+  return $ret;
 }

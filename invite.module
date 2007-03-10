@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.30 2007-03-10 19:40:39 smk Exp $
+// $Id: invite.module,v 1.10.2.31 2007-03-10 20:32:55 smk Exp $
 /** 
  * @file 
  * The invite.module provides an 'Invite a friend' feature. It allows your
@@ -212,6 +212,11 @@ function invite_menu($may_cache) {
       'access' => user_access('send invitations'),
       'type' => MENU_CALLBACK);
   }
+  else {
+    // check for joined users
+    _invite_check_messages();
+  }
+
   return $items;
 }
  
@@ -556,11 +561,14 @@ function _invite_set_timestamp($email, $uid, $regcode){
   db_query("UPDATE {invite} SET timestamp = %d, mid = %d, email = '%s' WHERE reg_code = '%s'", time(), $uid, $email, $regcode);
 }
 
-function _invite_check_msgs($uid){
-  $result = db_query('SELECT i.email, i.mid, u.name FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid WHERE i.timestamp != 0 AND i.uid = %d AND i.received = 0', $uid);
-  while ($rec = db_fetch_object($result)) {
-      drupal_set_message(l($rec->name, 'user/'. $rec->mid) .' ( '.$rec->email.') has joined '.variable_get('site_name', 'this site').'!');
-      db_query('UPDATE {invite} SET received = 1 WHERE timestamp != 0 AND uid = %d AND received = 0', $uid);
+function _invite_check_messages(){
+  global $user;
+  $result = db_query('SELECT i.email, i.mid, u.name FROM {invite} i INNER JOIN {users} u ON u.uid = i.mid WHERE i.uid = %d AND i.timestamp != 0 AND i.received = 0', $user->uid);
+  if (db_num_rows($result)) {
+    while ($new_user = db_fetch_object($result)) {
+      drupal_set_message(t('!user-link (@user-email) has joined @site-name!', array('!user-link' => l($new_user->name, 'user/'. $new_user->mid), '@user-email' => $new_user->email, '@site-name' => variable_get('site_name', t('Drupal')))));
+    }
+    db_query('UPDATE {invite} SET received = 1 WHERE uid = %d AND timestamp != 0 AND received = 0', $user->uid);
   }
 }
 
