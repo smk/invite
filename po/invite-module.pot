@@ -1,12 +1,12 @@
 # LANGUAGE translation of Drupal (invite.module)
 # Copyright YEAR NAME <EMAIL@ADDRESS>
-# Generated from file: invite.module,v 1.9.2.28 2007/03/06 21:08:27 smk
+# Generated from file: invite.module,v 1.9.2.33 2007/03/10 20:34:02 smk
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"POT-Creation-Date: 2007-03-06 22:59+0100\n"
+"POT-Creation-Date: 2007-03-12 20:00+0100\n"
 "PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
 "Last-Translator: NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
@@ -79,7 +79,7 @@ msgstr ""
 msgid "Subject"
 msgstr ""
 
-#: invite.module:108;568
+#: invite.module:108;595
 msgid "You've been invited"
 msgstr ""
 
@@ -107,7 +107,7 @@ msgstr ""
 msgid "site"
 msgstr ""
 
-#: invite.module:127;135;553;561
+#: invite.module:127;135;580;588
 msgid "inviter"
 msgstr ""
 
@@ -167,151 +167,163 @@ msgstr ""
 msgid "Customize the text that appears above the email form on the invite page for users."
 msgstr ""
 
-#: invite.module:214
+#: invite.module:219
 msgid "New user registration by invitation only."
 msgstr ""
 
-#: invite.module:238;278
+#: invite.module:243;283
 msgid "Sorry, this invitation code has expired."
 msgstr ""
 
-#: invite.module:242
+#: invite.module:247
 msgid "Sorry, new user registration by invite only."
 msgstr ""
 
-#: invite.module:257
+#: invite.module:262
 msgid "Request new password"
 msgstr ""
 
-#: invite.module:257
+#: invite.module:262
 msgid "Request new password via e-mail."
 msgstr ""
 
-#: invite.module:283
+#: invite.module:288
 msgid "You have not been invited to join this site."
 msgstr ""
 
-#: invite.module:284
+#: invite.module:289
 msgid "Uninvited user registration attempt."
 msgstr ""
 
-#: invite.module:306
+#: invite.module:316
 msgid "Registration code failed for %name %email."
 msgstr ""
 
-#: invite.module:306
+#: invite.module:316;473
 msgid "view"
 msgstr ""
 
-#: invite.module:334
+#: invite.module:349
 msgid "Your invitations"
 msgstr ""
 
-#: invite.module:340
+#: invite.module:355
 msgid "Delete invitation"
 msgstr ""
 
-#: invite.module:343
+#: invite.module:358
 msgid "Expired"
 msgstr ""
 
-#: invite.module:343
+#: invite.module:358
 msgid "Pending"
 msgstr ""
 
-#: invite.module:349
+#: invite.module:363
 msgid "Joined"
 msgstr ""
 
-#: invite.module:357;386
+#: invite.module:363
+msgid "Deleted"
+msgstr ""
+
+#: invite.module:371;400
 msgid "Email"
 msgstr ""
 
-#: invite.module:357
+#: invite.module:371
 msgid "Status"
 msgstr ""
 
-#: invite.module:361
+#: invite.module:375
 msgid "You have not sent any invitations yet."
 msgstr ""
 
-#: invite.module:370
+#: invite.module:384
 msgid "Invite a friend"
 msgstr ""
 
-#: invite.module:378
+#: invite.module:392
 msgid "You have %invites invites left"
 msgstr ""
 
-#: invite.module:390
+#: invite.module:404
 msgid "Type the email of the person you would like to invite"
 msgstr ""
 
-#: invite.module:395
+#: invite.module:409
 msgid "Your message"
 msgstr ""
 
-#: invite.module:398
+#: invite.module:412
 msgid "This message will be added to the mail sent to the person you are inviting."
 msgstr ""
 
-#: invite.module:402
+#: invite.module:416
 msgid "Submit"
 msgstr ""
 
-#: invite.module:405
+#: invite.module:419
 msgid "Maximum number (%max) of invitations reached."
 msgstr ""
 
-#: invite.module:415
+#: invite.module:429
 msgid "The email address does not appear to be valid syntax."
 msgstr ""
 
-#: invite.module:444
+#: invite.module:466
 msgid "Invitation to %email has been deleted."
 msgstr ""
 
-#: invite.module:449
-msgid "Could not delete invitation, because %email already joined the site."
+#: invite.module:469
+msgid "Invitations to registered users cannot be deleted."
 msgstr ""
 
-#: invite.module:463
+#: invite.module:473
+msgid "Detected malicious attempt to delete an invitation."
+msgstr ""
+
+#: invite.module:487
 msgid "The user you are trying to invite has already been invited."
 msgstr ""
 
-#: invite.module:469
+#: invite.module:493
 msgid "The user you are trying to invite has already registered."
 msgstr ""
 
-#: invite.module:476
+#: invite.module:500
 msgid "You have exceeded your allowed invitations."
 msgstr ""
 
-#: invite.module:571
+#: invite.module:561
+msgid "%user-link (%user-email) has joined %site-name!"
+msgstr ""
+
+#: invite.module:561;598
 msgid "Drupal"
 msgstr ""
 
-#: invite.module:581
+#: invite.module:608
 msgid "Your invitation was sent successfully."
 msgstr ""
 
-#: invite.module:584
+#: invite.module:611
 msgid "Problems occurred sending the invitation. Please contact the site administrator."
 msgstr ""
 
-#: invite.module:585
+#: invite.module:612
 msgid "Failed sending invitation. To: %email From: %from"
 msgstr ""
 
-#: invite.module:592
+#: invite.module:619
 msgid "Your friend, %inviter has invited you to join %site [%homepage].\r\n\r\nTo become a member of %site, click the link below or paste it into the address bar of your browser. \r\n\r\n%join_link\r\n\r\n----------\r\n\r\n%message"
 msgstr ""
 
-#: invite.module:606
+#: invite.module:633
 msgid "<p>This is an overview of the invitations you have sent. The status of each invitation is shown:\r\n<ul>\r\n  <li><strong>Joined</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the email address to take you to their profile page.</li>\r\n  <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation. You may send a reminder, by clicking the 'Remind Me' link.</li>\r\n  <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>\r\n</ul>\r\n</p>\r\n<p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>"
 msgstr ""
 
-#: invite.module:284;306;585;0
+#: invite.module:289;316;473;612;0
 msgid "invite"
 msgstr ""
 
