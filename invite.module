@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.32 2007-03-14 13:03:37 smk Exp $
+// $Id: invite.module,v 1.10.2.33 2007-03-14 13:14:16 smk Exp $
 /** 
  * @file 
  * The invite.module provides an 'Invite a friend' feature. It allows your
@@ -465,7 +465,7 @@ function invite_delete($email) {
   $email = urldecode($email);
 
   if ($email != '') {
-    $invite = db_fetch_object(db_query("SELECT i.uid AS inviter, i.timestamp FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid WHERE i.email = '%s'", $email));
+    $invite = db_fetch_object(db_query("SELECT uid AS inviter, timestamp FROM {invite} WHERE email = '%s'", $email));
     // Inviter must match current user
     if ($invite->inviter == $user->uid) {
       // Verify that invite may be deleted
