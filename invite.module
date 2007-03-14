@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.31 2007-03-10 20:32:55 smk Exp $
+// $Id: invite.module,v 1.10.2.32 2007-03-14 13:03:37 smk Exp $
 /** 
  * @file 
  * The invite.module provides an 'Invite a friend' feature. It allows your
@@ -465,11 +465,11 @@ function invite_delete($email) {
   $email = urldecode($email);
 
   if ($email != '') {
-    $invite = db_fetch_object(db_query("SELECT i.uid AS inviter, (u.uid IS NOT NULL) AS account_exists FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid WHERE i.email = '%s'", $email));
+    $invite = db_fetch_object(db_query("SELECT i.uid AS inviter, i.timestamp FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid WHERE i.email = '%s'", $email));
     // Inviter must match current user
     if ($invite->inviter == $user->uid) {
       // Verify that invite may be deleted
-      if (!$invite->account_exists || variable_get('invite_allow_join_delete', 0)) {
+      if (!$invite->timestamp || variable_get('invite_allow_join_delete', 0)) {
         _invite_delete($email, $user->uid);
         drupal_set_message(t('Invitation to %email has been deleted.', array('%email' => $email)));
       }
