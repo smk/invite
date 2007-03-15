@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.33 2007-03-14 13:14:16 smk Exp $
+// $Id: invite.module,v 1.10.2.34 2007-03-15 23:32:10 smk Exp $
 /** 
  * @file 
  * The invite.module provides an 'Invite a friend' feature. It allows your
@@ -229,12 +229,11 @@ function invite_form_alter($form_id, &$form) {
       $form['registration']['user_register']['#options']['inviteonly'] = t('New user registration by invitation only.');
       break;
 
-    case 'user_register': 
-      $user_admin = user_access('administer users');
-      $invite_only = (variable_get('user_register',1) == 'inviteonly');
+    case 'user_register':
       $valid_invite = FALSE;
       if ($code = arg(2)) {
         if ($invite = _invite_fetch_invite($code)) {
+          $form['mail']['#default_value'] = $invite->email;
           $valid_invite = (!$invite->expired);
           $form['invite_code'] = array(
             '#type' => 'value',
@@ -247,15 +246,17 @@ function invite_form_alter($form_id, &$form) {
         }
       }
 
+      $user_admin = user_access('administer users');
+      $invite_only = (variable_get('user_register', 1) == 'inviteonly');
       if ((!$user_admin) && $invite_only) {
         if (!$valid_invite) {
           if ($invite->expired) {
             drupal_set_message(t('Sorry, this invitation code has expired.'));
           }
           else {
-            // Redirect to the standard login form if in invite only mode and a valid invite is not present
             drupal_set_message(t('Sorry, new user registration by invite only.'));
           }
+          // Redirect to standard login form
           drupal_goto('user');
         }
         else if (isset($form['#submit']['user_register_submit'])) {
@@ -655,7 +656,7 @@ function _invite_unblock($uid) {
 }
 
 function _invite_fetch_invite($invite_code) {
-  return db_fetch_object(db_query("SELECT uid AS referrer, (expiry < %d) AS expired FROM {invite} WHERE reg_code = '%s' AND timestamp = 0", time(), $invite_code));
+  return db_fetch_object(db_query("SELECT email, uid AS referrer, (expiry < %d) AS expired FROM {invite} WHERE reg_code = '%s' AND timestamp = 0", time(), $invite_code));
 }
 
 function _invite_delete($email, $inviter_uid) {
