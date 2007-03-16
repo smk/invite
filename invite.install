@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.3.2.4 2007-03-10 20:32:51 smk Exp $
+// $Id: invite.install,v 1.3.2.5 2007-03-16 00:09:08 smk Exp $
 
 /**
  * Install the initial schema.
@@ -17,6 +17,7 @@ function invite_install() {
           expiry int(11) NOT NULL default '0',
           timestamp int(11) NOT NULL default '0',
           received tinyint(3) unsigned NOT NULL default '0',
+          message text NOT NULL default '',
           PRIMARY KEY  (email),
           UNIQUE (reg_code)
         ) /*!40100 DEFAULT CHARACTER SET utf8 */;"
@@ -34,6 +35,7 @@ function invite_install() {
           expiry INTEGER NOT NULL DEFAULT 0,
           timestamp INTEGER NOT NULL DEFAULT 0,
           received SMALLINT NOT NULL DEFAULT 0,
+          message TEXT NOT NULL DEFAULT '',
           PRIMARY KEY (email),
           UNIQUE (reg_code)
         );"
@@ -111,5 +113,22 @@ function invite_update_4() {
   }
   // prevent displaying messages for old invites ;-)
   $ret[] = update_sql("UPDATE {invite} SET received = 1 WHERE mid != 0");
+  return $ret;
+}
+
+/**
+ * Add column message.
+ */
+function invite_update_5() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {invite} ADD COLUMN message TEXT NOT NULL default ''");
+      break;
+    case 'pgsql':
+      db_add_column($ret, 'invite', 'message', 'TEXT', array('not null' => TRUE, 'default' => "''"));
+      break;
+  }
   return $ret;
 }
