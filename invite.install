@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.2.2.8 2007-03-16 00:09:32 smk Exp $
+// $Id: invite.install,v 1.2.2.9 2007-03-19 05:32:41 smk Exp $
 
 /**
  * Install the initial schema.
@@ -131,3 +131,4 @@ function invite_update_5() {
       break;
   }
   return $ret;
+}
