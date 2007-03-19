@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.35 2007-03-16 00:09:13 smk Exp $
+// $Id: invite.module,v 1.10.2.36 2007-03-19 05:31:59 smk Exp $
 /** 
  * @file 
  * The invite.module provides an 'Invite a friend' feature. It allows your
@@ -359,7 +359,7 @@ function _invite_form() {
   );
 
   $inc = 0;
-  $result = db_query("SELECT i.*, (u.uid IS NOT NULL) AS account_exists FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid WHERE i.uid = %d ORDER BY i.expiry DESC", $user->uid);
+  $result = db_query("SELECT i.*, u.uid FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid AND u.uid != 0 WHERE i.uid = %d ORDER BY i.expiry DESC", $user->uid);
   while ($invite = db_fetch_object($result)){
     $delete_link = l(t('Delete invitation'), 'invite/delete/'. urlencode($invite->email));
     if (!$invite->timestamp) {
@@ -368,8 +368,9 @@ function _invite_form() {
       $action_cell = $delete_link;
     }
     else {
-      $email_cell = $invite->account_exists ? l($invite->email, 'user/'. $invite->mid) : '<em>'. check_plain($invite->email) .'</em>';
-      $status_cell = $invite->account_exists ? t('Joined') : t('Deleted');
+      $account_exists = !empty($invite->uid);
+      $email_cell = $account_exists ? l($invite->email, 'user/'. $invite->mid) : '<em>'. check_plain($invite->email) .'</em>';
+      $status_cell = $account_exists ? t('Joined') : t('Deleted');
       $action_cell = variable_get('invite_allow_join_delete', 0) ? $delete_link : '&nbsp;';
     }
     $items[] = array($email_cell, $status_cell, $action_cell);
@@ -656,7 +657,9 @@ function _invite_unblock($uid) {
 }
 
 function _invite_fetch_invite($invite_code) {
-  return db_fetch_object(db_query("SELECT email, uid AS referrer, (expiry < %d) AS expired FROM {invite} WHERE reg_code = '%s' AND timestamp = 0", time(), $invite_code));
+  $invite = db_fetch_object(db_query("SELECT email, uid AS referrer, expiry FROM {invite} WHERE reg_code = '%s' AND timestamp = 0", $invite_code));
+  $invite->expired = $invite->expiry < time();
+  return $invite;
 }
 
 function _invite_delete($email, $inviter_uid) {
