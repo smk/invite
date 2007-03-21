@@ -1,10 +1,13 @@
 <?php
-// $Id: invite.module,v 1.10.2.36 2007-03-19 05:31:59 smk Exp $
+// $Id: invite.module,v 1.10.2.37 2007-03-21 03:09:10 smk Exp $
 /** 
  * @file 
  * The invite.module provides an 'Invite a friend' feature. It allows your
  * users to send and track invitations to join your site.
  */ 
+
+define('INVITE_MAX_INVITES',  1000);
+define('INVITE_MAX_PER_TURN',    1);
 
 /** 
  * Implementation of hook_help(). 
@@ -37,6 +40,8 @@ function _invite_settings() {
   $form['user_settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('User settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
   );
 
   // settings for new members
@@ -80,17 +85,40 @@ function _invite_settings() {
   $form['user_roles'] = array(
     '#type' => 'fieldset',
     '#title' => t('Role limitations'),
-    '#tree' => FALSE
+    '#tree' => FALSE,
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
   );
   
   foreach ($roles as $role) {
     $role_no_space = str_replace(' ', '_', $role);
-    $form['user_roles']['invite_maxnum_'.$role_no_space] = array(
+    $form['user_roles']['invite_maxnum_'. $role_no_space] = array(
       '#type' => 'select',
       '#title' => t('Limit for %role', array('%role' => $role)),
-      '#default_value' => variable_get('invite_maxnum_'. $role_no_space, 0),
-      '#options' => array(0 => t('unlimited'), 5 => 5, 10 => 10, 20 => 20, 50 => 50, 100 => 100, 300 => 300, 500 => 500, 1000 => 1000),
+      '#default_value' => variable_get('invite_maxnum_'. $role_no_space, INVITE_MAX_INVITES),
+      '#options' => array(5 => 5, 10 => 10, 20 => 20, 50 => 50, 100 => 100, 500 => 500, 1000 => 1000, 0 => t('unlimited')),
       '#description' => t('Allows to limit the total number of invitations a %role can send.', array('%role' => $role)),
+      '#multiple' => FALSE,
+      '#required' => TRUE,
+    );
+  }
+  
+  $form['multi_invites'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Multiple invitations'),
+    '#tree' => FALSE,
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  
+  foreach ($roles as $role) {
+    $role_no_space = str_replace(' ', '_', $role);
+    $form['multi_invites']['invite_maxmultiple_'. $role_no_space] = array(
+      '#type' => 'select',
+      '#title' => t('Limit per turn for %role', array('%role' => $role)),
+      '#default_value' => variable_get('invite_maxmultiple_'. $role_no_space, INVITE_MAX_PER_TURN),
+      '#options' => array(1 => '1 ('. t('disabled') .')', 5 => 5, 10 => 10, 100 => 100, 0 => t('unlimited')),
+      '#description' => t('Allows to limit the maximum number of invitations a %role can send per turn.', array('%role' => $role)),
       '#multiple' => FALSE,
       '#required' => TRUE,
     );
@@ -100,6 +128,8 @@ function _invite_settings() {
   $form['email_settings'] = array(
     '#type' => 'fieldset',
     '#title' => t('Email settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
   );
 
   $form['email_settings']['invite_subject'] = array(
@@ -161,7 +191,9 @@ function _invite_settings() {
   // invite page customization settings
   $form['invite_page'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Invite page cutomization'),
+    '#title' => t('Invite page customization'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
   );
 
   $form['invite_page']['invite_page_title'] = array(
@@ -397,67 +429,164 @@ function _invite_form() {
   $maximum_invites = _invite_max_invites_by_role();
   if ($maximum_invites > 0) {
     $invites_left = $maximum_invites - $inc;
-    $form['invite_form']['remaining_invites'] = array(
+    $form['invite_form']['markup_remaining_invites'] = array(
       '#type' => 'markup',
-      '#value' => t('You have @invites invites left.', array('@invites' => $invites_left)),
+      '#value' => ($invites_left > 0)
+        ? format_plural($invites_left, 'You have one invite left.', 'You have @count invites left.')
+        : t('Maximum number (@max) of invitations reached.', array('@max' => $maximum_invites)),
+    );
+    $form['invite_form']['remaining_invites'] = array(
+      '#type' => 'value',
+      '#value' => $invites_left,
     );
   }
   
   //the invitation form
   if ($inc < $maximum_invites  || $maximum_invites == 0){
-    $form['invite_form']['email'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Email'),
-      '#default_value' => '',
-      '#size' => 20,
-      '#maxlength' => 64,
-      '#description' => t('Type the email of the person you would like to invite'),
-      '#required' => TRUE,
-    );
+    $maximum_multiple = _invite_max_invites_per_turn();
+    
+    if (isset($_SESSION['invite_failed_emails'])) {
+      $failed_emails = implode("\n", (array)unserialize($_SESSION['invite_failed_emails']));
+      unset($_SESSION['invite_failed_emails']);
+    }
+    
+    if ($maximum_multiple != 1) {
+      $form['invite_form']['email'] = array(
+        '#type' => 'textarea',
+        '#default_value' => $failed_emails,
+        '#rows' => 2,
+        '#required' => TRUE,
+      );
+    }
+    else {
+      $form['invite_form']['email'] = array(
+        '#type' => 'textfield',
+        '#default_value' => '',
+        '#maxlength' => 64,
+        '#required' => TRUE,
+      );
+    }
+    if ($failed_emails) {
+      $form['invite_form']['email']['#attributes']['class'] = 'error';
+    }
+    $form['invite_form']['email']['#title'] = format_plural($maximum_multiple, 'Email', 'Email(s)');
+    $form['invite_form']['email']['#description'] = format_plural($maximum_multiple, 'Type the email of the person you would like to invite.', 'Type the email address(es) of the person(s) you would like to invite.');
+
     $form['invite_form']['message'] = array(
       '#type' => 'textarea',
       '#title' => t('Your message'),
       '#default_value' => '',
       '#required' => FALSE,
-      '#description' => t('This message will be added to the mail sent to the person you are inviting.'),
-    );        
+      '#description' => format_plural($maximum_multiple, 'This message will be added to the mail sent to the person you are inviting.', 'This message will be added to the mail sent to the person(s) you are inviting.'),
+    );
     $form['invite_form']['submit'] = array(
       '#type' => 'submit',
       '#value' => t('Submit'),
     );
-  } else {
-    drupal_set_message(t('Maximum number (@max) of invitations reached.', array('@max' => $maximum_invites)));
   }
 
   return $form;
 }
 
+function _invite_get_emails($string) {
+  $valid_emails = $failed_emails = array();
+  $emails = array_unique(split("[,\n\r]", $string));
+  foreach ($emails as $email) {
+    $email = trim($email);
+    if ($email) {
+      if (valid_email_address($email)) {
+        $valid_emails[] = $email;
+    	}
+      else {
+        $failed_emails[] = $email;
+      }
+    }
+  }
+  if (count($failed_emails)) {
+    $_SESSION['invite_failed_emails'] = serialize($failed_emails);
+  }
+  return $valid_emails;
+}
+
 function _invite_form_validate($form_id, &$edit) {
   global $user;
-  
-  if (!valid_email_address(trim($edit['email']))) {
-    form_set_error('email', t('The email address does not appear to be valid syntax.'));
-  }
 
-  $x = _invite_check_invited($edit['email'], $user->uid);
-  if ($x['is_invited']) {
-    form_set_error('invite_email', $x['message']);
+  $emails = _invite_get_emails($edit['email']);
+
+  if (count($emails)) {
+    // filter out already registered users, but pass validation
+    $sql = "SELECT mail AS email FROM {users} WHERE mail IN (%s)";
+    $error_message = array(
+      t('The following recipient has already registered:'),
+      t('The following recipients have already registered:')
+    );
+    _invite_validate_emails($emails, $sql, $error_message);
+  
+    // filter out already invited users, but pass validation
+    $sql = "SELECT email FROM {invite} WHERE email IN (%s)";
+    $error_message = array(
+      t('The following recipient has already been invited:'),
+      t('The following recipients have already been invited:')
+    );
+    _invite_validate_emails($emails, $sql, $error_message);
+  
+    // check invite limit, fail to let the user choose which ones to send
+    if (isset($edit['remaining_invites']) && count($emails) > $edit['remaining_invites']) {
+      form_set_error('email', format_plural($edit['remaining_invites'], 'You have only one invitate left.', 'You have only @count invitates left.'));
+      return;
+    }
+  
+    // check limit per turn
+    $maximum_per_turn = _invite_max_invites_per_turn();
+    if ($maximum_per_turn > 0 && count($emails) > $maximum_per_turn) {
+      form_set_error('email', format_plural($maximum_per_turn, 'You can send only one invitation per turn.', 'You cannot send more than @count invitations per turn.'));
+      return;
+    }
+  
+    form_set_value(array('#parents' => array('validated_emails')), $emails);
   }
 }
 
 function _invite_form_submit($form_id, $edit) {
   global $user;
+
+  $count_failed = $count_success = 0;
+
+  if (isset($_SESSION['invite_failed_emails'])) {
+    $failed_emails = (array)unserialize($_SESSION['invite_failed_emails']);
+    $count_failed = count($failed_emails);
+  }
   
-  // generate code
-  $code = _invite_create_regcode();
+  if (is_array($edit['validated_emails'])) {
+    foreach ($edit['validated_emails'] as $email) {
+      // generate code for each mail
+      $code = _invite_create_regcode();
+      $message = trim($edit['message']);
+  
+      // send email
+      if (_invite_send_invite('mail', $user->name, $email, $code, $message)) {
+        db_query("INSERT INTO {invite} (email, reg_code, uid, expiry, message) VALUES ('%s', '%s', %d, %d, '%s')", $email, $code, $user->uid, time()+(variable_get('invite_expiry', 30)*60*60*24), $message);
+        
+        // notify other modules
+        $args = array('inviter' => $user);
+        module_invoke_all('invite', 'invite', $args);
+        $count_success++;  
+      }
+      else {
+        $failed_emails[] = $email;
+        $count_failed++;
+      }
+    }
+  }
 
-  // send email
-  if ($success = _invite_send_invite('mail', $user->name, trim($edit['email']), $code, $edit['message'])) {
-    db_query("INSERT INTO {invite} (email, reg_code, uid, expiry, message) VALUES ('%s', '%s', %d, %d, '%s')", trim($edit['email']), $code,$user->uid, time()+(variable_get('invite_expiry', 30)*60*60*24), $edit['message']);
-
-    // notify other modules
-    $args = array('inviter' => $user);
-    module_invoke_all('invite', 'invite', $args);
+  if ($count_success) {
+    $success = format_plural($count_success, '@count invite has been successfully sent.', '@count invites have been successfully sent.');
+    drupal_set_message($success);
+  }
+  if ($count_failed) {
+    $_SESSION['invite_failed_emails'] = serialize($failed_emails);
+    $error = format_plural($count_failed, '@count entered email is invalid. Please correct it.', '@count entered emails are invalid. Please correct them.');
+    drupal_set_message($error, 'error');
   }
 }
 
@@ -490,49 +619,49 @@ function invite_delete($email) {
  * @{
  * Module specific helper functions.
  */
-function _invite_check_invited($email, $uid) {
-  $rtn = array('is_invited' => FALSE, 'message' => '');
-  
-  if ((int)db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE email = '%s'", $email)) > 0) {
-    $rtn['message'] = t('The user you are trying to invite has already been invited.');
-    $rtn['is_invited'] = TRUE;
-    return $rtn;
-  }
-
-  if ((int)db_result(db_query("SELECT COUNT(*) FROM {users} WHERE mail = '%s'", $email)) > 0) {
-    $rtn['message'] = t('The user you are trying to invite has already registered.');
-    $rtn['is_invited'] = TRUE;
-    return $rtn;
-  }
-
-  $max_invites = _invite_max_invites_by_role();
-  if ($max_invites > 0 && $max_invites <= db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d", $uid))) {
-    $rtn['message'] = t('You have exceeded your allowed invitations.');
-    $rtn['is_invited'] = TRUE;
-    return $rtn;
-  }
-  
-  return $rtn;
+function _invite_max_invites_by_role($uid = NULL) {
+  return _invite_get_max_by_role('maxnum', INVITE_MAX_INVITES, $uid);
 }
 
-function _invite_max_invites_by_role($uid = NULL, $default_max = 0) {
+function _invite_max_invites_per_turn($uid = NULL) {
+  return _invite_get_max_by_role('maxmultiple', INVITE_MAX_PER_TURN, $uid);
+}
+
+function _invite_get_max_by_role($var, $default, $uid = NULL) {
   global $user;
   
+  $result = 0;
   $account = (is_null($uid)) ? $user : user_load(array('uid' => $uid));
+
   foreach (user_roles() as $role) {
     $role_no_space = str_replace(' ', '_', $role);
     if (in_array($role, $account->roles)) {
-      $max_by_role = variable_get('invite_maxnum_'. $role_no_space, 0);
-      if ($max_by_role == 0) {
+      $variable = 'invite_'. $var .'_'. $role_no_space;
+      $role_max = variable_get($variable, $default);
+      if ($role_max == 0) {
         return 0;
       }
-      if ($max_by_role > $default_max) {
-        $default_max = $max_by_role;
+      if ($role_max > $result) {
+        $result = $role_max;
       }
     }
   }
-  
-  return $default_max;
+  return $result;
+}
+
+function _invite_validate_emails(&$emails, $sql, $error_message) {
+  $failed_emails = array();
+  $emails_sql = "'". implode("','", array_map('db_escape_string', $emails)) ."'";
+  $result = db_query(sprintf($sql, $emails_sql));
+  while ($row = db_fetch_object($result)) {
+    $failed_emails[] = $row->email;
+  }
+  if (count($failed_emails)) {
+    $error = count($failed_emails) > 1 ? $error_message[1] : $error_message[0];
+    $error .= '<br />'. implode(', ', array_map('check_plain', $failed_emails));
+    drupal_set_message($error, 'error');
+    $emails = array_diff($emails, $failed_emails);
+  }
 }
 
 function _invite_role_escalate($invitee) {
@@ -614,11 +743,12 @@ function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient
 
   switch ($op){
     case "mail":
-      if ($success = drupal_mail('invite-mail', $email, $subject, wordwrap($body, 72), $from)) {
-        drupal_set_message(t('Your invitation was sent successfully.'));
-      }
-      else {
-        drupal_set_message(t('Problems occurred sending the invitation. Please contact the site administrator.'), 'error');
+      if (!($success = drupal_mail('invite-mail', $email, $subject, wordwrap($body, 72), $from))) {
+        static $error_shown = FALSE;
+        if (!$error_shown) {
+          drupal_set_message(t('Problems occurred sending the invitation(s). Please contact the site administrator.'), 'error');
+          $error_shown = TRUE;
+        }
         watchdog('invite', t("Failed sending invitation. To: @email From: @from", array('@email' => $email, '@from' => $from)));
       }
       return $success;
