@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.37 2007-03-21 03:09:10 smk Exp $
+// $Id: invite.module,v 1.10.2.38 2007-03-21 12:17:11 smk Exp $
 /** 
  * @file 
  * The invite.module provides an 'Invite a friend' feature. It allows your
@@ -219,6 +219,7 @@ function _invite_settings() {
  * Implementation of hook_menu().
  */
 function invite_menu($may_cache) {
+  global $user;
   $items = array();
 
   if ($may_cache) {
@@ -244,9 +245,9 @@ function invite_menu($may_cache) {
       'access' => user_access('send invitations'),
       'type' => MENU_CALLBACK);
   }
-  else {
-    // check for joined users
-    _invite_check_messages();
+  else if ($user->uid && user_access('send invitations')) {
+    // check for newly registered users
+    _invite_check_messages($user->uid);
   }
 
   return $items;
@@ -391,6 +392,7 @@ function _invite_form() {
   );
 
   $inc = 0;
+  $access_profiles = user_access('access user profiles');
   $result = db_query("SELECT i.*, u.uid FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid AND u.uid != 0 WHERE i.uid = %d ORDER BY i.expiry DESC", $user->uid);
   while ($invite = db_fetch_object($result)){
     $delete_link = l(t('Delete invitation'), 'invite/delete/'. urlencode($invite->email));
@@ -401,7 +403,12 @@ function _invite_form() {
     }
     else {
       $account_exists = !empty($invite->uid);
-      $email_cell = $account_exists ? l($invite->email, 'user/'. $invite->mid) : '<em>'. check_plain($invite->email) .'</em>';
+      if ($access_profiles) {
+        $email_cell = $account_exists ? l($invite->email, 'user/'. $invite->mid, array('title' => t('View user profile.'))) : '<em>'. check_plain($invite->email) .'</em>';
+      }
+      else {
+        $email_cell = $account_exists ? check_plain($invite->email) : '<em>'. check_plain($invite->email) .'</em>';
+      }
       $status_cell = $account_exists ? t('Joined') : t('Deleted');
       $action_cell = variable_get('invite_allow_join_delete', 0) ? $delete_link : '&nbsp;';
     }
@@ -515,20 +522,24 @@ function _invite_form_validate($form_id, &$edit) {
 
   if (count($emails)) {
     // filter out already registered users, but pass validation
-    $sql = "SELECT mail AS email FROM {users} WHERE mail IN (%s)";
-    $error_message = array(
-      t('The following recipient has already registered:'),
-      t('The following recipients have already registered:')
-    );
-    _invite_validate_emails($emails, $sql, $error_message);
+    $failed_emails = _invite_validate_emails("SELECT mail AS email FROM {users} WHERE mail IN (%s)", $emails);
+    if (count($failed_emails)) {
+      $error = format_plural(count($failed_emails), 'The following recipient has already registered:', 'The following recipients have already registered:') .'<br />';
+      foreach ($failed_emails as $key => $email) {
+        $account = user_load(array('mail' => $email));
+        $failed_emails[$key] = theme('username', $account) .' ('. check_plain($email) .')';
+      }
+      $error .= implode(', ', $failed_emails);
+      drupal_set_message($error, 'error');
+    }
   
     // filter out already invited users, but pass validation
-    $sql = "SELECT email FROM {invite} WHERE email IN (%s)";
-    $error_message = array(
-      t('The following recipient has already been invited:'),
-      t('The following recipients have already been invited:')
-    );
-    _invite_validate_emails($emails, $sql, $error_message);
+    $failed_emails = _invite_validate_emails("SELECT email FROM {invite} WHERE email IN (%s)", $emails);
+    if (count($failed_emails)) {
+      $error = format_plural(count($failed_emails), 'The following recipient has already been invited:', 'The following recipients have already been invited:') .'<br />';
+      $error .= implode(', ', array_map('check_plain', $failed_emails));
+      drupal_set_message($error, 'error');
+    }
   
     // check invite limit, fail to let the user choose which ones to send
     if (isset($edit['remaining_invites']) && count($emails) > $edit['remaining_invites']) {
@@ -649,19 +660,16 @@ function _invite_get_max_by_role($var, $default, $uid = NULL) {
   return $result;
 }
 
-function _invite_validate_emails(&$emails, $sql, $error_message) {
+function _invite_validate_emails($sql, &$emails) {
   $failed_emails = array();
   $emails_sql = "'". implode("','", array_map('db_escape_string', $emails)) ."'";
   $result = db_query(sprintf($sql, $emails_sql));
   while ($row = db_fetch_object($result)) {
     $failed_emails[] = $row->email;
   }
-  if (count($failed_emails)) {
-    $error = count($failed_emails) > 1 ? $error_message[1] : $error_message[0];
-    $error .= '<br />'. implode(', ', array_map('check_plain', $failed_emails));
-    drupal_set_message($error, 'error');
-    $emails = array_diff($emails, $failed_emails);
-  }
+  // leave only valid emails
+  $emails = array_diff($emails, $failed_emails);
+  return $failed_emails;
 }
 
 function _invite_role_escalate($invitee) {
@@ -692,14 +700,12 @@ function _invite_set_timestamp($email, $uid, $regcode){
   db_query("UPDATE {invite} SET timestamp = %d, mid = %d, email = '%s' WHERE reg_code = '%s'", time(), $uid, $email, $regcode);
 }
 
-function _invite_check_messages(){
-  global $user;
-  $result = db_query('SELECT i.email, i.mid, u.name FROM {invite} i INNER JOIN {users} u ON u.uid = i.mid WHERE i.uid = %d AND i.timestamp != 0 AND i.received = 0', $user->uid);
-  if (db_num_rows($result)) {
-    while ($new_user = db_fetch_object($result)) {
-      drupal_set_message(t('!user-link (@user-email) has joined @site-name!', array('!user-link' => l($new_user->name, 'user/'. $new_user->mid), '@user-email' => $new_user->email, '@site-name' => variable_get('site_name', t('Drupal')))));
-    }
-    db_query('UPDATE {invite} SET received = 1 WHERE uid = %d AND timestamp != 0 AND received = 0', $user->uid);
+function _invite_check_messages($uid) {
+  $result = db_query('SELECT i.mid, i.email FROM {invite} i INNER JOIN {users} u ON u.uid = i.mid AND u.status = 1 WHERE i.uid = %d AND i.timestamp != 0 AND i.received = 0', $uid);
+  while ($invite = db_fetch_object($result)) {
+    $account = user_load(array('uid' => $invite->mid));
+    drupal_set_message(t('!user (@email) has joined @site-name!', array('!user' => theme('username', $account), '@email' => $account->mail, '@site-name' => variable_get('site_name', t('Drupal')))));
+    db_query("UPDATE {invite} SET received = 1 WHERE email = '%s'", $invite->email);
   }
 }
 
