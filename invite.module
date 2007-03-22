@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.38 2007-03-21 12:17:11 smk Exp $
+// $Id: invite.module,v 1.10.2.39 2007-03-22 16:55:46 smk Exp $
 /** 
  * @file 
  * The invite.module provides an 'Invite a friend' feature. It allows your
@@ -704,7 +704,7 @@ function _invite_check_messages($uid) {
   $result = db_query('SELECT i.mid, i.email FROM {invite} i INNER JOIN {users} u ON u.uid = i.mid AND u.status = 1 WHERE i.uid = %d AND i.timestamp != 0 AND i.received = 0', $uid);
   while ($invite = db_fetch_object($result)) {
     $account = user_load(array('uid' => $invite->mid));
-    drupal_set_message(t('!user (@email) has joined @site-name!', array('!user' => theme('username', $account), '@email' => $account->mail, '@site-name' => variable_get('site_name', t('Drupal')))));
+    drupal_set_message(t('!user (@email) has joined @site-name!', array('!user' => theme('username', $account), '@email' => $invite->email, '@site-name' => variable_get('site_name', t('Drupal')))));
     db_query("UPDATE {invite} SET received = 1 WHERE email = '%s'", $invite->email);
   }
 }
