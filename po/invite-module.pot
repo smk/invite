@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"POT-Creation-Date: 2007-03-25 17:20+0200\n"
+"POT-Creation-Date: 2007-03-25 17:52+0200\n"
 "PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
 "Last-Translator: NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
@@ -304,11 +304,11 @@ msgid "Failed sending invitation. To: %email From: %from"
 msgstr ""
 
 #: invite.module:758
-msgid "Your friend, %inviter has invited you to join %site [%homepage].\r\n\r\nTo become a member of %site, click the link below or paste it into the address bar of your browser. \r\n\r\n%join_link\r\n\r\n----------\r\n\r\n%message"
+msgid "Your friend, %inviter has invited you to join %site [%homepage].\n\nTo become a member of %site, click the link below or paste it into the address bar of your browser. \n\n%join_link\n\n----------\n\n%message"
 msgstr ""
 
 #: invite.module:772
-msgid "<p>This is an overview of the invitations you have sent. The status of each invitation is shown:\r\n<ul>\r\n  <li><strong>Joined</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the email address to take you to their profile page.</li>\r\n  <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation. You may send a reminder, by clicking the 'Remind Me' link.</li>\r\n  <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>\r\n</ul>\r\n</p>\r\n<p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>"
+msgid "<p>This is an overview of the invitations you have sent. The status of each invitation is shown:\n<ul>\n  <li><strong>Joined</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the email address to take you to their profile page.</li>\n  <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation. You may send a reminder, by clicking the 'Remind Me' link.</li>\n  <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>\n</ul>\n</p>\n<p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>"
 msgstr ""
 
 #: invite.module:323;350;616;751;0
