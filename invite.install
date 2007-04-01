@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.2.2.9 2007-03-19 05:32:41 smk Exp $
+// $Id: invite.install,v 1.2.2.10 2007-04-01 13:01:57 smk Exp $
 
 /**
  * Install the initial schema.
@@ -95,6 +95,7 @@ function invite_update_3() {
   if ($num) {
     drupal_set_message(t('%num orphaned invites have been deleted.'), array('%num' => $num));
   }
+  return array();
 }
 
 /**
