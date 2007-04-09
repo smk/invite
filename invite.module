@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.39 2007-03-22 16:55:46 smk Exp $
+// $Id: invite.module,v 1.10.2.40 2007-04-09 19:33:43 smk Exp $
 /** 
  * @file 
  * The invite.module provides an 'Invite a friend' feature. It allows your
@@ -350,10 +350,8 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
             // Escalate user role
             _invite_role_escalate($account);
 
-            // Activate user account for invite-only sites
-            if (variable_get('user_register', 1) == 'inviteonly') {
-              _invite_unblock($account->uid);
-            }
+            // Auto-approve user account
+            _invite_unblock($account->uid);
           }
         } 
         else {
