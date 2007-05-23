@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.41 2007-04-20 02:29:12 smk Exp $
+// $Id: invite.module,v 1.10.2.42 2007-05-23 19:43:36 smk Exp $
 /** 
  * @file 
  * The invite.module provides a GMail-style 'Invite a friend' feature. It
@@ -659,6 +659,16 @@ function invite_delete($email) {
     }
   }
   drupal_goto('invite');
+}
+
+/**
+ * Implementation of hook_disable().
+ */
+function invite_disable() {
+  if (variable_get('user_register', 1) == 'inviteonly') {
+    variable_set('user_register', 1);
+    drupal_set_message(t('User registration option reset to %no_approval.', array('%no_approval' => t('Visitors can create accounts and no administrator approval is required.'))));
+  }
 }
 
 /**

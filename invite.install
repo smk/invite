@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.3.2.8 2007-04-20 02:29:12 smk Exp $
+// $Id: invite.install,v 1.3.2.9 2007-05-23 19:43:36 smk Exp $
 
 /**
  * Install the initial schema.
@@ -50,6 +50,32 @@ function invite_install() {
   else {
     drupal_set_message(t('Problems occurred while creating the database schema for the invite module.'));
   }
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function invite_uninstall() {
+  // Drop database table
+  db_query('DROP TABLE {invite}');
+
+  // Delete variables
+  $sql = "DELETE from {variable} WHERE name LIKE '%s%%'";
+  db_query($sql, 'invite_target_role_');
+  db_query($sql, 'invite_maxnum_');
+  db_query($sql, 'invite_maxmultiple_');
+
+  variable_del('invite_target_role_default');
+  variable_del('invite_expiry');
+  variable_del('invite_allow_join_delete');
+  variable_del('invite_subject');
+  variable_del('invite_use_users_email');
+  variable_del('invite_use_users_email_replyto');
+  variable_del('invite_manual_from');
+  variable_del('invite_manual_reply_to');
+  variable_del('invite_page_title');
+  variable_del('invite_default_mail_template');
+  variable_del('invite_help_text');
 }
 
 function invite_update_1() {
