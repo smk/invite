@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.42 2007-05-23 19:43:36 smk Exp $
+// $Id: invite.module,v 1.10.2.43 2007-06-08 16:27:03 smk Exp $
 /** 
  * @file 
  * The invite.module provides a GMail-style 'Invite a friend' feature. It
@@ -239,8 +239,7 @@ function invite_menu($may_cache) {
     $items[] = array(
       'path' => 'invite',
       'title' => variable_get('invite_page_title', t('Invite your friends and colleagues')),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => '_invite_form',
+      'callback' => 'invite_overview',
       'access' => user_access('send invitations'),
       'type' => MENU_NORMAL_ITEM);
     $items[] = array(
@@ -376,6 +375,29 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
 }
 
 /**
+ * Implementation of hook_block().
+ */
+function invite_block($op = 'list', $delta = 0, $edit = array()) {
+  if (user_access('send invitations')) {
+    if ($op == 'list') {
+      $blocks[0] = array('info' => t('Invite a friend'));
+      return $blocks;
+    }
+    else if ($op == 'view') {
+      switch($delta) {
+        case 0:
+          $block = array(
+            'subject' => t('Invite a friend'),
+            'content' => drupal_get_form('invite_form', 'block'),
+          );
+          break;
+      }
+      return $block;
+    }
+  }
+}
+
+/**
  * Implementation of hook_cron().
  */
 function invite_cron() {
@@ -385,18 +407,12 @@ function invite_cron() {
 }
 
 /**
- * Menu callback; displays the invite form.
+ * Display an overview of sent invitations and present the invite form.
  */
-function _invite_form() {
+function invite_overview() {
   global $user;
   
-  //this displays all invites for a user, and counts how many invites they have left to give
-  $form['invitations'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Your invitations'),
-  );
-
-  $inc = 0;
+  $items = array();
   $access_profiles = user_access('access user profiles');
   $result = db_query("SELECT i.*, u.uid FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid AND u.uid != 0 WHERE i.uid = %d ORDER BY i.expiry DESC", $user->uid);
   while ($invite = db_fetch_object($result)){
@@ -418,83 +434,149 @@ function _invite_form() {
       $action_cell = variable_get('invite_allow_join_delete', 0) ? $delete_link : '&nbsp;';
     }
     $items[] = array($email_cell, $status_cell, $action_cell);
-    $inc++;
   }
-  
+
+  return theme('invite_overview', $items);
+}
+
+/**
+ * Theme function for the invites page.
+ */
+function theme_invite_overview($items) {
+  // display table of invites
+  $output = '<div><fieldset><legend>'. t('Your invitations') .'</legend>';
   if (count($items) > 0) {
     $headers = array(t('Email'), t('Status'), '&nbsp;');
-    $table = theme('table', $headers, $items, array('id' => 'invite_table'));
+    $output .= theme('table', $headers, $items, array('id' => 'invite_table'));
   }
   else {
-    $table = t('You have not sent any invitations yet.');
+    $output .= t('You have not sent any invitations yet.');
   }
-  $form['invitations']['table'] = array(
-    '#type' => 'markup',
-    '#value' => $table,
-  );
+  $output .= '</fieldset></div>';
   
-  $form['invite_form'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Invite a friend'),
-  );      
-  
-  $maximum_invites = _invite_max_invites_by_role();
-  if ($maximum_invites > 0) {
-    $invites_left = $maximum_invites - $inc;
-    $form['invite_form']['markup_remaining_invites'] = array(
-      '#type' => 'markup',
-      '#value' => ($invites_left > 0)
-        ? format_plural($invites_left, 'You have one invite left.', 'You have @count invites left.')
-        : t('Maximum number (@max) of invitations reached.', array('@max' => $maximum_invites)),
-    );
-    $form['invite_form']['remaining_invites'] = array(
-      '#type' => 'value',
-      '#value' => $invites_left,
-    );
-  }
-  
-  //the invitation form
-  if ($inc < $maximum_invites  || $maximum_invites == 0){
-    $maximum_multiple = _invite_max_invites_per_turn();
-    
-    if (isset($_SESSION['invite_failed_emails'])) {
-      $failed_emails = implode("\n", (array)unserialize($_SESSION['invite_failed_emails']));
-      unset($_SESSION['invite_failed_emails']);
-    }
-    
-    if ($maximum_multiple != 1) {
-      $form['invite_form']['email'] = array(
-        '#type' => 'textarea',
-        '#default_value' => $failed_emails,
-        '#rows' => 2,
-        '#required' => TRUE,
-      );
-    }
-    else {
-      $form['invite_form']['email'] = array(
-        '#type' => 'textfield',
-        '#default_value' => '',
-        '#maxlength' => 64,
-        '#required' => TRUE,
-      );
-    }
-    if ($failed_emails) {
-      $form['invite_form']['email']['#attributes']['class'] = 'error';
-    }
-    $form['invite_form']['email']['#title'] = format_plural($maximum_multiple, 'Email', 'Email(s)');
-    $form['invite_form']['email']['#description'] = format_plural($maximum_multiple, 'Type the email of the person you would like to invite.', 'Type the email address(es) of the person(s) you would like to invite.');
+  // add the invitation form
+  $output .= drupal_get_form('invite_form', 'page');
 
-    $form['invite_form']['message'] = array(
-      '#type' => 'textarea',
-      '#title' => t('Your message'),
-      '#default_value' => '',
-      '#required' => FALSE,
-      '#description' => format_plural($maximum_multiple, 'This message will be added to the mail sent to the person you are inviting.', 'This message will be added to the mail sent to the person(s) you are inviting.'),
-    );
-    $form['invite_form']['submit'] = array(
-      '#type' => 'submit',
-      '#value' => t('Submit'),
-    );
+  return $output;
+}
+
+/**
+ * Form generation.
+ */
+function invite_form($op) {
+  global $user;
+
+  $maximum_invites = _invite_max_invites_by_role();
+
+  if ($maximum_invites > 0) {
+    $invites_sent = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d", $user->uid));
+    $invites_left = max($maximum_invites - $invites_sent, 0);
+  }
+
+  switch ($op) {
+    case 'block':
+      if ($maximum_invites > 0 && $invites_left == 0) {
+        // hide the block
+        $form['#access'] = FALSE;
+        break;
+      }
+
+      $form['#action'] = url('invite');
+
+      $form['invite'] = array(
+        '#type' => 'markup',
+        '#value' => t('Recommend @site-name to:', array('@site-name' => variable_get('site_name', t('Drupal')))),
+      );
+      $description = '';
+      if ($maximum_invites > 0) {
+        $description = format_plural($invites_left, '@count invite left', '@count invites left');
+        $form['remaining_invites'] = array(
+          '#type' => 'value',
+          '#value' => $invites_left,
+        );
+      }
+      $form['email'] = array(
+        '#type' => 'textfield',
+        '#size' => 20,
+        '#maxlength' => 64,
+        '#description' => $description,
+        '#required' => TRUE,
+      );
+      $form['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Send invite'),
+      );
+      $form['link'] = array(
+        '#type' => 'markup',
+        '#prefix' => '<div><small>',
+        '#value' => l('View your invites', 'invite'),
+        '#suffix' => '</small></div>',
+      );
+      break;
+
+    case 'page':
+      $form['invite_form'] = array(
+        '#type' => 'fieldset',
+        '#title' => t('Invite a friend'),
+      );
+      $disabled = FALSE;
+      if ($maximum_invites > 0) {
+        if ($invites_left == 0) {
+          $markup = t('Maximum number (@max) of invitations reached.', array('@max' => $maximum_invites));
+          $disabled = TRUE;
+        }
+        else {
+          $markup = format_plural($invites_left, 'You have one invite left.', 'You have @count invites left.');
+        }
+        $form['invite_form']['markup_remaining_invites'] = array(
+          '#type' => 'markup',
+          '#value' => $markup,
+        );
+        $form['invite_form']['remaining_invites'] = array(
+          '#type' => 'value',
+          '#value' => $invites_left,
+        );
+      }
+      $maximum_multiple = _invite_max_invites_per_turn();
+      if (isset($_SESSION['invite_failed_emails'])) {
+        $failed_emails = implode("\n", (array)unserialize($_SESSION['invite_failed_emails']));
+        unset($_SESSION['invite_failed_emails']);
+      }
+      if ($maximum_multiple != 1) {
+        $form['invite_form']['email'] = array(
+          '#type' => 'textarea',
+          '#default_value' => $failed_emails,
+          '#rows' => 2,
+          '#required' => TRUE,
+        );
+      }
+      else {
+        $form['invite_form']['email'] = array(
+          '#type' => 'textfield',
+          '#default_value' => '',
+          '#maxlength' => 64,
+          '#required' => TRUE,
+        );
+      }
+      if ($failed_emails) {
+        $form['invite_form']['email']['#attributes']['class'] = 'error';
+      }
+      $form['invite_form']['email']['#title'] = format_plural($maximum_multiple, 'Email', 'Email(s)');
+      $form['invite_form']['email']['#description'] = format_plural($maximum_multiple, 'Type the email of the person you would like to invite.', 'Type the email address(es) of the person(s) you would like to invite.');
+
+      $form['invite_form']['message'] = array(
+        '#type' => 'textarea',
+        '#title' => t('Your message'),
+        '#required' => FALSE,
+        '#description' => format_plural($maximum_multiple, 'This message will be added to the mail sent to the person you are inviting.', 'This message will be added to the mail sent to the person(s) you are inviting.'),
+        '#disabled' => $disabled,
+      );        
+      $form['invite_form']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Submit'),
+        '#disabled' => $disabled,
+      );
+      break;
   }
 
   return $form;
@@ -538,7 +620,7 @@ function _invite_get_emails($string) {
  * Filters out emails that are already registered or have been invited before.
  * Checks the invite limit of the user and the max. number of invites per turn.
  */
-function _invite_form_validate($form_id, &$edit) {
+function invite_form_validate($form_id, &$edit) {
   global $user;
 
   $emails = _invite_get_emails($edit['email']);
@@ -587,9 +669,10 @@ function _invite_form_validate($form_id, &$edit) {
  *
  * Sends out invitation emails.
  */
-function _invite_form_submit($form_id, $edit) {
+function invite_form_submit($form_id, $edit) {
   global $user;
 
+  $failed_emails = array();
   $count_failed = $count_success = 0;
 
   if (isset($_SESSION['invite_failed_emails'])) {
@@ -614,19 +697,21 @@ function _invite_form_submit($form_id, $edit) {
       }
       else {
         $failed_emails[] = $email;
-        $count_failed++;
       }
     }
   }
 
+  if ($failed_emails) {
+    $_SESSION['invite_failed_emails'] = serialize($failed_emails);
+  }
+
   if ($count_success) {
-    $success = format_plural($count_success, '@count invite has been successfully sent.', '@count invites have been successfully sent.');
-    drupal_set_message($success);
+    $message = format_plural($count_success, 'Your invite has been successfully sent.', '@count invites have been successfully sent.');
+    drupal_set_message($message);
   }
   if ($count_failed) {
-    $_SESSION['invite_failed_emails'] = serialize($failed_emails);
-    $error = format_plural($count_failed, '@count entered email is invalid. Please correct it.', '@count entered emails are invalid. Please correct them.');
-    drupal_set_message($error, 'error');
+    $message = format_plural($count_failed, 'The entered email is invalid. Please correct it.', '@count entered emails are invalid. Please correct them.');
+    drupal_set_message($message, 'error');
   }
 }
 
