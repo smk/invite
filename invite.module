@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.42 2007-04-20 02:29:57 smk Exp $
+// $Id: invite.module,v 1.9.2.43 2007-06-11 18:12:55 smk Exp $
 /** 
  * @file 
  * The invite.module provides a GMail-style 'Invite a friend' feature. It
@@ -737,40 +737,47 @@ function _invite_validate_emails($sql, &$emails) {
 }
 
 /**
- * Escalates an invited user's role(s), based on the role of the inviter.
+ * Escalates an invited user's role(s), based on the role(s) of the inviter.
  *
  * @param $invitee
  *   A user object.
  */
 function _invite_role_escalate($invitee) {
-  // Try to load the inviting user and add target role(s) based on configured
-  // mapping
+  // Default target role
+  $roles = array('default');
+
+  // Add roles of inviter
   $inviter_uid = db_result(db_query("SELECT uid FROM {invite} WHERE mid = %d", $invitee->uid));
-  if ($inviter = user_load(array('uid' => $inviter_uid))) {
-    $targets = array();
-    foreach ($inviter->roles as $role) {
-      $role_no_space = str_replace(' ', '_', $role);
-      if (($target = variable_get('invite_target_role_'. $role_no_space, DRUPAL_AUTHENTICATED_RID)) != DRUPAL_AUTHENTICATED_RID) {
-        $targets[$target] = $target;
-      }
+  if ($inviter_uid && $inviter = user_load(array('uid' => $inviter_uid))) {
+    $roles = array_merge($roles, $inviter->roles);
+  }
+
+  // Map to configured target roles
+  $targets = array();
+  foreach ($roles as $role) {
+    $role_no_space = str_replace(' ', '_', $role);
+    $target = variable_get('invite_target_role_'. $role_no_space, DRUPAL_AUTHENTICATED_RID);
+    if ($target != DRUPAL_AUTHENTICATED_RID) {
+      $targets[$target] = $target;
     }
   }
 
-  // Add default target role
-  if (($target_default = variable_get('invite_target_role_default', DRUPAL_AUTHENTICATED_RID)) != DRUPAL_AUTHENTICATED_RID) {
-    $targets[$target_default] = $target_default;
-  }
+  // Notify other modules of changed user
+  $edit = array('roles' => $targets);
+  user_module_invoke('update', $edit, $invitee);
 
-  // Set new role(s)
+  // Save new user role(s)
   foreach ($targets as $target) {
-    db_lock_table('users_roles');
     db_query("DELETE FROM {users_roles} WHERE uid = %d AND rid = %d", $invitee->uid, $target);
     db_query("INSERT INTO {users_roles} (uid, rid) VALUES (%d, %d)", $invitee->uid, $target);
-    db_unlock_tables();
   }
   
   // Notify other modules of role escalation
-  $args = array('invitee' => $invitee, 'inviter' => $inviter, 'roles' => $targets);
+  $args = array(
+    'invitee' => $invitee,
+    'inviter' => $inviter,
+    'roles' => $targets
+  );
   module_invoke_all('invite', 'escalate', $args);
 }
 

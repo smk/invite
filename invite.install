@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.2.2.12 2007-04-20 02:29:57 smk Exp $
+// $Id: invite.install,v 1.2.2.13 2007-06-11 18:12:55 smk Exp $
 
 /**
  * Install the initial schema.
@@ -45,7 +45,7 @@ function invite_install() {
   }
 
   if ($result1 && result2) {
-    drupal_set_message(t('The database schema for the invite module has been successfully cerated.'));
+    drupal_set_message(t('The database schema for the invite module has been successfully created.'));
   }
   else {
     drupal_set_message(t('Problems occurred while creating the database schema for the invite module.'));
