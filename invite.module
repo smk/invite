@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.44 2007-06-11 18:09:48 smk Exp $
+// $Id: invite.module,v 1.10.2.45 2007-07-05 14:11:28 smk Exp $
 /** 
  * @file 
  * The invite.module provides a GMail-style 'Invite a friend' feature. It
@@ -489,7 +489,7 @@ function invite_form($op) {
       );
       $description = '';
       if ($maximum_invites > 0) {
-        $description = format_plural($invites_left, '@count invite left', '@count invites left');
+        $description = format_plural($invites_left, '1 invite left', '@count invites left');
         $form['remaining_invites'] = array(
           '#type' => 'value',
           '#value' => $invites_left,
@@ -526,7 +526,7 @@ function invite_form($op) {
           $disabled = TRUE;
         }
         else {
-          $markup = format_plural($invites_left, 'You have one invite left.', 'You have @count invites left.');
+          $markup = format_plural($invites_left, 'You have 1 invite left.', 'You have @count invites left.');
         }
         $form['invite_form']['markup_remaining_invites'] = array(
           '#type' => 'markup',
@@ -648,14 +648,14 @@ function invite_form_validate($form_id, &$edit) {
   
     // Check invite limit, fail to let the user choose which ones to send
     if (isset($edit['remaining_invites']) && count($emails) > $edit['remaining_invites']) {
-      form_set_error('email', format_plural($edit['remaining_invites'], 'You have only one invitate left.', 'You have only @count invitates left.'));
+      form_set_error('email', format_plural($edit['remaining_invites'], 'You have only 1 invite left.', 'You have only @count invites left.'));
       return;
     }
   
     // Check limit per turn
     $maximum_per_turn = _invite_max_invites_per_turn();
     if ($maximum_per_turn > 0 && count($emails) > $maximum_per_turn) {
-      form_set_error('email', format_plural($maximum_per_turn, 'You can send only one invitation per turn.', 'You cannot send more than @count invitations per turn.'));
+      form_set_error('email', format_plural($maximum_per_turn, 'You cannot send more than one invitation per turn.', 'You cannot send more than @count invitations per turn.'));
       return;
     }
   
