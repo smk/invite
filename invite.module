@@ -1,13 +1,23 @@
 <?php
-// $Id: invite.module,v 1.10.2.45 2007-07-05 14:11:28 smk Exp $
+// $Id: invite.module,v 1.10.2.46 2007-07-20 22:33:31 smk Exp $
+
 /** 
  * @file 
  * The invite.module provides a GMail-style 'Invite a friend' feature. It
  * allows your users to send and track invitations to join your site.
  */ 
 
-define('INVITE_MAX_INVITES',  0);
-define('INVITE_MAX_PER_TURN', 1);
+/**
+ * @name Invite limits
+ * @{
+ * Provide defaults for certain limits.
+ */
+define('INVITE_UNLIMITED_INVITES', 0);
+define('INVITE_MAX_INVITES',       INVITE_UNLIMITED_INVITES);
+define('INVITE_MAX_PER_TURN',      1);
+/**
+ * @}
+ */
 
 /** 
  * Implementation of hook_help(). 
@@ -33,8 +43,11 @@ function invite_perm() {
  * Menu callback; renders invite settings form.
  */
 function _invite_settings() {
-  $target_roles = $roles = user_roles();
-  unset($target_roles[DRUPAL_ANONYMOUS_RID]);
+  $roles = user_roles(0, 'send invitations');
+  if (count($roles) == 0) {
+    drupal_set_message(t('Please enable the <em>send invitations</em> permission for at least one role. This can be done at !url.', array('!url' => l('Access control settings', 'admin/user/access'))));
+  }
+  $target_roles = user_roles(1);
 
   $form['user_settings'] = array(
     '#type' => 'fieldset',
@@ -99,8 +112,8 @@ function _invite_settings() {
       '#type' => 'select',
       '#title' => t('Limit for %role', array('%role' => $role)),
       '#default_value' => variable_get('invite_maxnum_'. $role_no_space, INVITE_MAX_INVITES),
-      '#options' => array(5 => 5, 10 => 10, 20 => 20, 50 => 50, 100 => 100, 500 => 500, 1000 => 1000, 0 => t('unlimited')),
-      '#description' => t('Allows to limit the total number of invitations a %role can send.', array('%role' => $role)),
+      '#options' => array(5 => 5, 10 => 10, 20 => 20, 50 => 50, 100 => 100, 500 => 500, 1000 => 1000, INVITE_UNLIMITED_INVITES => t('unlimited')),
+      '#description' => t('Allows to limit the total number of invitations %role can send.', array('%role' => $role)),
       '#multiple' => FALSE,
       '#required' => TRUE,
     );
@@ -121,7 +134,7 @@ function _invite_settings() {
       '#type' => 'select',
       '#title' => t('Limit per turn for %role', array('%role' => $role)),
       '#default_value' => variable_get('invite_maxmultiple_'. $role_no_space, INVITE_MAX_PER_TURN),
-      '#options' => array(1 => '1 ('. t('disabled') .')', 5 => 5, 10 => 10, 100 => 100, 0 => t('unlimited')),
+      '#options' => array(1 => '1 ('. t('disabled') .')', 5 => 5, 10 => 10, 100 => 100, INVITE_UNLIMITED_INVITES => t('unlimited')),
       '#description' => t('Allows to limit the maximum number of invitations a %role can send per turn.', array('%role' => $role)),
       '#multiple' => FALSE,
       '#required' => TRUE,
@@ -468,14 +481,14 @@ function invite_form($op) {
 
   $maximum_invites = _invite_max_invites_by_role();
 
-  if ($maximum_invites > 0) {
+  if ($maximum_invites != INVITE_UNLIMITED_INVITES) {
     $invites_sent = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d", $user->uid));
     $invites_left = max($maximum_invites - $invites_sent, 0);
   }
 
   switch ($op) {
     case 'block':
-      if ($maximum_invites > 0 && $invites_left == 0) {
+      if ($maximum_invites != INVITE_UNLIMITED_INVITES && $invites_left == 0) {
         // hide the block
         $form['#access'] = FALSE;
         break;
@@ -488,7 +501,7 @@ function invite_form($op) {
         '#value' => t('Recommend @site-name to:', array('@site-name' => variable_get('site_name', t('Drupal')))),
       );
       $description = '';
-      if ($maximum_invites > 0) {
+      if ($maximum_invites != INVITE_UNLIMITED_INVITES) {
         $description = format_plural($invites_left, '1 invite left', '@count invites left');
         $form['remaining_invites'] = array(
           '#type' => 'value',
@@ -520,7 +533,7 @@ function invite_form($op) {
         '#title' => t('Invite a friend'),
       );
       $disabled = FALSE;
-      if ($maximum_invites > 0) {
+      if ($maximum_invites != INVITE_UNLIMITED_INVITES) {
         if ($invites_left == 0) {
           $markup = t('Maximum number (@max) of invitations reached.', array('@max' => $maximum_invites));
           $disabled = TRUE;
@@ -537,38 +550,34 @@ function invite_form($op) {
           '#value' => $invites_left,
         );
       }
-      $maximum_multiple = _invite_max_invites_per_turn();
+      $maximum_per_turn = _invite_max_invites_per_turn();
       if (isset($_SESSION['invite_failed_emails'])) {
         $failed_emails = implode("\n", (array)unserialize($_SESSION['invite_failed_emails']));
         unset($_SESSION['invite_failed_emails']);
       }
-      if ($maximum_multiple != 1) {
-        $form['invite_form']['email'] = array(
-          '#type' => 'textarea',
-          '#default_value' => $failed_emails,
-          '#rows' => 2,
-          '#required' => TRUE,
-        );
+      $form['invite_form']['email'] = array(
+        '#default_value' => $failed_emails,
+        '#required' => TRUE,
+      );
+      if ($maximum_per_turn != 1) {
+        $form['invite_form']['email']['#type'] = 'textarea';
+        $form['invite_form']['email']['#rows'] = 2;
       }
       else {
-        $form['invite_form']['email'] = array(
-          '#type' => 'textfield',
-          '#default_value' => '',
-          '#maxlength' => 64,
-          '#required' => TRUE,
-        );
+        $form['invite_form']['email']['#type'] = 'textfield';
+        $form['invite_form']['email']['#maxlength'] = 64;
       }
       if ($failed_emails) {
         $form['invite_form']['email']['#attributes']['class'] = 'error';
       }
-      $form['invite_form']['email']['#title'] = format_plural($maximum_multiple, 'Email', 'Email(s)');
-      $form['invite_form']['email']['#description'] = format_plural($maximum_multiple, 'Type the email of the person you would like to invite.', 'Type the email address(es) of the person(s) you would like to invite.');
+      $form['invite_form']['email']['#title'] = format_plural($maximum_per_turn, 'Email', 'Email(s)');
+      $form['invite_form']['email']['#description'] = format_plural($maximum_per_turn, 'Type the email of the person you would like to invite.', 'Type the email address(es) of the person(s) you would like to invite.');
 
       $form['invite_form']['message'] = array(
         '#type' => 'textarea',
         '#title' => t('Your message'),
         '#required' => FALSE,
-        '#description' => format_plural($maximum_multiple, 'This message will be added to the mail sent to the person you are inviting.', 'This message will be added to the mail sent to the person(s) you are inviting.'),
+        '#description' => format_plural($maximum_per_turn, 'This message will be added to the mail sent to the person you are inviting.', 'This message will be added to the mail sent to the person(s) you are inviting.'),
         '#disabled' => $disabled,
       );        
       $form['invite_form']['submit'] = array(
@@ -602,7 +611,7 @@ function _invite_get_emails($string) {
     if ($email) {
       if (valid_email_address($email)) {
         $valid_emails[] = $email;
-    	}
+      }
       else {
         $failed_emails[] = $email;
       }
@@ -654,7 +663,7 @@ function invite_form_validate($form_id, &$edit) {
   
     // Check limit per turn
     $maximum_per_turn = _invite_max_invites_per_turn();
-    if ($maximum_per_turn > 0 && count($emails) > $maximum_per_turn) {
+    if ($maximum_per_turn != INVITE_UNLIMITED_INVITES && count($emails) > $maximum_per_turn) {
       form_set_error('email', format_plural($maximum_per_turn, 'You cannot send more than one invitation per turn.', 'You cannot send more than @count invitations per turn.'));
       return;
     }
@@ -799,19 +808,20 @@ function _invite_get_max_by_role($var, $default, $uid = NULL) {
   $result = 0;
   $account = (is_null($uid)) ? $user : user_load(array('uid' => $uid));
 
-  foreach (user_roles() as $role) {
+  foreach (user_roles(0, 'send invitations') as $role) {
     $role_no_space = str_replace(' ', '_', $role);
     if (in_array($role, $account->roles)) {
       $variable = 'invite_'. $var .'_'. $role_no_space;
       $role_max = variable_get($variable, $default);
-      if ($role_max == 0) {
-        return 0;
+      if ($role_max == INVITE_UNLIMITED_INVITES) {
+        return INVITE_UNLIMITED_INVITES;
       }
       if ($role_max > $result) {
         $result = $role_max;
       }
     }
   }
+
   return $result;
 }
 
@@ -853,7 +863,7 @@ function _invite_role_escalate($invitee) {
   // Add roles of inviter
   $inviter_uid = db_result(db_query("SELECT uid FROM {invite} WHERE mid = %d", $invitee->uid));
   if ($inviter_uid && $inviter = user_load(array('uid' => $inviter_uid))) {
-    $roles = array_merge($roles, $inviter->roles);
+    $roles = array_merge($roles, array_intersect($inviter->roles, user_roles(0, 'send invitations')));
   }
 
   // Map to configured target roles
