@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.3.2.2 2006-09-09 13:06:48 nickw Exp $ */
+/* $Id: README.txt,v 1.3.2.3 2007-07-21 00:13:31 smk Exp $ */
 
 INTRO
 -----
@@ -59,19 +59,9 @@ It occured to me pretty early on that you could use this in conjunction with aut
 CONTACT
 -------
 
-  Suggestions are welcome.   I am a member of a discussion list for discussion
-of this module and related personal blogging features.
-
-    http://softwaremanagers.org/drupal-personal-blogs
-
-
 Project page: http://drupal.org/project/invite
 
-I also maintain a page on my site for this module
-http://www.blogtown.ca/node/718
-
-
-Module Author:
+Original Author:
 David Hill a.k.a. Tatonca  <tatonca_@hotmail.com>
 
 
