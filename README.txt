@@ -1,65 +1,62 @@
-/* $Id: README.txt,v 1.4.2.2 2007-07-21 00:13:42 smk Exp $ */
+/* $Id: README.txt,v 1.4.2.3 2007-07-22 20:52:07 smk Exp $ */
 
-INTRO
------
+SYNOPSIS
+--------
 
-Blogs are more fun when you have an audience. People who share common interests, who can commiserate with you and celebrate with you. Folks that leave comments, and have blogs of thier own for you to read.
+Blogs are more fun when you have an audience. People who share common interests, who can commiserate with you and celebrate with you. Folks that leave comments, and have blogs of their own for you to read.
 
-The invite.module provides an 'Invite a friend' feature. It allows your users to send and track invitations to join your site, and notifies them when thier friends have joined so they can add them to thier buddylist. A random code is generated for the invitation, along with a link to the registration form.  The new user can then input the code when submiting thier registration.  Registration successfully completed in this way will automatically be set active, and escalated to a new role as designated by the administrator.
+The invite.module provides an 'Invite a friend' feature. It allows your users to send and track invitations to join your site, and notifies them when their friends have joined so they can add them to their buddylist. Registrations successfully completed in this way will automatically be set active, and can be escalated to a new role as designated by the administrator.
 
-This module is meant to be used when user registration settings have been set to: 
+This module can also be used to allow new user registrations "by invitation only", which allows you to maintain a semi-private site.
 
-   'Visitors can create accounts but administrator approval is required.' 
+REQUIREMENTS
+------------
+
+  - Token module: http://drupal.org/project/token
 
 GENERAL USE
 -----------
 
 To invite a friend :
 
-   1. Go to account information by clicking on My Account in the Navigation menu.
-   2. In your Buddies section, click on the 'Invite a Friend' link.
-   3. At the bottom of the Invite page, input the email address of the person you would like to invite.
-   4. Press Submit
-   5. This will send an invitation which you can now track from your invite page.
+  1. Click on the 'Invite your friends and colleages' link.
+  3. At the bottom of the Invite page, input the e-mail address(es) of the
+     person(s) you would like to invite, and add a personal message.
+  4. Press Submit
+  5. This will send an invitation which you can now track from your invite
+     page.
 
-Invitations show up with one of three statuses : Joined, Pending and Expired.
+Invitations show up with one of three statuses : Pending, Joined and Expired.
 
-Joined : Shows that the person you have invited has used your invitation to join blogtown. Click on the email address to take you to thier profile page where you can add them to your buddylist
+- Pending: The invitation has been sent, but your friend has still not accepted
+  the invitation. You may send a reminder, by clicking the 'Remind Me' link.
 
-Pending : The invitation has been sent, but your friend has still not accepted the invitation. You may send a reminder, by clicking the 'Remind Me' link.
+- Joined: Shows that the person you have invited has used your invitation to
+  join your site. Click on the e-mail address to take you to their profile page
+  where you can add them to your buddylist.
 
-Expired: The invitation has not been used to register on blogtown within the expiration period (30 days)
+- Expired: The invitation has not been used to register within the expiration
+  period (default: 30 days)
 
-At any time, you may delete either 'pending' or 'expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.
+At any time, you may delete either 'pending' or 'expired' invitations. 'Joined' invitations cannot be deleted and count permanently toward your invitation allotment (this behavior can be altered by changing the configuration settings below).
 
-SETTINGS
---------
+INVITE API
+----------
 
-Settings:  Target Role: the role invited members will be added to
+Several third-party modules are able to react on invite's events:
 
-           Include Features: if the feature module is installed, this will include
-                              the feature.module output in the email, stripped of HTML
+  - Buddylist
+    When an invitee registers he/she will be automagically added to each others
+    buddy list.
 
-           Invitation Expiry: time, in days, for how long an invitation can stay valid
-
-           Number of invitations per user: how many invites total can each user send
-
-           Sample Email : not really a feature, this shows an example of what the email 
-                           will look like
-
-MISC
-----
-
-The module makes use of the features.module if available, and will allow you to add your features output to the email.  
-
-I created the module with buddylist in mind, however is not dependant on buddylist in anyway.  The link will display in the same section as buddylist in the users account view, or alone in the same section if buddylist is not installed.
-
-It occured to me pretty early on that you could use this in conjunction with automember.module, to allow the users that acheive the higher role level when using that module, the ability to invite new people to the site, and new invitees to be relagated to a lower role, making for a kinda of self perpetuating ecosystem... 
+  - Userpoints
+    Credit some points for sending registrations and/or when an invited user
+    registers.
 
 TWEAKS
 ------
 
-When the site is set to allow new accounts by invitation only, it would be nice to remove the Create a new account tab that shows up if a user clicks on the Request a new password link.
+When the site is set to allow new accounts by invitation only, it would be nice to remove the 'Create new account' tab that shows up if a user clicks on the 'Request a new password' link.
 
 To solve this issue, you could add the following lines to your template.php:
 
@@ -68,14 +65,16 @@ function phptemplate_menu_item_link($item, $link_item) {
   return l($item['title'], $link_item['path'], !empty($item['description']) ? array('title' => $item['description']) : array(), isset($item['query']) ? $item['query'] : NULL);
 }
 
-This prevents the "Create new account" menu item from being rendered.
+This prevents the 'Create new account' menu item from being rendered.
 
 CONTACT
 -------
 
-Project page: http://drupal.org/project/invite
+For bug reports, feature suggestions and latest developments visit the project page: http://drupal.org/project/invite
+
+Project maintainer:
+Stefan Kudwien (smk) <smk@unleashedmind.com>
 
 Original Author:
 David Hill a.k.a. Tatonca  <tatonca_@hotmail.com>
-
 
