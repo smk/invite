@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.3.2.11 2007-07-20 23:46:20 smk Exp $
+// $Id: invite.install,v 1.3.2.12 2007-07-22 19:17:05 smk Exp $
 
 /**
  * Install the initial schema.
@@ -115,12 +115,12 @@ function invite_update_2() {
 function invite_update_3() {
   // Collect orphaned invites
   $result = db_query("SELECT DISTINCT i.uid FROM {invite} i LEFT JOIN {users} u ON i.uid = u.uid WHERE u.uid IS NULL");
-  $num = db_num_rows($result);
+  $count = db_num_rows($result);
   while ($referrer = db_fetch_object($result)) {
     db_query("DELETE FROM {invite} WHERE uid = %d", $referrer->uid);
   }
-  if ($num) {
-    drupal_set_message(t('@num orphaned invites have been deleted.'), array('@num' => $num));
+  if ($count) {
+    drupal_set_message(t('@count orphaned invites have been deleted.', array('@count' => $count)));
   }
   return array();
 }
@@ -160,3 +160,22 @@ function invite_update_5() {
   }
   return $ret;
 }
+
+/**
+ * Clean up invitations of deleted users.
+ */
+function invite_update_6() {
+  if (variable_get('invite_allow_join_delete', 0)) {
+    // Collect orphaned invites
+    $result = db_query("SELECT DISTINCT i.mid FROM {invite} i LEFT JOIN {users} u ON i.mid = u.uid WHERE u.uid IS NULL");
+    $count = db_num_rows($result);
+    while ($invitee = db_fetch_object($result)) {
+      db_query("DELETE FROM {invite} WHERE mid = %d", $invitee->mid);
+    }
+    if ($count) {
+      drupal_set_message(t('@count orphaned invites have been deleted.', array('@count' => $count)));
+    }
+  }
+  return array();
+}
+
