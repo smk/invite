@@ -1,5 +1,6 @@
 <?php
-// $Id: invite.module,v 1.9.2.43 2007-06-11 18:12:55 smk Exp $
+// $Id: invite.module,v 1.9.2.44 2007-07-22 07:22:49 smk Exp $
+
 /** 
  * @file 
  * The invite.module provides a GMail-style 'Invite a friend' feature. It
@@ -854,7 +855,7 @@ function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient
   $homepage = $base_url;
   $inviter = $user_name;
 
-  $body = t($template, array('%site' => check_plain($site), '%join_link' => $join_link, '%homepage' => check_plain($homepage), '%message' => check_plain($message), '%inviter' => check_plain($inviter)));
+  $body = t($template, array('%site' => check_plain($site), '%join_link' => $join_link, '%homepage' => check_plain($homepage), '%message' => $message, '%inviter' => check_plain($inviter)));
 
   switch ($op){
     case "mail":
