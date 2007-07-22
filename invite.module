@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.47 2007-07-22 19:17:05 smk Exp $
+// $Id: invite.module,v 1.10.2.48 2007-07-22 19:36:21 smk Exp $
 
 /** 
  * @file 
@@ -43,6 +43,8 @@ function invite_perm() {
  * Menu callback; renders invite settings form.
  */
 function _invite_settings() {
+  include(drupal_get_path('module', 'invite') .'/invite_token.inc');
+
   $roles = user_roles(0, 'send invitations');
   if (count($roles) == 0) {
     drupal_set_message(t('Please enable the <em>send invitations</em> permission for at least one role. This can be done at !url.', array('!url' => l('Access control settings', 'admin/user/access'))));
@@ -155,7 +157,7 @@ function _invite_settings() {
     '#default_value' => variable_get('invite_subject', t("You've been invited")),
     '#size' => 20,
     '#maxlength' => 64,
-    '#description' => t('Type the subject of the invitation email.'),
+    '#description' => t('Type the subject of the invitation email. Use the syntax [token] if you want to insert a replacement pattern.'),
     '#required' => TRUE,
   );
   
@@ -164,7 +166,16 @@ function _invite_settings() {
     '#title' => t('Mail template'),
     '#default_value' => _invite_get_mail_template(),
     '#required' => TRUE,
-    '#description' => t('Use the following placeholders: @site, @homepage, @join_link, @message, @inviter.'),
+    '#description' => t('Use the syntax [token] if you want to insert a replacement pattern.'),
+  );
+  $form['email_settings']['token_help'] = array(
+    '#title' => t('Replacement patterns'),
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+  );
+  $form['email_settings']['token_help']['help'] = array(
+    '#value' => theme('invite_token_help', array('user', 'profile', 'invite')),
   );
 
   $form['email_settings']['invite_use_users_email'] = array(
@@ -696,14 +707,17 @@ function invite_form_submit($form_id, $edit) {
   
   if (is_array($edit['validated_emails'])) {
     foreach ($edit['validated_emails'] as $email) {
-      // Generate code for each mail
-      $code = _invite_create_regcode();
-      $message = trim($edit['message']);
-  
+      // Create the invite object
+      $invite          = new stdClass();
+      $invite->email   = $email;
+      $invite->inviter = $user->name;
+      $invite->message = trim($edit['message']);
+      $invite->code    = _invite_create_regcode();
+
       // Send email
-      if (_invite_send_invite('mail', $user->name, $email, $code, $message)) {
+      if (_invite_send_invite($invite)) {
         db_query("INSERT INTO {invite} (email, reg_code, uid, expiry, message) VALUES ('%s', '%s', %d, %d, '%s')", $email, $code, $user->uid, time()+(variable_get('invite_expiry', 30)*60*60*24), $message);
-        
+
         // Notify other modules
         $args = array('inviter' => $user);
         module_invoke_all('invite', 'invite', $args);
@@ -726,6 +740,36 @@ function invite_form_submit($form_id, $edit) {
   if ($count_failed) {
     $message = format_plural($count_failed, 'The entered email is invalid. Please correct it.', '@count entered emails are invalid. Please correct them.');
     drupal_set_message($message, 'error');
+  }
+}
+
+/**
+ * Implementation of hook_token_values().
+ */
+function invite_token_values($type = 'all', $object = NULL) {
+  $values = array();
+  if ($type == 'invite' && is_object($object)) {
+    // NOTE: Invite is currently only capable of sending plain text emails.
+    // If you intend to change that, you need to properly escape all user input
+    // by adding check_plain() around below values!
+    $values['inviter']        = $object->inviter;
+    $values['invite-mail']    = $object->email;
+    $values['invite-message'] = $object->message;
+    $values['join-link']      = url('user/register/'. $object->code, NULL, NULL, TRUE);
+  }
+  return $values;
+}
+
+/**
+ * Implementation of hook_token_list().
+ */
+function invite_token_list($type = 'all') {
+  if ($type == 'invite' || $type == 'all') {
+    $tokens['invite']['inviter']        = t('The name of the inviting user. <em>Note:</em> This is the same as [user].');
+    $tokens['invite']['invite-mail']    = t('The email address of the invited user.');
+    $tokens['invite']['invite-message'] = t('The message text of the inviting user for the invitee.');
+    $tokens['invite']['join-link']      = t('The link to the registration page of the site.');
+    return $tokens;
   }
 }
 
@@ -945,10 +989,10 @@ function _invite_create_regcode(){
 /**
  * Prepares and sends an invite to the specified email address.
  */
-function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient-email]", $code = "registration-code", $message = '[your message]'){
-  global $base_url, $user;
+function _invite_send_invite($invite){
+  global $user;
 
-  // this next bit sets From and Reply-To headers
+  // Set From and Reply-To headers
   if(!$from = variable_get('invite_manual_from', NULL)) {
     if (variable_get('invite_use_users_email', t('inviter'))) {
       $from = $user->mail;
@@ -965,28 +1009,26 @@ function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient
       $replyto = variable_get('site_mail', ini_get('sendmail_from'));
     }
   }
-  $subject = variable_get('invite_subject',t("You've been invited"));
+  $headers = array('Reply-To' => $replyto);
 
-  $template = _invite_get_mail_template();
-  $site = variable_get('site_name', t('Drupal'));
-  $join_link = url('user/register/'. $code, NULL, NULL, TRUE);
-  $homepage = $base_url;
-  $inviter = $user_name;
+  $subject = variable_get('invite_subject', t("You've been invited"));
+  $body = _invite_get_mail_template();
 
-  $body = t($template, array('@site' => $site, '@join_link' => $join_link, '@homepage' => $homepage, '@message' => $message, '@inviter' => $inviter));
+  // Perform token replacement
+  $types = array('user' => $user, 'profile' => $user, 'invite' => $invite);
+  $subject = token_replace_multiple($subject, $types);
+  $body = token_replace_multiple($body, $types);
 
-  switch ($op){
-    case "mail":
-      if (!($success = drupal_mail('invite-mail', $email, $subject, wordwrap($body, 72), $from))) {
-        static $error_shown = FALSE;
-        if (!$error_shown) {
-          drupal_set_message(t('Problems occurred sending the invitation(s). Please contact the site administrator.'), 'error');
-          $error_shown = TRUE;
-        }
-        watchdog('invite', t("Failed sending invitation. To: @email From: @from", array('@email' => $email, '@from' => $from)));
-      }
-      return $success;
+  if (!($success = drupal_mail('invite-mail', $invite->email, $subject, wordwrap($body, 72), $from, $headers))) {
+    static $error_shown = FALSE;
+    if (!$error_shown) {
+      drupal_set_message(t('Problems occurred sending the invitation(s). Please contact the site administrator.'), 'error');
+      $error_shown = TRUE;
+    }
+    watchdog('invite', t("Failed sending invitation. To: @email From: @from", array('@email' => $email, '@from' => $from)));
   }
+
+  return $success;
 }
 
 /**
@@ -995,15 +1037,15 @@ function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient
  * @return The localized email body.
  */
 function _invite_get_mail_template() {
-  $template = t("Your friend, @inviter has invited you to join @site [@homepage].
+  $template = t("Your friend, [inviter] has invited you to join [site-name] at [site-url].
 
-To become a member of @site, click the link below or paste it into the address bar of your browser. 
+To become a member of [site-name], click the link below or paste it into the address bar of your browser. 
 
-@join_link
+[join-link]
 
 ----------
 
-@message");
+[invite-message]");
 
   return variable_get('invite_default_mail_template', $template);
 }
