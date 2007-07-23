@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.51 2007-07-23 20:27:00 smk Exp $
+// $Id: invite.module,v 1.10.2.52 2007-07-23 20:37:16 smk Exp $
 
 /** 
  * @file 
@@ -527,16 +527,23 @@ function invite_form($op = 'page') {
   if ($maximum_invites != INVITE_UNLIMITED_INVITES) {
     $invites_sent = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d", $user->uid));
     $invites_left = max($maximum_invites - $invites_sent, 0);
+
+    if ($invites_left == 0) {
+      if ($op == 'block') {
+        // Hide the block
+        $form['#access'] = FALSE;
+        return $form;
+      }
+      else {
+        // Redirect to invites list
+        drupal_set_message(t('Sorry, you reached the maximum number (@max) of invitations.', array('@max' => $maximum_invites)), 'error');
+        drupal_goto('invite/list');
+      }
+    }
   }
 
   switch ($op) {
     case 'block':
-      if ($maximum_invites != INVITE_UNLIMITED_INVITES && $invites_left == 0) {
-        // hide the block
-        $form['#access'] = FALSE;
-        break;
-      }
-
       $form['#action'] = url('invite');
 
       $form['invite'] = array(
@@ -570,18 +577,9 @@ function invite_form($op = 'page') {
 
     case 'page':
     default:
-      $disabled = FALSE;
-
       if ($maximum_invites != INVITE_UNLIMITED_INVITES) {
-        if ($invites_left == 0) {
-          $markup = t('Maximum number (@max) of invitations reached.', array('@max' => $maximum_invites));
-          $disabled = TRUE;
-        }
-        else {
-          $markup = format_plural($invites_left, 'You have 1 invite left.', 'You have @count invites left.');
-        }
         $form['markup_remaining_invites'] = array(
-          '#value' => $markup,
+          '#value' => format_plural($invites_left, 'You have 1 invite left.', 'You have @count invites left.'),
         );
         $form['remaining_invites'] = array(
           '#type' => 'value',
@@ -613,7 +611,6 @@ function invite_form($op = 'page') {
         '#default_value' => $failed_emails,
         '#description' => format_plural($maximum_per_turn, 'Type the email address of the person you would like to invite.', 'Type the email address(es) of the person(s) you would like to invite. Addresses should be separated by newlines or commas.'),
         '#required' => TRUE,
-        '#disabled' => $disabled,
       );
       if ($maximum_per_turn != 1) {
         $form['email']['#type'] = 'textarea';
@@ -639,7 +636,6 @@ function invite_form($op = 'page') {
           '#maxlength' => 64,
           '#description' => t('Type the subject of the invitation email.'),
           '#required' => TRUE,
-          '#disabled' => $disabled,
         );
       }
       else {
@@ -657,12 +653,10 @@ function invite_form($op = 'page') {
       $form['message'] = array(
         '#type' => 'textarea',
         '#description' => format_plural($maximum_per_turn, 'This message will be added to the mail sent to the person you are inviting.', 'This message will be added to the mail sent to the person(s) you are inviting.'),
-        '#disabled' => $disabled,
       );        
       $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Submit'),
-        '#disabled' => $disabled,
       );
       break;
   }
