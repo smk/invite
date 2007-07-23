@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.48 2007-07-22 19:36:21 smk Exp $
+// $Id: invite.module,v 1.10.2.49 2007-07-23 09:57:51 smk Exp $
 
 /** 
  * @file 
@@ -205,14 +205,14 @@ function _invite_settings() {
   $form['email_settings']['advanced']['invite_manual_from'] = array(
     '#type' => 'textfield', 
     '#title' => t('Manually override <em>From</em> email address'), 
-    '#default_value' => variable_get('invite_manual_from', variable_get('site_mail', ini_get('sendmail_from'))), 
+    '#default_value' => variable_get('invite_manual_from', ''), 
     '#description' => t('The email address the invitation email is sent from.')
   );
 
   $form['email_settings']['advanced']['invite_manual_reply_to'] = array(
     '#type' => 'textfield', 
     '#title' => t('Manually override <em>Reply-To</em> email address'), 
-    '#default_value' => variable_get('invite_manual_reply_to', variable_get('site_mail', ini_get('sendmail_from'))), 
+    '#default_value' => variable_get('invite_manual_reply_to', ''), 
     '#description' => t('The email address you want recipients to reply to.')
   );
 
@@ -992,24 +992,22 @@ function _invite_create_regcode(){
 function _invite_send_invite($invite){
   global $user;
 
-  // Set From and Reply-To headers
-  if(!$from = variable_get('invite_manual_from', NULL)) {
-    if (variable_get('invite_use_users_email', t('inviter'))) {
-      $from = $user->mail;
-    }
-    else {
-      $from = variable_get('site_mail', ini_get('sendmail_from'));
-    }
+  $headers  = array();
+
+  // Manual settings override custom settings below
+  $from     = variable_get('invite_manual_from', '');
+  $reply_to = variable_get('invite_manual_reply_to', '');
+
+  // Set custom From and Reply-To headers
+  if (!$from && variable_get('invite_use_users_email', 0)) {
+    $from = $user->mail;
   }
-  if(!$replyto = variable_get('invite_manual_reply_to', NULL)) {
-    if (variable_get('invite_use_users_email_replyto', t('inviter'))) {
-      $replyto = $user->mail;
-    }
-    else {
-      $replyto = variable_get('site_mail', ini_get('sendmail_from'));
-    }
+  if (!$reply_to && variable_get('invite_use_users_email_replyto', 0)) {
+    $reply_to = $user->mail;
   }
-  $headers = array('Reply-To' => $replyto);
+  if ($reply_to) {
+    $headers['Reply-To'] = $reply_to;
+  }
 
   $subject = variable_get('invite_subject', t("You've been invited"));
   $body = _invite_get_mail_template();
