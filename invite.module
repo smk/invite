@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.45 2007-07-22 19:18:04 smk Exp $
+// $Id: invite.module,v 1.9.2.46 2007-07-23 09:58:08 smk Exp $
 
 /** 
  * @file 
@@ -182,14 +182,14 @@ function invite_settings() {
   $form['email_settings']['advanced']['invite_manual_from'] = array(
     '#type' => 'textfield', 
     '#title' => t('Manually override <em>From</em> email address'), 
-    '#default_value' => variable_get('invite_manual_from', variable_get('site_mail', ini_get('sendmail_from'))), 
+    '#default_value' => variable_get('invite_manual_from', ''), 
     '#description' => t('The email address the invitation email is sent from.')
   );
 
   $form['email_settings']['advanced']['invite_manual_reply_to'] = array(
     '#type' => 'textfield', 
     '#title' => t('Manually override <em>Reply-To</em> email address'), 
-    '#default_value' => variable_get('invite_manual_reply_to', variable_get('site_mail', ini_get('sendmail_from'))), 
+    '#default_value' => variable_get('invite_manual_reply_to', ''), 
     '#description' => t('The email address you want recipients to reply to.')
   );
 
@@ -832,39 +832,42 @@ function _invite_create_regcode(){
 /**
  * Prepares and sends an invite to the specified email address.
  */
-function _invite_send_invite($op, $user_name = "[username]", $email ="[recipient-email]", $code = "registration-code", $message = '[your message]'){
+function _invite_send_invite($op, $user_name, $email, $code, $message) {
   global $base_url, $user;
 
-  // this next bit sets From and Reply-To headers
-  if(!$from = variable_get('invite_manual_from', NULL)) {
-    if (variable_get('invite_use_users_email', t('inviter'))) {
-      $from = $user->mail;
-    }
-    else {
-      $from = variable_get('site_mail', ini_get('sendmail_from'));
-    }
-  }
-  if(!$replyto = variable_get('invite_manual_reply_to', NULL)) {
-    if (variable_get('invite_use_users_email_replyto', t('inviter'))) {
-      $replyto = $user->mail;
-    }
-    else {
-      $replyto = variable_get('site_mail', ini_get('sendmail_from'));
-    }
-  }
-  $subject = variable_get('invite_subject',t("You've been invited"));
+  $headers  = array();
 
+  // Manual settings override custom settings below
+  $from     = variable_get('invite_manual_from', '');
+  $reply_to = variable_get('invite_manual_reply_to', '');
+
+  // Set custom From and Reply-To headers
+  if (!$from && variable_get('invite_use_users_email', 0)) {
+    $from = $user->mail;
+  }
+  if ($from) {
+    $headers[] = 'From: '. $from;
+  }
+  if (!$reply_to && variable_get('invite_use_users_email_replyto', 0)) {
+    $reply_to = $user->mail;
+  }
+  if ($reply_to) {
+    $headers[] = 'Reply-To: '. $reply_to;
+  }
+  $header = count($headers) > 0 ? implode("\n", $headers) : NULL;
+
+  $subject = variable_get('invite_subject',t("You've been invited"));
   $template = _invite_get_mail_template();
   $site = variable_get('site_name', t('Drupal'));
   $join_link = url('user/register/'. $code, NULL, NULL, TRUE);
   $homepage = $base_url;
   $inviter = $user_name;
 
-  $body = t($template, array('%site' => check_plain($site), '%join_link' => $join_link, '%homepage' => check_plain($homepage), '%message' => $message, '%inviter' => check_plain($inviter)));
+  $body = t($template, array('%site' => $site, '%join_link' => $join_link, '%homepage' => $homepage, '%message' => $message, '%inviter' => $inviter));
 
   switch ($op){
     case "mail":
-      if (!($success = user_mail($email, $subject, wordwrap($body, 72), "From: $from\r\nReply-To: $replyto"))) {
+      if (!($success = user_mail($email, $subject, wordwrap($body, 72), $header))) {
         static $error_shown = FALSE;
         if (!$error_shown) {
           drupal_set_message(t('Problems occurred sending the invitation(s). Please contact the site administrator.'), 'error');
