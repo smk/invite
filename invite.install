@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.3.2.14 2007-07-23 14:53:59 smk Exp $
+// $Id: invite.install,v 1.3.2.15 2007-07-23 20:27:00 smk Exp $
 
 /**
  * Install the initial schema.
@@ -17,7 +17,7 @@ function invite_install() {
           expiry int(11) NOT NULL default '0',
           timestamp int(11) NOT NULL default '0',
           received tinyint(3) unsigned NOT NULL default '0',
-          message text NOT NULL,
+          data text NOT NULL,
           PRIMARY KEY  (email),
           UNIQUE (reg_code),
           KEY (uid)
@@ -35,7 +35,7 @@ function invite_install() {
           expiry INTEGER NOT NULL DEFAULT 0,
           timestamp INTEGER NOT NULL DEFAULT 0,
           received SMALLINT NOT NULL DEFAULT 0,
-          message TEXT NOT NULL DEFAULT '',
+          data TEXT NOT NULL DEFAULT '',
           PRIMARY KEY (email),
           UNIQUE (reg_code)
         );"
@@ -190,6 +190,40 @@ function invite_update_7() {
     );
     drupal_set_message(strtr('Please note that invite now depends on the %token module.', array('%token' => l('token', 'http://drupal.org/project/token', array('target' => '_blank'), NULL, NULL, TRUE))), 'error');
   }
+  return $ret;
+}
+
+/**
+ * Change message to a generic data column and convert existing messages.
+ */
+function invite_update_8() {
+  $ret = array();
+
+  // Add column data first
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {invite} ADD COLUMN data TEXT NOT NULL default ''");
+      break;
+    case 'pgsql':
+      db_add_column($ret, 'invite', 'data', 'TEXT', array('not null' => TRUE, 'default' => "''"));
+      break;
+  }
+
+  // Convert existing messages
+  $result = db_query("SELECT reg_code, message FROM {invite} WHERE message != ''");
+  while ($row = db_fetch_object($result)) {
+    if (substr($row->message, 0, 2) == 'a:') {
+      // Already serialized
+      continue;
+    }
+    $data = array('subject' => NULL, 'message' => $row->message);
+    db_query("UPDATE {invite} SET data = '%s' WHERE reg_code = '%s'", serialize($data), $row->reg_code);
+  }
+
+  // Finally drop column message
+  $ret[] = update_sql("ALTER TABLE {invite} DROP message");
+
   return $ret;
 }
 

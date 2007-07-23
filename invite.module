@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.50 2007-07-23 13:27:04 smk Exp $
+// $Id: invite.module,v 1.10.2.51 2007-07-23 20:27:00 smk Exp $
 
 /** 
  * @file 
@@ -154,13 +154,20 @@ function _invite_settings() {
   $form['email_settings']['invite_subject'] = array(
     '#type' => 'textfield',
     '#title' => t('Subject'),
-    '#default_value' => variable_get('invite_subject', t("You've been invited")),
+    '#default_value' => variable_get('invite_subject', t('[inviter] has sent you an invite!')),
     '#size' => 20,
     '#maxlength' => 64,
-    '#description' => t('Type the subject of the invitation email. Use the syntax [token] if you want to insert a replacement pattern.'),
+    '#description' => t('Type the default subject of the invitation email. Use the syntax [token] if you want to insert a replacement pattern.'),
     '#required' => TRUE,
   );
   
+  $form['email_settings']['invite_subject_editable'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Editable subject'),
+    '#description' => t('Choose whether users should be able to customize the subject.'),
+    '#default_value' => variable_get('invite_subject_editable', FALSE),
+  );
+
   $form['email_settings']['invite_default_mail_template'] = array(
     '#type' => 'textarea',
     '#title' => t('Mail template'),
@@ -582,6 +589,18 @@ function invite_form($op = 'page') {
         );
       }
 
+      if (variable_get('invite_use_users_email', 0)) {
+        $from = check_plain(variable_get('site_name', t('Drupal')) .' <'. $user->mail .'>');
+      }
+      else {
+        $from = check_plain(variable_get('site_name', t('Drupal')) .' <'. variable_get('site_mail', ini_get('sendmail_from')) .'>');
+      }
+      $form['from'] = array(
+        '#type' => 'item',
+        '#title' => t('From'),
+        '#value' => $from,
+      );
+
       $maximum_per_turn = _invite_max_invites_per_turn();
       $failed_emails = '';
 
@@ -609,25 +628,27 @@ function invite_form($op = 'page') {
       }
 
       // Perform token replacement
-      $subject = t(variable_get('invite_subject', t("You've been invited")));
+      $subject = t(variable_get('invite_subject', t('[inviter] has sent you an invite!')));
       $subject = token_replace_multiple($subject, _invite_token_types());
 
-      if (variable_get('invite_use_users_email', 0)) {
-        $from = check_plain(variable_get('site_name', t('Drupal')) .' <'. $user->mail .'>');
+      if (variable_get('invite_subject_editable', FALSE)) {
+        $form['subject'] = array(
+          '#type' => 'textfield',
+          '#title' => t('Subject'),
+          '#default_value' => $subject,
+          '#maxlength' => 64,
+          '#description' => t('Type the subject of the invitation email.'),
+          '#required' => TRUE,
+          '#disabled' => $disabled,
+        );
       }
       else {
-        $from = check_plain(variable_get('site_name', t('Drupal')) .' <'. variable_get('site_mail', ini_get('sendmail_from')) .'>');
+        $form['subject'] = array(
+          '#type' => 'item',
+          '#title' => t('Subject'),
+          '#value' => $subject,
+        );
       }
-      $form['subject'] = array(
-        '#type' => 'item',
-        '#title' => t('Subject'),
-        '#value' => $subject,
-      );
-      $form['from'] = array(
-        '#type' => 'item',
-        '#value' => $from,
-        '#title' => t('From'),
-      );
 
       $form['body'] = array(
         '#type' => 'item',
@@ -781,21 +802,42 @@ function invite_form_submit($form_id, $edit) {
     $count_failed = count($failed_emails);
   }
   
+  $subject = isset($edit['subject']) ? trim($edit['subject']) : NULL;
+  $message = trim($edit['message']);
+
   if (is_array($edit['validated_emails'])) {
     foreach ($edit['validated_emails'] as $email) {
+      // Create invite object
       $invite = _invite_substitutions(array(
         'email'   => $email,
-        'message' => trim($edit['message']),
         'code'    => _invite_create_regcode(),
+        'subject' => $subject,
+        'message' => $message,
       ));
+
+      // Add auxiliary data
+      $data = array(
+        'subject' => NULL,
+        'message' => $message
+      );
+      if (variable_get('invite_subject_editable', FALSE)) {
+        $default_subject = t(variable_get('invite_subject', t('[inviter] has sent you an invite!')));
+        $default_subject = token_replace_multiple($default_subject, _invite_token_types((array)$invite));
+        if ($invite->subject != $default_subject) {
+          $data['subject'] = $invite->subject;
+        }
+      }
+      $invite->data = $data;
 
       // Send email
       if (_invite_send_invite($invite)) {
-        db_query("INSERT INTO {invite} (email, reg_code, uid, expiry, message) VALUES ('%s', '%s', %d, %d, '%s')", $invite->email, $invite->code, $invite->inviter->uid, time()+(variable_get('invite_expiry', 30)*60*60*24), $invite->message);
+        // Save invite
+        invite_save($invite);
 
         // Notify other modules
         $args = array('inviter' => $invite->inviter);
         module_invoke_all('invite', 'invite', $args);
+
         $count_success++;  
       }
       else {
@@ -816,6 +858,17 @@ function invite_form_submit($form_id, $edit) {
     $message = format_plural($count_failed, 'The entered email is invalid. Please correct it.', '@count entered emails are invalid. Please correct them.');
     drupal_set_message($message, 'error');
   }
+}
+
+/**
+ * Save an invite to the database.
+ *
+ * @param $edit
+ *   Associative array of data to store.
+ */
+function invite_save($edit) {
+  $edit = (array)$edit;
+  return db_query("INSERT INTO {invite} (email, reg_code, uid, expiry, data) VALUES ('%s', '%s', %d, %d, '%s')", $edit['email'], $edit['code'], $edit['inviter']->uid, time() + (variable_get('invite_expiry', 30)*60*60*24), serialize($edit['data']));
 }
 
 /**
@@ -876,7 +929,8 @@ function invite_delete($email) {
       watchdog('invite', t('Detected malicious attempt to delete an invitation.'), WATCHDOG_WARNING, l(t('view'), 'user/'. $user->uid));
     }
   }
-  drupal_goto('invite');
+
+  drupal_goto('invite/list');
 }
 
 /**
@@ -1086,21 +1140,23 @@ function _invite_send_invite($invite){
 
   // Using t() for user specified text is evil according to
   // http://groups.drupal.org/node/1827/muahaha
-  $subject = t(variable_get('invite_subject', t("You've been invited")));
+  if (empty($invite->subject)) {
+    $invite->subject = t(variable_get('invite_subject', t('[inviter] has sent you an invite!')));
+  }
   $body = t(_invite_get_mail_template());
 
   // Perform token replacement
   $types = array('user' => $user, 'profile' => $user, 'invite' => $invite);
-  $subject = token_replace_multiple($subject, $types);
+  $subject = token_replace_multiple($invite->subject, $types);
   $body = token_replace_multiple($body, $types);
 
-  if (!($success = drupal_mail('invite-mail', $invite->email, $subject, wordwrap($body, 72), $from, $headers))) {
+  if (!($success = drupal_mail('invite-mail', $invite->email, $invite->subject, wordwrap($body, 72), $from, $headers))) {
     static $error_shown = FALSE;
     if (!$error_shown) {
-      drupal_set_message(t('Problems occurred sending the invitation(s). Please contact the site administrator.'), 'error');
+      drupal_set_message(t('Problems occurred while sending the invitation(s). Please contact the site administrator.'), 'error');
       $error_shown = TRUE;
     }
-    watchdog('invite', t("Failed sending invitation. To: @email From: @from", array('@email' => $email, '@from' => $from)));
+    watchdog('invite', t('Failed sending invitation. To: @email From: @from', array('@email' => '<'. $invite->email .'>', '@from' => '<'. $from .'>')));
   }
 
   return $success;
