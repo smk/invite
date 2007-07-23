@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.2.2.15 2007-07-22 19:18:04 smk Exp $
+// $Id: invite.install,v 1.2.2.16 2007-07-23 21:49:46 smk Exp $
 
 /**
  * Install the initial schema.
@@ -8,7 +8,7 @@ function invite_install() {
   switch ($GLOBALS['db_type']) {
     case 'mysql':
     case 'mysqli':
-      $result1 = db_query("
+      db_query("
         CREATE TABLE {invite} (
           email varchar(64) NOT NULL default '',
           reg_code varchar(64) NOT NULL default '',
@@ -19,14 +19,14 @@ function invite_install() {
           received tinyint(3) unsigned NOT NULL default '0',
           message text NOT NULL,
           PRIMARY KEY  (email),
-          UNIQUE (reg_code)
+          UNIQUE (reg_code),
+          KEY (uid)
         ) /*!40100 DEFAULT CHARACTER SET utf8 */;"
       );
-      $result2 = db_query("ALTER TABLE {invite} ADD INDEX (uid)");
       break;
 
     case 'pgsql':
-      $result1 = db_query("
+      db_query("
         CREATE TABLE {invite} (
           email VARCHAR(64) NOT NULL DEFAULT '',
           reg_code VARCHAR(64) NOT NULL DEFAULT '',
@@ -40,15 +40,8 @@ function invite_install() {
           UNIQUE (reg_code)
         );"
       );
-      $result2 = db_query("CREATE INDEX {invite}_uid_idx ON {invite} (uid)");
+      db_query("CREATE INDEX {invite}_uid_idx ON {invite} (uid)");
       break;
-  }
-
-  if ($result1 && $result2) {
-    drupal_set_message(t('The database schema for the invite module has been successfully created.'));
-  }
-  else {
-    drupal_set_message(t('Problems occurred while creating the database schema for the invite module.'));
   }
 }
 
@@ -84,17 +77,17 @@ function invite_update_2() {
 }
 
 /**
- * Clean up invitations for deleted users.
+ * Clean up invitations from deleted users.
  */
 function invite_update_3() {
   // Collect orphaned invites
   $result = db_query("SELECT DISTINCT i.uid FROM {invite} i LEFT JOIN {users} u ON i.uid = u.uid WHERE u.uid IS NULL");
   $num = db_num_rows($result);
-  while ($referrer = db_fetch_object($result)) {
-    db_query("DELETE FROM {invite} WHERE uid = %d", $referrer->uid);
+  while ($inviter = db_fetch_object($result)) {
+    db_query("DELETE FROM {invite} WHERE uid = %d", $inviter->uid);
   }
   if ($num) {
-    drupal_set_message(t('%num orphaned invites have been deleted.', array('%num' => $num)));
+    drupal_set_message(strtr('%num orphaned invites have been deleted.', array('%num' => $num)));
   }
   return array();
 }
@@ -141,13 +134,13 @@ function invite_update_5() {
 function invite_update_6() {
   if (variable_get('invite_allow_join_delete', 0)) {
     // Collect orphaned invites
-    $result = db_query("SELECT DISTINCT i.mid FROM {invite} i LEFT JOIN {users} u ON i.mid = u.uid WHERE u.uid IS NULL");
+    $result = db_query("SELECT i.mid FROM {invite} i LEFT JOIN {users} u ON i.mid = u.uid WHERE u.uid IS NULL");
     $num = db_num_rows($result);
     while ($invitee = db_fetch_object($result)) {
       db_query("DELETE FROM {invite} WHERE mid = %d", $invitee->mid);
     }
     if ($num) {
-      drupal_set_message(t('@num orphaned invites have been deleted.', array('@num' => $num)));
+      drupal_set_message(strtr('%num orphaned invites have been deleted.', array('%num' => $num)));
     }
   }
   return array();
