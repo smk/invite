@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.52 2007-07-23 20:37:16 smk Exp $
+// $Id: invite.module,v 1.10.2.53 2007-07-23 20:50:40 smk Exp $
 
 /** 
  * @file 
@@ -762,6 +762,13 @@ function invite_form_validate($form_id, &$edit) {
       $error = format_plural(count($failed_emails), 'The following recipient has already been invited:', 'The following recipients have already been invited:') .'<br />';
       $error .= implode(', ', array_map('check_plain', $failed_emails));
       drupal_set_message($error, 'error');
+    }
+
+    // Check that there is at least one valid email remaining after filtering
+    // out dupes
+    if (!count($emails)) {
+      form_set_error('email');
+      return;
     }
   
     // Check invite limit, fail to let the user choose which ones to send
