@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.49 2007-07-23 09:57:51 smk Exp $
+// $Id: invite.module,v 1.10.2.50 2007-07-23 13:27:04 smk Exp $
 
 /** 
  * @file 
@@ -27,7 +27,7 @@ function invite_help($section) {
     case 'admin/modules#description':
       return t('Allows users to send GMail style invitations, and automatically escalates new users who join the site to a role of your designation.');
       
-    case 'invite':
+    case 'invite/list':
       return _invite_get_help_text();
   }
 }
@@ -251,6 +251,8 @@ function invite_menu($may_cache) {
   $items = array();
 
   if ($may_cache) {
+    $send_access = user_access('send invitations');
+
     $items[] = array(
       'path' => 'admin/user/invite',
       'title' => 'Invite settings',
@@ -258,19 +260,36 @@ function invite_menu($may_cache) {
       'callback' => 'drupal_get_form',
       'callback arguments' => '_invite_settings',
       'access' => user_access('administer site configuration'),
-      'type' => MENU_NORMAL_ITEM
+      'type' => MENU_NORMAL_ITEM,
     );
     $items[] = array(
       'path' => 'invite',
       'title' => variable_get('invite_page_title', t('Invite your friends and colleagues')),
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('invite_form', 'page'),
+      'access' => $send_access,
+      'type' => MENU_NORMAL_ITEM,
+    );
+    $items[] = array(
+      'path' => 'invite/add',
+      'title' => t('New invitation'),
+      'access' => $send_access,
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => -1,
+    );
+    $items[] = array(
+      'path' => 'invite/list',
+      'title' => t('Your invitations'),
       'callback' => 'invite_overview',
-      'access' => user_access('send invitations'),
-      'type' => MENU_NORMAL_ITEM);
+      'access' => $send_access,
+      'type' => MENU_LOCAL_TASK,
+    );
     $items[] = array(
       'path' => 'invite/delete', 
       'callback' => 'invite_delete',
-      'access' => user_access('send invitations'),
-      'type' => MENU_CALLBACK);
+      'access' => $send_access,
+      'type' => MENU_CALLBACK,
+    );
   }
   else if ($user->uid && user_access('send invitations')) {
     // Check for newly registered users
@@ -436,7 +455,7 @@ function invite_cron() {
 }
 
 /**
- * Display an overview of sent invitations and present the invite form.
+ * Menu callback; display overview of sent invitations.
  */
 function invite_overview() {
   global $user;
@@ -469,10 +488,11 @@ function invite_overview() {
 }
 
 /**
- * Theme function for the invites page.
+ * Theme function for the invite overview.
  */
 function theme_invite_overview($items) {
-  // display table of invites
+
+  // Display table of invites
   $output = '<div><fieldset><legend>'. t('Your invitations') .'</legend>';
   if (count($items) > 0) {
     $headers = array(t('Email'), t('Status'), '&nbsp;');
@@ -483,16 +503,16 @@ function theme_invite_overview($items) {
   }
   $output .= '</fieldset></div>';
   
-  // add the invitation form
-  $output .= drupal_get_form('invite_form', 'page');
-
   return $output;
 }
 
 /**
- * Form generation.
+ * Generate the invite form.
+ *
+ * @param $op
+ *   The type of form to generate, 'page' or 'block'.
  */
-function invite_form($op) {
+function invite_form($op = 'page') {
   global $user;
 
   $maximum_invites = _invite_max_invites_by_role();
@@ -513,7 +533,6 @@ function invite_form($op) {
       $form['#action'] = url('invite');
 
       $form['invite'] = array(
-        '#type' => 'markup',
         '#value' => t('Recommend @site-name to:', array('@site-name' => variable_get('site_name', t('Drupal')))),
       );
       $description = '';
@@ -536,7 +555,6 @@ function invite_form($op) {
         '#value' => t('Send invite'),
       );
       $form['link'] = array(
-        '#type' => 'markup',
         '#prefix' => '<div><small>',
         '#value' => l('View your invites', 'invite'),
         '#suffix' => '</small></div>',
@@ -544,11 +562,9 @@ function invite_form($op) {
       break;
 
     case 'page':
-      $form['invite_form'] = array(
-        '#type' => 'fieldset',
-        '#title' => t('Invite a friend'),
-      );
+    default:
       $disabled = FALSE;
+
       if ($maximum_invites != INVITE_UNLIMITED_INVITES) {
         if ($invites_left == 0) {
           $markup = t('Maximum number (@max) of invitations reached.', array('@max' => $maximum_invites));
@@ -557,46 +573,72 @@ function invite_form($op) {
         else {
           $markup = format_plural($invites_left, 'You have 1 invite left.', 'You have @count invites left.');
         }
-        $form['invite_form']['markup_remaining_invites'] = array(
-          '#type' => 'markup',
+        $form['markup_remaining_invites'] = array(
           '#value' => $markup,
         );
-        $form['invite_form']['remaining_invites'] = array(
+        $form['remaining_invites'] = array(
           '#type' => 'value',
           '#value' => $invites_left,
         );
       }
+
       $maximum_per_turn = _invite_max_invites_per_turn();
+      $failed_emails = '';
+
       if (isset($_SESSION['invite_failed_emails'])) {
         $failed_emails = implode("\n", (array)unserialize($_SESSION['invite_failed_emails']));
         unset($_SESSION['invite_failed_emails']);
       }
-      $form['invite_form']['email'] = array(
+      $form['email'] = array(
+        '#title' => t('To'),
         '#default_value' => $failed_emails,
+        '#description' => format_plural($maximum_per_turn, 'Type the email address of the person you would like to invite.', 'Type the email address(es) of the person(s) you would like to invite. Addresses should be separated by newlines or commas.'),
         '#required' => TRUE,
+        '#disabled' => $disabled,
       );
       if ($maximum_per_turn != 1) {
-        $form['invite_form']['email']['#type'] = 'textarea';
-        $form['invite_form']['email']['#rows'] = 2;
+        $form['email']['#type'] = 'textarea';
+        $form['email']['#rows'] = 2;
       }
       else {
-        $form['invite_form']['email']['#type'] = 'textfield';
-        $form['invite_form']['email']['#maxlength'] = 64;
+        $form['email']['#type'] = 'textfield';
+        $form['email']['#maxlength'] = 64;
       }
       if ($failed_emails) {
-        $form['invite_form']['email']['#attributes']['class'] = 'error';
+        $form['email']['#attributes']['class'] = 'error';
       }
-      $form['invite_form']['email']['#title'] = format_plural($maximum_per_turn, 'Email', 'Email(s)');
-      $form['invite_form']['email']['#description'] = format_plural($maximum_per_turn, 'Type the email of the person you would like to invite.', 'Type the email address(es) of the person(s) you would like to invite.');
 
-      $form['invite_form']['message'] = array(
+      // Perform token replacement
+      $subject = t(variable_get('invite_subject', t("You've been invited")));
+      $subject = token_replace_multiple($subject, _invite_token_types());
+
+      if (variable_get('invite_use_users_email', 0)) {
+        $from = check_plain(variable_get('site_name', t('Drupal')) .' <'. $user->mail .'>');
+      }
+      else {
+        $from = check_plain(variable_get('site_name', t('Drupal')) .' <'. variable_get('site_mail', ini_get('sendmail_from')) .'>');
+      }
+      $form['subject'] = array(
+        '#type' => 'item',
+        '#title' => t('Subject'),
+        '#value' => $subject,
+      );
+      $form['from'] = array(
+        '#type' => 'item',
+        '#value' => $from,
+        '#title' => t('From'),
+      );
+
+      $form['body'] = array(
+        '#type' => 'item',
+        '#title' => t('Message'),
+      );
+      $form['message'] = array(
         '#type' => 'textarea',
-        '#title' => t('Your message'),
-        '#required' => FALSE,
         '#description' => format_plural($maximum_per_turn, 'This message will be added to the mail sent to the person you are inviting.', 'This message will be added to the mail sent to the person(s) you are inviting.'),
         '#disabled' => $disabled,
       );        
-      $form['invite_form']['submit'] = array(
+      $form['submit'] = array(
         '#type' => 'submit',
         '#value' => t('Submit'),
         '#disabled' => $disabled,
@@ -605,6 +647,42 @@ function invite_form($op) {
   }
 
   return $form;
+}
+
+/**
+ * Theme function for the invite form.
+ */
+function theme_invite_form($form) {
+  $output = '';
+  $op = $form['#parameters'][1];
+
+  if ($op == 'page') {
+    // Show form elements
+    $output .= drupal_render($form['markup_remaining_invites']);
+    $output .= drupal_render($form['remaining_invites']);
+    $output .= drupal_render($form['from']);
+    $output .= drupal_render($form['email']);
+    $output .= drupal_render($form['subject']);
+  
+    // Show complete invitation message
+    $output .= drupal_render($form['body']);
+    $output .= '<div class="invite-message"><div class="opening">';
+
+    // Prepare invitation message
+    $message_form = "</div>\n". drupal_render($form['message']) ."\n".'<div class="closing">';
+    $body = _filter_autop(t(_invite_get_mail_template()));
+
+    // Perform token replacement
+    $types = _invite_token_types(array('message' => $message_form));
+    $output .= token_replace_multiple($body, $types);
+
+    $output .= "</div></div>\n";
+  }
+
+  // Render all missing form elements
+  $output .= drupal_render($form);
+
+  return $output;
 }
 
 /**
@@ -654,7 +732,7 @@ function invite_form_validate($form_id, &$edit) {
     // Filter out already registered users, but pass validation
     $failed_emails = _invite_validate_emails("SELECT mail AS email FROM {users} WHERE mail IN (%s)", $emails);
     if (count($failed_emails)) {
-      $error = format_plural(count($failed_emails), 'The following recipient has already registered:', 'The following recipients have already registered:') .'<br />';
+      $error = format_plural(count($failed_emails), 'The following recipient is already a member:', 'The following recipients are already members:') .'<br />';
       foreach ($failed_emails as $key => $email) {
         $account = user_load(array('mail' => $email));
         $failed_emails[$key] = theme('username', $account) .' ('. check_plain($email) .')';
@@ -695,8 +773,6 @@ function invite_form_validate($form_id, &$edit) {
  * Sends out invitation emails.
  */
 function invite_form_submit($form_id, $edit) {
-  global $user;
-
   $failed_emails = array();
   $count_failed = $count_success = 0;
 
@@ -707,19 +783,18 @@ function invite_form_submit($form_id, $edit) {
   
   if (is_array($edit['validated_emails'])) {
     foreach ($edit['validated_emails'] as $email) {
-      // Create the invite object
-      $invite          = new stdClass();
-      $invite->email   = $email;
-      $invite->inviter = $user->name;
-      $invite->message = trim($edit['message']);
-      $invite->code    = _invite_create_regcode();
+      $invite = _invite_substitutions(array(
+        'email'   => $email,
+        'message' => trim($edit['message']),
+        'code'    => _invite_create_regcode(),
+      ));
 
       // Send email
       if (_invite_send_invite($invite)) {
-        db_query("INSERT INTO {invite} (email, reg_code, uid, expiry, message) VALUES ('%s', '%s', %d, %d, '%s')", $email, $code, $user->uid, time()+(variable_get('invite_expiry', 30)*60*60*24), $message);
+        db_query("INSERT INTO {invite} (email, reg_code, uid, expiry, message) VALUES ('%s', '%s', %d, %d, '%s')", $invite->email, $invite->code, $invite->inviter->uid, time()+(variable_get('invite_expiry', 30)*60*60*24), $invite->message);
 
         // Notify other modules
-        $args = array('inviter' => $user);
+        $args = array('inviter' => $invite->inviter);
         module_invoke_all('invite', 'invite', $args);
         $count_success++;  
       }
@@ -752,7 +827,7 @@ function invite_token_values($type = 'all', $object = NULL) {
     // NOTE: Invite is currently only capable of sending plain text emails.
     // If you intend to change that, you need to properly escape all user input
     // by adding check_plain() around below values!
-    $values['inviter']        = $object->inviter;
+    $values['inviter']        = $object->inviter->name;
     $values['invite-mail']    = $object->email;
     $values['invite-message'] = $object->message;
     $values['join-link']      = url('user/register/'. $object->code, NULL, NULL, TRUE);
@@ -1009,8 +1084,10 @@ function _invite_send_invite($invite){
     $headers['Reply-To'] = $reply_to;
   }
 
-  $subject = variable_get('invite_subject', t("You've been invited"));
-  $body = _invite_get_mail_template();
+  // Using t() for user specified text is evil according to
+  // http://groups.drupal.org/node/1827/muahaha
+  $subject = t(variable_get('invite_subject', t("You've been invited")));
+  $body = t(_invite_get_mail_template());
 
   // Perform token replacement
   $types = array('user' => $user, 'profile' => $user, 'invite' => $invite);
@@ -1035,14 +1112,13 @@ function _invite_send_invite($invite){
  * @return The localized email body.
  */
 function _invite_get_mail_template() {
-  $template = t("Your friend, [inviter] has invited you to join [site-name] at [site-url].
+  $template = t("Your friend, [inviter], has invited you to join [site-name] at [site-url].
 
 To become a member of [site-name], click the link below or paste it into the address bar of your browser. 
 
 [join-link]
 
 ----------
-
 [invite-message]");
 
   return variable_get('invite_default_mail_template', $template);
@@ -1064,6 +1140,43 @@ function _invite_get_help_text() {
 <p>At any time, you may delete either 'Pending' or 'Expired' invitations. 'Joined' invitation cannot be deleted and count permanently toward your invitation allotment.</p>");
 
   return variable_get('invite_help_text', $help);
+}
+
+/**
+ * Provide token types for use in invite message replacements.
+ *
+ * @param $args
+ *   Associative array of additional arguments to merge in the invite object.
+ * @return
+ *   Array of token types suitable as input for token_replace().
+ */
+function _invite_token_types($args = array()) {
+  global $user;
+
+  $invite = _invite_substitutions($args);
+  return array('user' => $user, 'profile' => $user, 'invite' => $invite);
+}
+
+/**
+ * Create an invite object with reasonable default values for use in
+ * invite message.
+ *
+ * @param $args
+ *   Associative array of additional arguments to merge in the invite object.
+ * @return
+ *   The invite object.
+ */
+function _invite_substitutions($args = array()) {
+  global $user;
+
+  $defaults = array(
+    'inviter' => $user,
+    'email'   => '--recipient-email--',
+    'message' => '',
+    'code'    => '--invite-code--'
+  );
+
+  return (object)array_merge($defaults, $args);
 }
 
 /**
