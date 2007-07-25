@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.58 2007-07-25 09:33:14 smk Exp $
+// $Id: invite.module,v 1.10.2.59 2007-07-25 13:53:24 smk Exp $
 
 /**
  * @file
@@ -47,7 +47,7 @@ function _invite_settings() {
 
   $roles = user_roles(0, 'send invitations');
   if (count($roles) == 0) {
-    drupal_set_message(t('Please enable the <em>send invitations</em> permission for at least one role. This can be done at !url.', array('!url' => l('Access control settings', 'admin/user/access'))));
+    drupal_set_message(t('Please enable the <em>send invitations</em> permission for at least one role. This can be done on the <a href="!access_url">Access control page</a>.', array('!access_url' => url('admin/user/access'))));
   }
   $target_roles = user_roles(1);
 
@@ -570,7 +570,7 @@ function invite_form($op = 'page') {
       );
       $form['link'] = array(
         '#prefix' => '<div><small>',
-        '#value' => l('View your invites', 'invite'),
+        '#value' => l(t('View your invites'), 'invite'),
         '#suffix' => '</small></div>',
       );
       break;
