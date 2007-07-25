@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.48 2007-07-25 09:20:22 smk Exp $
+// $Id: invite.module,v 1.9.2.49 2007-07-25 09:33:36 smk Exp $
 
 /** 
  * @file 
@@ -851,7 +851,7 @@ function _invite_send_invite($op, $user_name, $email, $code, $message) {
 
   // Set custom From and Reply-To headers
   if (!$from) {
-    if (variable_get('invite_use_users_email', 0)) {
+    if ($user->uid && variable_get('invite_use_users_email', 0)) {
       $from = $user->mail;
     }
     else if ($from_site) {
@@ -862,7 +862,7 @@ function _invite_send_invite($op, $user_name, $email, $code, $message) {
     $headers[] = 'From: '. $from;
   }
   if (!$reply_to) {
-    if (variable_get('invite_use_users_email_replyto', 0)) {
+    if ($user->uid && variable_get('invite_use_users_email_replyto', 0)) {
       $reply_to = $user->mail;
     }
     else if ($from_site) {
