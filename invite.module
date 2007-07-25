@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.57 2007-07-25 09:18:51 smk Exp $
+// $Id: invite.module,v 1.10.2.58 2007-07-25 09:33:14 smk Exp $
 
 /**
  * @file
@@ -587,7 +587,7 @@ function invite_form($op = 'page') {
         );
       }
 
-      if (variable_get('invite_use_users_email', 0)) {
+      if ($user->uid && variable_get('invite_use_users_email', 0)) {
         $from = check_plain($user->mail);
       }
       else {
@@ -1138,7 +1138,7 @@ function _invite_send_invite($invite) {
 
   // Set custom From and Reply-To headers
   if (!$from) {
-    if (variable_get('invite_use_users_email', 0)) {
+    if ($user->uid && variable_get('invite_use_users_email', 0)) {
       $from = $user->mail;
     }
     else if ($from_site) {
@@ -1146,7 +1146,7 @@ function _invite_send_invite($invite) {
     }
   }
   if (!$reply_to) {
-    if (variable_get('invite_use_users_email_replyto', 0)) {
+    if ($user->uid && variable_get('invite_use_users_email_replyto', 0)) {
       $reply_to = $user->mail;
     }
     else if ($from_site) {
