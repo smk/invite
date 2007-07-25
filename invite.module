@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.54 2007-07-23 21:41:40 smk Exp $
+// $Id: invite.module,v 1.10.2.55 2007-07-25 00:23:39 smk Exp $
 
 /**
  * @file
@@ -1129,15 +1129,23 @@ function _invite_send_invite($invite) {
   $reply_to = variable_get('invite_manual_reply_to', '');
 
   // Set custom From and Reply-To headers
-  if (!$from && variable_get('invite_use_users_email', 0)) {
-    $from = $user->mail;
+  if (!$from) {
+    if (variable_get('invite_use_users_email', 0)) {
+      $from = $user->mail;
+    }
+    else {
+      $from = variable_get('site_mail', ini_get('sendmail_from'));
+    }
   }
-  if (!$reply_to && variable_get('invite_use_users_email_replyto', 0)) {
-    $reply_to = $user->mail;
+  if (!$reply_to) {
+    if (variable_get('invite_use_users_email_replyto', 0)) {
+      $reply_to = $user->mail;
+    }
+    else {
+      $reply_to = variable_get('site_mail', ini_get('sendmail_from'));
+    }
   }
-  if ($reply_to) {
-    $headers['Reply-To'] = $reply_to;
-  }
+  $headers['Reply-To'] = $reply_to;
 
   // Using t() for user specified text is evil according to
   // http://groups.drupal.org/node/1827/muahaha
