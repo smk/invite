@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.46 2007-07-23 09:58:08 smk Exp $
+// $Id: invite.module,v 1.9.2.47 2007-07-25 00:25:21 smk Exp $
 
 /** 
  * @file 
@@ -842,14 +842,24 @@ function _invite_send_invite($op, $user_name, $email, $code, $message) {
   $reply_to = variable_get('invite_manual_reply_to', '');
 
   // Set custom From and Reply-To headers
-  if (!$from && variable_get('invite_use_users_email', 0)) {
-    $from = $user->mail;
+  if (!$from) {
+    if (variable_get('invite_use_users_email', 0)) {
+      $from = $user->mail;
+    }
+    else {
+      $from = variable_get('site_mail', ini_get('sendmail_from'));
+    }
   }
   if ($from) {
     $headers[] = 'From: '. $from;
   }
-  if (!$reply_to && variable_get('invite_use_users_email_replyto', 0)) {
-    $reply_to = $user->mail;
+  if (!$reply_to) {
+    if (variable_get('invite_use_users_email_replyto', 0)) {
+      $reply_to = $user->mail;
+    }
+    else {
+      $reply_to = variable_get('site_mail', ini_get('sendmail_from'));
+    }
   }
   if ($reply_to) {
     $headers[] = 'Reply-To: '. $reply_to;
