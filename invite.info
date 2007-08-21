@@ -1,0 +1,5 @@
+; $Id: invite.info,v 1.3 2007-08-21 19:46:22 smk Exp $
+name = Invite
+description = Allows users to send GMail style invitations, and automatically escalates new users who use them to a role of your designation.
+dependencies = token
+package = Mail
