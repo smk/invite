@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.49 2007-07-25 09:33:36 smk Exp $
+// $Id: invite.module,v 1.9.2.50 2007-08-27 04:40:28 smk Exp $
 
 /** 
  * @file 
@@ -955,8 +955,10 @@ function _invite_unblock($uid) {
  *   The tracking code to lookup the invite for.
  */
 function _invite_fetch_invite($invite_code) {
-  $invite = db_fetch_object(db_query("SELECT email, uid AS referrer, expiry FROM {invite} WHERE reg_code = '%s' AND timestamp = 0", $invite_code));
-  $invite->expired = $invite->expiry < time();
+  $result = db_query("SELECT email, uid AS referrer, expiry FROM {invite} WHERE reg_code = '%s' AND timestamp = 0", $invite_code);
+  if ($invite = db_fetch_object($result)) {
+    $invite->expired = ($invite->expiry < time() ? TRUE : FALSE);
+  }
   return $invite;
 }
 
