@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.60 2007-08-27 04:47:52 smk Exp $
+// $Id: invite.module,v 1.10.2.61 2007-08-29 10:56:09 smk Exp $
 
 /**
  * @file
@@ -373,6 +373,28 @@ function invite_form_alter($form_id, &$form) {
  */
 function invite_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
+    case 'view':
+      if (user_access('send invitations', $account)) {
+        $counts = invite_get_counts($account->uid);
+        $items['joined'] = array(
+          'title' => t('Successful'),
+          'value' => $counts['joined'],
+          'class' => 'successful',
+        );
+        $items['pending'] = array(
+          'title' => t('Pending'),
+          'value' => $counts['pending'],
+          'class' => 'pending',
+        );
+        $items['expired'] = array(
+          'title' => t('Unsuccessful'),
+          'value' => $counts['expired'],
+          'class' => 'expired',
+        );
+        return array(t('Invitation counts') => $items);
+      }
+      break;
+
     case 'insert':
       if ($invite = _invite_fetch_invite_from_session()) {
         // Update invite status
@@ -949,6 +971,22 @@ function invite_delete($email) {
   }
 
   drupal_goto('invite/list');
+}
+
+/**
+ * Calculate the number of successful/pending/unsuccessful invitations.
+ *
+ * @param $uid
+ *   The user id to calculate counts for.
+ * @return
+ *   An array consisting of three elements: joined, pending and expired.
+ */
+function invite_get_counts($uid) {
+  $time = time();
+  $count['joined'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp > 0", $uid));
+  $count['pending'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp = 0 AND expiry <= %d", $uid, $time));
+  $count['expired'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp = 0 AND expiry > %d", $uid, $time));
+  return $count;
 }
 
 /**
