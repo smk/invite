@@ -1,11 +1,16 @@
 <?php
-// $Id: invite.module,v 1.12 2007-08-21 19:46:22 smk Exp $
+// $Id: invite.module,v 1.13 2007-08-29 11:25:42 smk Exp $
 
 /**
  * @file
  * The invite.module provides a GMail-style 'Invite a friend' feature. It
  * allows your users to send and track invitations to join your site.
  */
+
+/**
+ * Session variable name.
+ */
+define('INVITE_SESSION', 'invite_code');
 
 /**
  * @name Invite limits
@@ -270,6 +275,12 @@ function invite_menu($may_cache) {
       'type' => MENU_NORMAL_ITEM,
     );
     $items[] = array(
+      'path' => 'invite/accept',
+      'callback' => 'invite_action',
+      'access' => TRUE,
+      'type' => MENU_CALLBACK,
+    );
+    $items[] = array(
       'path' => 'invite',
       'title' => variable_get('invite_page_title', t('Invite your friends and colleagues')),
       'callback' => 'drupal_get_form',
@@ -317,42 +328,33 @@ function invite_form_alter($form_id, &$form) {
       break;
 
     case 'user_register':
-      $valid_invite = FALSE;
-      if ($code = arg(2)) {
-        // Check for valid invite code
+      $invite = _invite_fetch_invite_from_session();
+
+      // Legacy url support (user/register/123)
+      if (!$invite && $code = arg(2)) {
         if ($invite = _invite_fetch_invite($code)) {
-          $form['mail']['#default_value'] = $invite->email;
-          $valid_invite = (!$invite->expired);
-          $form['invite_code'] = array(
-            '#type' => 'value',
-            '#value' => $code,
-          );
-          $form['invite_referrer'] = array(
-            '#type' => 'value',
-            '#value' => $invite->referrer,
-          );
+          if (_invite_validate($invite)) {
+            $_SESSION[INVITE_SESSION] = $invite->code;
+          }
         }
       }
 
-      $user_admin = user_access('administer users');
-      $invite_only = (variable_get('user_register', 1) == 'inviteonly');
-      if ((!$user_admin) && $invite_only) {
-        if (!$valid_invite) {
-          if ($invite->expired) {
-            drupal_set_message(t('Sorry, this invitation code has expired.'));
-          }
-          else {
-            drupal_set_message(t('Sorry, new user registration by invite only.'));
-          }
-          // Redirect to standard login form
-          drupal_goto('user');
+      if ($invite) {
+        // Preset email field, taking 3rd party added fields into account
+        if (isset($form['account'])) {
+          $field = &$form['account'];
         }
-        else if (isset($form['#submit']['user_register_submit'])) {
-          // If we are in invite only mode, hijack the usual user registration
-          // submission
-          $form['#submit'] = array('invite_register_submit' => array());
+        else {
+          $field = &$form;
+        }
+        if (isset($field['mail'])) {
+          $field['mail']['#default_value'] = $invite->email;
         }
       }
+      else if (variable_get('user_register', 1) == 'inviteonly') {
+        drupal_set_message(t('Sorry, new user registration by invitation only.'));
+        drupal_goto();
+    	}
       break;
 
     case 'user_login_block':
@@ -367,53 +369,22 @@ function invite_form_alter($form_id, &$form) {
 }
 
 /**
- * Forms API callback; overrides user_register_submit().
- *
- * Perform invite validation on user registration submission for invite-only
- * sites. Checks for a valid invitation before passing control back to the
- * core user registration.
- */
-function invite_register_submit($form_id, $form_values) {
-  // No need to check for invite only mode as invite_form_alter has already
-  // done that
-  if ($invite = _invite_fetch_invite($form_values['invite_code'])) {
-    if (!$invite->expired) {
-      return user_register_submit($form_id, $form_values);
-    }
-    else {
-      drupal_set_message(t('Sorry, this invitation code has expired.'));
-    }
-  }
-  else {
-    drupal_set_message(t('You have not been invited to join this site.'));
-    watchdog('invite', t('Uninvited user registration attempt.'), WATCHDOG_WARNING);
-  }
-  return '<front>';
-}
-
-/**
  * Implementation of hook_user().
  */
 function invite_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
     case 'insert':
-      if (isset($edit['invite_code'])) {
-        // Check for valid tracking code
-        if ($invite = _invite_fetch_invite($edit['invite_code'])) {
-          if (!$invite->expired) {
-            // Update invite status
-            _invite_set_timestamp($edit['mail'], $account->uid, $edit['invite_code']);
+      if ($invite = _invite_fetch_invite_from_session()) {
+        // Update invite status
+        _invite_set_timestamp($edit['mail'], $account->uid, $invite->code);
 
-            // Escalate user role
-            _invite_role_escalate($account);
+        // Escalate user role
+        _invite_role_escalate($account);
 
-            // Approve user account
-            _invite_unblock($account->uid);
-          }
-        }
-        else {
-          watchdog('invite', t('Registration code failed for %name %email.', array('%name' => $account->name, '%email' => '<'. $account->mail .'>')), WATCHDOG_NOTICE, l(t('view'), 'user/'. $account->uid));
-        }
+        // Unblock user account
+        _invite_unblock($account->uid);
+
+        unset($_SESSION[INVITE_SESSION]);
       }
       break;
 
@@ -459,6 +430,52 @@ function invite_cron() {
   // TODO: cron should check which invitations are expired and possibly send a follow up mail
   // This should also trigger a module_invoke_all('invite', 'expire', $args) call so that other modules can
   // react to the expired invitation.
+}
+
+/**
+ * Menu callback; handles incoming join requests.
+ */
+function invite_action() {
+  global $user;
+
+  if (!$user->uid) {
+    // User not logged in
+    $invite = _invite_fetch_invite(arg(2));
+
+    // Check for a valid invite code
+    if (_invite_validate($invite)) {
+      $_SESSION[INVITE_SESSION] = $invite->code;
+      drupal_goto('user/register');
+    }
+  }
+
+  drupal_goto();
+}
+
+/**
+ * Performs validation on an invitate record.
+ *
+ * @param $invite
+ *   An invite record as returned by _invite_fetch_invite().
+ * @return
+ *   TRUE if the code is valid, otherwise the function won't return.
+ */
+function _invite_validate($invite) {
+  if (!$invite) {
+    drupal_set_message(t('The invitation code could not be recognized. Please make sure you entered it correctly.'), 'error');
+    drupal_goto();
+  }
+  else if (!$invite->valid) {
+    drupal_set_message(t('This invitation code has been used before. Please login now with your user name and password.'));
+    drupal_goto('user');
+  }
+  else if ($invite->expired) {
+    drupal_set_message(t('Sorry, this invitation code has expired.'));
+    drupal_goto();
+  }
+  else {
+    return TRUE;
+  }
 }
 
 /**
@@ -884,7 +901,7 @@ function invite_token_values($type = 'all', $object = NULL) {
     $values['inviter']        = $object->inviter->name;
     $values['invite-mail']    = $object->email;
     $values['invite-message'] = $object->message;
-    $values['join-link']      = url('user/register/'. $object->code, NULL, NULL, TRUE);
+    $values['join-link']      = url('invite/accept/'. $object->code, NULL, NULL, TRUE);
   }
   return $values;
 }
@@ -1189,7 +1206,7 @@ function _invite_send_invite($invite) {
 function _invite_get_mail_template() {
   $template = t("Your friend, [inviter], has invited you to join [site-name] at [site-url].
 
-To become a member of [site-name], click the link below or paste it into the address bar of your browser. 
+To become a member of [site-name], click the link below or paste it into the address bar of your browser.
 
 [join-link]
 
@@ -1269,17 +1286,34 @@ function _invite_unblock($uid) {
 }
 
 /**
- * Fetches a valid invite record from the database.
- *
- * A valid invite is one whose tracking code hasn't been used before.
+ * Fetches an invite record from the database.
  *
  * @param $invite_code
  *   The tracking code to lookup the invite for.
+ * @return
+ *   An invite record with additional properties valid and expired.
  */
 function _invite_fetch_invite($invite_code) {
-  $invite = db_fetch_object(db_query("SELECT email, uid AS referrer, expiry FROM {invite} WHERE reg_code = '%s' AND timestamp = 0", $invite_code));
-  $invite->expired = $invite->expiry < time();
+  $result = db_query("SELECT reg_code AS code, email, uid AS referrer, timestamp, expiry FROM {invite} WHERE reg_code = '%s'", $invite_code);
+  if ($invite = db_fetch_object($result)) {
+    $invite->valid = ($invite->timestamp == 0 ? TRUE : FALSE);
+    $invite->expired = ($invite->expiry < time() ? TRUE : FALSE);
+  }
   return $invite;
+}
+
+/**
+ * Returns an invite record from an invite code stored in the user's session.
+ *
+ * @return
+ *   An invite record, or FALSE if there is no invite code stored in the
+ *   user's session.
+ */
+function _invite_fetch_invite_from_session() {
+  if (isset($_SESSION[INVITE_SESSION])) {
+  	return _invite_fetch_invite($_SESSION[INVITE_SESSION]);
+  }
+  return FALSE;
 }
 
 /**
