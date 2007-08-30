@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.63 2007-08-30 23:14:01 smk Exp $
+// $Id: invite.module,v 1.10.2.64 2007-08-30 23:20:24 smk Exp $
 
 /**
  * @file
@@ -653,7 +653,7 @@ function invite_form($op = 'page') {
       );
       $form['link'] = array(
         '#prefix' => '<div><small>',
-        '#value' => l(t('View your invites'), 'invite'),
+        '#value' => l(t('View your invites'), 'invite/list'),
         '#suffix' => '</small></div>',
       );
       break;
