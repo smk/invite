@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.62 2007-08-29 11:13:44 smk Exp $
+// $Id: invite.module,v 1.10.2.63 2007-08-30 23:14:01 smk Exp $
 
 /**
  * @file
@@ -411,13 +411,20 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
       break;
 
     case 'delete':
-      // Delete invites originating from this user
-      db_query("DELETE FROM {invite} WHERE uid = %d", $account->uid);
-      if (variable_get('invite_allow_join_delete', 0)) {
-        // Delete invitation for this user. To prevent fraud, this will only
-        // happen when deletion of joined users is allowed.
+      // Only delete invites of existing users if the configuration allows it to
+      $delete_joined = variable_get('invite_allow_join_delete', 0);
+
+      // Delete invite for this user
+      if ($delete_joined) {
         db_query("DELETE FROM {invite} WHERE mid = %d", $account->uid);
       }
+
+      // Delete any invites originating from this user
+      $sql = "DELETE FROM {invite} WHERE uid = %d";
+      if (!$delete_joined) {
+        $sql .= " AND timestamp != 0";
+      }
+      db_query($sql, $account->uid);
       break;
   }
 }
