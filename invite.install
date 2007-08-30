@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.2.2.16 2007-07-23 21:49:46 smk Exp $
+// $Id: invite.install,v 1.2.2.17 2007-08-30 23:17:11 smk Exp $
 
 /**
  * Install the initial schema.
@@ -77,14 +77,18 @@ function invite_update_2() {
 }
 
 /**
- * Clean up invitations from deleted users.
+ * Clean up invites originating from deleted users.
  */
 function invite_update_3() {
   // Collect orphaned invites
   $result = db_query("SELECT DISTINCT i.uid FROM {invite} i LEFT JOIN {users} u ON i.uid = u.uid WHERE u.uid IS NULL");
   $num = db_num_rows($result);
+  $sql = "DELETE FROM {invite} WHERE uid = %d";
+  if (!variable_get('invite_allow_join_delete', 0)) {
+    $sql .= " AND timestamp != 0";
+  }
   while ($inviter = db_fetch_object($result)) {
-    db_query("DELETE FROM {invite} WHERE uid = %d", $inviter->uid);
+    db_query($sql, $inviter->uid);
   }
   if ($num) {
     drupal_set_message(strtr('%num orphaned invites have been deleted.', array('%num' => $num)));
