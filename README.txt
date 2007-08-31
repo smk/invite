@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.4.2.5 2007-08-30 23:32:34 smk Exp $ */
+/* $Id: README.txt,v 1.4.2.6 2007-08-31 00:11:50 smk Exp $ */
 
 SUMMARY
 
@@ -116,13 +116,38 @@ At any time, you may withdraw either 'pending' or 'expired' invitations. 'Accept
 
 INVITE API
 
-Several third-party modules can act on invite events:
+The Invite module exposes hook_invite() that allows any module to react to the
+invite lifecycle.
 
-* Buddylist http://drupal.org/project/buddylist and
-  User Relationships http://drupal.org/project/user_relationships
+function hook_invite($op, $args) {
+  case 'invite':
+    An invitation has been successfully send.
+    $args['inviter']: The user account object of the person who did the
+                      inviting.
+
+  case 'escalate':
+    Invitee has accepted an invitation and has been promoted to the appropriate
+    user roles.
+    $args['invitee']: The user account object of the person who was invited.
+    $args['inviter']: The user account object of the person who did the
+                      inviting.
+    $args['roles']:   An array of roles that the invitee has been escalated to.
+   
+  case 'cancel':
+    Inviter has cancelled an invitation.
+    $args['inviter']: The user account object of the person who did the
+                      inviting.
+    $args['email']:   The e-mail address of the user whose invitation got
+                      cancelled.
+}
+
+There are several third-party modules that currently can react on invite events:
+
+* Buddylist                                  http://drupal.org/project/buddylist
+  User Relationships                http://drupal.org/project/user_relationships
   Inviter and invitee are automagically put on their respective buddy list.
 
-* Userpoints http://drupal.org/project/userpoints
+* Userpoints                                http://drupal.org/project/userpoints
   Credit some points for sending registrations and/or when an invited user
   registers.
 
