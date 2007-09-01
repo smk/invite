@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.7 2007-08-29 11:25:42 smk Exp $ */
+/* $Id: README.txt,v 1.8 2007-09-01 03:00:29 smk Exp $ */
 
 SUMMARY
 
@@ -50,9 +50,10 @@ CONFIGURATION
 * Invitation expiry
   Specify how long sent invitations are valid (in days). After an invitation
   expires the registration link becomes invalid.
-* Allow deletion of joined users
-  Whether to allow your users to delete (ie. revoke) invitations that are still
-  in the 'pending' state.
+* Allow withdrawing accepted invitations
+  Whether to allow your users to delete accepted invitations. This will also
+  delete all invitations from/to a user upon termination of its account.
+  Disable to prevent users from deleting their account to be re-invited.
 
 --- Role limitations ---
 
@@ -99,28 +100,54 @@ To invite a friend :
 5. This will send an invitation e-mail which you can now track from the
    'Your invitations' page.
 
-Invitations show up with one of three statuses: joined, pending and expired.
+Invitations show up in one of the states accepted, pending, expired, or deleted.
 
-* Joined: Shows that the person you have invited has accepted the invitation to
-  join the site. Click on the e-mail address to watch the user's profile page.
+* Accepted: Shows that the person you have invited has accepted the invitation
+  to join the site. Click on the e-mail address to watch the user's profile
+  page.
 * Pending: The invitation has been sent, but the invitee has still not accepted
   the invitation.
 * Expired: The invitation has not been used to register within the expiration
   period.
+* Deleted: The user account has been terminated.
 
-At any time, you may delete either 'pending' or 'expired' invitations. 'Joined' 
-invitations can only be deleted if the configuration allows it to.
+At any time, you may withdraw either 'pending' or 'expired' invitations. 'Accepted' invitations can only be withdrawn if the configuration allows it to.
 
 
 INVITE API
 
-Several third-party modules can act on invite events:
+The Invite module exposes hook_invite() that allows any module to react to the
+invite lifecycle.
 
-* Buddylist http://drupal.org/project/buddylist and
-  User Relationships http://drupal.org/project/user_relationships
+function hook_invite($op, $args) {
+  case 'invite':
+    An invitation has been successfully send.
+    $args['inviter']: The user account object of the person who did the
+                      inviting.
+
+  case 'escalate':
+    Invitee has accepted an invitation and has been promoted to the appropriate
+    user roles.
+    $args['invitee']: The user account object of the person who was invited.
+    $args['inviter']: The user account object of the person who did the
+                      inviting.
+    $args['roles']:   An array of roles that the invitee has been escalated to.
+   
+  case 'cancel':
+    Inviter has cancelled an invitation.
+    $args['inviter']: The user account object of the person who did the
+                      inviting.
+    $args['email']:   The e-mail address of the user whose invitation got
+                      cancelled.
+}
+
+There are several third-party modules that currently can react on invite events:
+
+* Buddylist                                  http://drupal.org/project/buddylist
+  User Relationships                http://drupal.org/project/user_relationships
   Inviter and invitee are automagically put on their respective buddy list.
 
-* Userpoints http://drupal.org/project/userpoints
+* Userpoints                                http://drupal.org/project/userpoints
   Credit some points for sending registrations and/or when an invited user
   registers.
 

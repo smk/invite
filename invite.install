@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.5 2007-08-21 19:46:22 smk Exp $
+// $Id: invite.install,v 1.6 2007-09-01 03:00:29 smk Exp $
 
 /**
  * Install the initial schema.
@@ -69,6 +69,7 @@ function invite_uninstall() {
   variable_del('invite_page_title');
   variable_del('invite_default_mail_template');
   variable_del('invite_help_text');
+  variable_del('invite_num_ranks');
 }
 
 function invite_update_1() {
@@ -103,14 +104,18 @@ function invite_update_2() {
 }
 
 /**
- * Clean up invitations from deleted users.
+ * Clean up invites originating from deleted users.
  */
 function invite_update_3() {
-  $ret    = array();
+  $ret = array();
   $result = db_query("SELECT DISTINCT i.uid FROM {invite} i LEFT JOIN {users} u ON i.uid = u.uid WHERE u.uid IS NULL");
-  $count  = db_num_rows($result);
+  $count = db_num_rows($result);
+  $sql = "DELETE FROM {invite} WHERE uid = %d";
+  if (!variable_get('invite_allow_join_delete', 0)) {
+    $sql .= " AND timestamp != 0";
+  }
   while ($inviter = db_fetch_object($result)) {
-    db_query("DELETE FROM {invite} WHERE uid = %d", $inviter->uid);
+    db_query($sql, $inviter->uid);
   }
   $ret[] = array(
     'query' => strtr('%count orphaned invites have been deleted.', array('%count' => $count)),
