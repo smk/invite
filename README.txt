@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.4.2.7 2007-09-02 00:42:53 smk Exp $ */
+/* $Id: README.txt,v 1.4.2.8 2007-09-02 01:49:44 smk Exp $ */
 
 SUMMARY
 
@@ -120,14 +120,6 @@ The Invite module exposes hook_invite() that allows any module to react to the
 invite lifecycle.
 
 function hook_invite($op, $args) {
-  case 'prepare':
-    An invitation is about to be sent.
-    $args['invite']: An object passed by reference describing the parameters of
-                     the invitation. It consists of the properties inviter (a
-                     user object), email (the user to be invited), code (the
-                     registration code), and data (an array consisting of the
-                     invite subject and message text).
-
   case 'invite':
     An invitation has been successfully send.
     $args['inviter']: The user account object of the person who did the

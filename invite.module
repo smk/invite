@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.67 2007-09-02 00:42:53 smk Exp $
+// $Id: invite.module,v 1.10.2.68 2007-09-02 01:49:44 smk Exp $
 
 /**
  * @file
@@ -887,10 +887,6 @@ function invite_form_submit($form_id, $edit) {
       'code'    => _invite_create_regcode(),
       'data'    => array('subject' => $subject, 'message' => $message),
     ));
-
-    // Allow other modules to modify the invitation
-    $args = array('invite' => &$invite);
-    module_invoke_all('invite', 'prepare', $args);
 
     // Perform token replacement on mail body
     $body = token_replace_multiple(t(_invite_get_mail_template()), _invite_token_types($invite));
