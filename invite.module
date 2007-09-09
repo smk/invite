@@ -1,10 +1,9 @@
 <?php
-// $Id: invite.module,v 1.10.2.68 2007-09-02 01:49:44 smk Exp $
+// $Id: invite.module,v 1.10.2.69 2007-09-09 22:54:36 smk Exp $
 
 /**
  * @file
- * The invite.module provides a GMail-style 'Invite a friend' feature. It
- * allows your users to send and track invitations to join your site.
+ * Allows your users to send and track invitations to join your site.
  */
 
 /**
@@ -30,7 +29,7 @@ define('INVITE_MAX_PER_TURN',      1);
 function invite_help($section) {
   switch ($section) {
     case 'admin/modules#description':
-      return t('Allows users to send GMail style invitations, and automatically escalates new users who join the site to a role of your designation.');
+      return t('Allows your users to send and track invitations to join your site.');
 
     case 'invite/list':
       return _invite_get_help_text();
