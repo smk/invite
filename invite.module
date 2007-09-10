@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.75 2007-09-10 09:19:12 smk Exp $
+// $Id: invite.module,v 1.10.2.76 2007-09-10 10:46:20 smk Exp $
 
 /**
  * @file
@@ -85,7 +85,8 @@ function invite_menu($may_cache) {
     );
     $items[] = array(
       'path' => 'invite/withdraw',
-      'callback' => 'invite_delete',
+      'callback' => 'drupal_get_form',
+      'callback arguments' => array('invite_delete'),
       'access' => $send_access,
       'type' => MENU_CALLBACK,
     );
@@ -109,11 +110,11 @@ function invite_form_alter($form_id, &$form) {
       break;
 
     case 'user_register':
-      $invite = _invite_fetch_invite_from_session();
+      $invite = invite_load_from_session();
 
       // Legacy url support (user/register/123)
       if (!$invite && $code = arg(2)) {
-        if ($invite = _invite_fetch_invite($code)) {
+        if ($invite = invite_load($code)) {
           if (_invite_validate($invite)) {
             $_SESSION[INVITE_SESSION_NAME] = $invite->reg_code;
           }
@@ -178,9 +179,9 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
       break;
 
     case 'insert':
-      if ($invite = _invite_fetch_invite_from_session()) {
+      if ($invite = invite_load_from_session()) {
         // Update invite status
-        _invite_set_timestamp($edit['mail'], $account->uid, $invite->reg_code);
+        _invite_set_accepted($edit['mail'], $account->uid, $invite->reg_code);
 
         // Escalate user role
         _invite_role_escalate($account);
@@ -471,7 +472,7 @@ function invite_action() {
 
   if (!$user->uid) {
     // User not logged in
-    $invite = _invite_fetch_invite(arg(2));
+    $invite = invite_load(arg(2));
 
     // Check for a valid invite code
     if (_invite_validate($invite)) {
@@ -481,6 +482,37 @@ function invite_action() {
   }
 
   drupal_goto();
+}
+
+/**
+ * Load an invite record for a tracking code.
+ *
+ * @param $code
+ *   A registration code to load the invite record for.
+ * @return
+ *   An invite record.
+ */
+function invite_load($code) {
+  $result = db_query("SELECT * FROM {invite} WHERE reg_code = '%s'", $code);
+  if ($invite = db_fetch_object($result)) {
+    $invite->inviter = user_load(array('uid' => $invite->uid));
+    $invite->data = (array)unserialize($invite->data);
+  }
+  return $invite;
+}
+
+/**
+ * Returns an invite record from an invite code stored in the user's session.
+ *
+ * @return
+ *   An invite record, or FALSE if there is no invite code stored in the
+ *   user's session.
+ */
+function invite_load_from_session() {
+  if (isset($_SESSION[INVITE_SESSION_NAME])) {
+  	return invite_load($_SESSION[INVITE_SESSION_NAME]);
+  }
+  return FALSE;
 }
 
 /**
@@ -497,7 +529,7 @@ function invite_overview() {
 
   while ($invite = db_fetch_object($result)) {
     $row = array();
-    $delete_link = l(t('Withdraw'), 'invite/withdraw/'. urlencode($invite->email));
+    $delete_link = l(t('Withdraw'), "invite/withdraw/{$invite->reg_code}");
 
     if (!$invite->timestamp) {
       $expired = ($invite->expiry < time());
@@ -530,6 +562,8 @@ function invite_overview() {
  *
  * @param $items
  *   An array of table rows.
+ *
+ * @ingroup themeable
  */
 function theme_invite_overview($items) {
 
@@ -578,6 +612,9 @@ function invite_form($op = 'page') {
         drupal_goto('invite/list');
       }
     }
+  }
+  else {
+    $invites_left = INVITE_UNLIMITED_INVITES;
   }
 
   $form['remaining_invites'] = array(
@@ -707,6 +744,8 @@ function invite_form($op = 'page') {
 
 /**
  * Theme function for the invite form.
+ *
+ * @ingroup themeable
  */
 function theme_invite_form($form) {
   $output = '';
@@ -818,7 +857,7 @@ function invite_form_submit($form_id, $edit) {
     // Create the invite object
     $invite = _invite_substitutions(array(
       'email'   => $email,
-      'code'    => _invite_create_regcode(),
+      'code'    => invite_regcode(),
       'data'    => array('subject' => $subject, 'message' => $message),
     ));
 
@@ -826,7 +865,7 @@ function invite_form_submit($form_id, $edit) {
     $body = token_replace_multiple(t(_invite_get_mail_template()), _invite_token_types($invite));
 
     // Send e-mail
-    if (_invite_send_invite($email, $subject, $body)) {
+    if (invite_send_invite($email, $subject, $body)) {
       // Save invite
       invite_save($invite);
 
@@ -902,6 +941,81 @@ function invite_get_subject($substitutions = array()) {
 }
 
 /**
+ * Creates a unique tracking code.
+ *
+ * @return
+ *   An 8-digit long, unique tracking code.
+ */
+function invite_regcode() {
+  do {
+    $reg_code = user_password(8);
+    $result = db_query("SELECT COUNT(*) FROM {invite} WHERE reg_code = '%s'", $reg_code);
+  } while (db_result($result));
+
+  return $reg_code;
+}
+
+/**
+ * Sends an invite to the specified e-mail address.
+ *
+ * @param $recipient
+ *   The recipient's e-mail address.
+ * @param $subject
+ *   The e-mail subject.
+ * @param $body
+ *   The e-mail body.
+ */
+function invite_send_invite($recipient, $subject, $body) {
+  global $user;
+
+  $headers = array();
+
+  // Prevent e-mail looking like spam to SPF-enabled MTAs
+  // see http://drupal.org/node/133789
+  $from_site = variable_get('site_mail', ini_get('sendmail_from'));
+  if ($from_site) {
+    $headers['Sender'] = $headers['Return-Path'] = $headers['Errors-To'] = $from_site;
+  }
+
+  // Manual settings override custom settings below
+  // Note: default value must be NULL to comply with legacy Drupal versions
+  $from = variable_get('invite_manual_from', NULL);
+  $reply_to = variable_get('invite_manual_reply_to', NULL);
+
+  // Set custom From and Reply-To headers
+  if (!$from) {
+    if ($user->uid && variable_get('invite_use_users_email', 0)) {
+      $from = $user->mail;
+    }
+    else if ($from_site) {
+      $from = $from_site;
+    }
+  }
+  if (!$reply_to) {
+    if ($user->uid && variable_get('invite_use_users_email_replyto', 0)) {
+      $reply_to = $user->mail;
+    }
+    else if ($from_site) {
+      $reply_to = $from_site;
+    }
+  }
+  if ($reply_to) {
+    $headers['Reply-To'] = $reply_to;
+  }
+
+  if (!($success = drupal_mail('invite-mail', $recipient, $subject, wordwrap($body, 72), $from, $headers))) {
+    static $error_shown = FALSE;
+    if (!$error_shown) {
+      drupal_set_message(t('Problems occurred while sending the invitation(s). Please contact the site administrator.'), 'error');
+      $error_shown = TRUE;
+    }
+    watchdog('invite', t('Failed sending invitation. To: @email From: @from', array('@email' => '<'. $recipient .'>', '@from' => '<'. $from .'>')));
+  }
+
+  return $success;
+}
+
+/**
  * Save an invite to the database.
  *
  * @param $edit
@@ -918,65 +1032,60 @@ function invite_save($edit) {
 }
 
 /**
- * Implementation of hook_token_values().
- */
-function invite_token_values($type = 'all', $object = NULL) {
-  $values = array();
-  if ($type == 'invite' && is_object($object)) {
-    // NOTE: Invite is currently only capable of sending plain text e-mails.
-    // If you intend to change that, you need to properly escape all user input
-    // by adding check_plain() around below values!
-    $values['inviter']        = $object->inviter->name;
-    $values['invite-mail']    = $object->email;
-    $values['invite-message'] = $object->data['message'];
-    $values['join-link']      = url('invite/accept/'. $object->code, NULL, NULL, TRUE);
-  }
-  return $values;
-}
-
-/**
- * Implementation of hook_token_list().
- */
-function invite_token_list($type = 'all') {
-  if ($type == 'invite' || $type == 'all') {
-    $tokens['invite']['inviter']        = t('The name of the inviting user. <em>Note:</em> This is the same as [user].');
-    $tokens['invite']['invite-mail']    = t('The e-mail address of the invited user.');
-    $tokens['invite']['invite-message'] = t('The message text of the inviting user for the invitee.');
-    $tokens['invite']['join-link']      = t('The link to the registration page of the site.');
-    return $tokens;
-  }
-}
-
-/**
- * Menu callback; deletes an invite record.
+ * Menu callback; display confirm form to delete an invitation.
  *
- * @param $email
- *   Urlencode()'d e-mail address of the invite record to remove.
+ * @param $code
+ *   A registration code to remove the invitation for.
  */
-function invite_delete($email) {
+function invite_delete($code) {
   global $user;
 
-  $email = urldecode($email);
+  $invite = invite_load($code);
 
-  if ($email != '') {
-    $invite = db_fetch_object(db_query("SELECT uid AS inviter, timestamp FROM {invite} WHERE email = '%s'", $email));
-    // Inviter must match current user
-    if ($invite->inviter == $user->uid) {
-      // Verify that invite may be deleted
-      if (!$invite->timestamp || user_access('withdraw accepted invitations')) {
-        _invite_delete($email, $user->uid);
-        drupal_set_message(t('Invitation to %email has been withdrawn.', array('%email' => $email)));
-      }
-      else {
-        drupal_set_message(t('Invitations to registered users cannot be withdrawn.'), 'error');
-      }
+  // Inviter must be the current user
+  if ($invite->inviter->uid == $user->uid) {
+    // Verify the invitation may be deleted
+    if (!$invite->timestamp || user_access('withdraw accepted invitations')) {
+      $form['invite'] = array(
+        '#type' => 'value',
+        '#value' => $invite,
+      );
+      $description = !$invite->timestamp ? t("The invitee won't be able to register any more using this invitation.") : '';
+
+      return confirm_form(
+        $form,
+        t('Are you sure you want to withdraw the invitation to %email?', array('%email' => $invite->email)),
+        'invite/list',
+        $description .' '. t('This action cannot be undone.'),
+        t('Withdraw'),
+        t('Cancel')
+      );
     }
     else {
-      watchdog('invite', t('Detected malicious attempt to delete an invitation.'), WATCHDOG_WARNING, l(t('view'), 'user/'. $user->uid));
-      drupal_access_denied();
+      drupal_set_message(t('Invitations to registered users cannot be withdrawn.'), 'error');
     }
   }
+  else {
+    watchdog('invite', t('Detected malicious attempt to delete an invitation.'), WATCHDOG_WARNING, l(t('view'), 'user/'. $user->uid));
+    drupal_access_denied();
+  }
 
+  drupal_goto('invite/list');
+}
+
+/**
+ * Submit handler to delete an invitation.
+ */
+function invite_delete_submit($form_id, $form_values) {
+  $invite = $form_values['invite'];
+
+  db_query("DELETE FROM {invite} WHERE reg_code = '%s'", $invite->reg_code);
+
+  // Notify other modules
+  $args = array('inviter' => $invite->inviter, 'email' => $invite->email);
+  module_invoke_all('invite', 'cancel', $args);
+
+  drupal_set_message(t('Invitation to %email has been withdrawn.', array('%email' => $invite->email)));
   drupal_goto('invite/list');
 }
 
@@ -1063,6 +1172,8 @@ function invite_user_rank($uid) {
  *   An array of arrays consisting of the user id and invite count.
  * @param $rank
  *   The rank of the first inviter in the list.
+ *
+ * @ingroup themeable
  */
 function theme_invite_ranks($inviters, $rank = 1) {
   if ($inviters) {
@@ -1093,6 +1204,8 @@ function theme_invite_ranks($inviters, $rank = 1) {
  *
  * @param $count
  *   A number.
+ *
+ * @ingroup themeable
  */
 function theme_invite_count($count) {
   $title = format_plural($count, '1 invite', '@count invites');
@@ -1101,7 +1214,46 @@ function theme_invite_count($count) {
 
 /**
  * @{
- * Module specific helper functions.
+ * Token functions.
+ */
+
+/**
+ * Implementation of hook_token_values().
+ */
+function invite_token_values($type = 'all', $object = NULL) {
+  $values = array();
+  if ($type == 'invite' && is_object($object)) {
+    // NOTE: Invite is currently only capable of sending plain text e-mails.
+    // If you intend to change that, you need to properly escape all user input
+    // by adding check_plain() around below values!
+    $values['inviter']        = $object->inviter->name;
+    $values['invite-mail']    = $object->email;
+    $values['invite-message'] = $object->data['message'];
+    $values['join-link']      = url('invite/accept/'. $object->code, NULL, NULL, TRUE);
+  }
+  return $values;
+}
+
+/**
+ * Implementation of hook_token_list().
+ */
+function invite_token_list($type = 'all') {
+  if ($type == 'invite' || $type == 'all') {
+    $tokens['invite']['inviter']        = t('The name of the inviting user. <em>Note:</em> This is the same as [user].');
+    $tokens['invite']['invite-mail']    = t('The e-mail address of the invited user.');
+    $tokens['invite']['invite-message'] = t('The message text of the inviting user for the invitee.');
+    $tokens['invite']['join-link']      = t('The link to the registration page of the site.');
+    return $tokens;
+  }
+}
+
+/**
+ * @}
+ */
+
+/**
+ * @{
+ * Helper functions.
  */
 
 /**
@@ -1161,6 +1313,32 @@ function _invite_validate_emails($sql, &$emails) {
 }
 
 /**
+ * Validates an invite record.
+ *
+ * @param $invite
+ *   An invite record as returned by invite_load().
+ * @return
+ *   TRUE if the invite is valid, otherwise this function won't return.
+ */
+function _invite_validate($invite) {
+  if (!$invite || !$invite->inviter) {
+    drupal_set_message(t('This invitation has been withdrawn.'));
+    drupal_goto();
+  }
+  else if ($invite->timestamp != 0) {
+    drupal_set_message(t('This invitation has already been used. Please login now with your username and password.'));
+    drupal_goto('user');
+  }
+  else if ($invite->expiry < time()) {
+    drupal_set_message(t('Sorry, this invitation has expired.'));
+    drupal_goto();
+  }
+  else {
+    return TRUE;
+  }
+}
+
+/**
  * Escalates an invited user's role(s), based on the role(s) of the inviter.
  *
  * @param $invitee
@@ -1206,7 +1384,7 @@ function _invite_role_escalate($invitee) {
 }
 
 /**
- * Marks an invitation as accepted.
+ * Sets an invitation's status to accepted.
  *
  * @param $email
  *   The e-mail address the invitee actually used in the registration.
@@ -1215,7 +1393,7 @@ function _invite_role_escalate($invitee) {
  * @param $code
  *   The registration code of the originating invite.
  */
-function _invite_set_timestamp($email, $uid, $code) {
+function _invite_set_accepted($email, $uid, $code) {
   db_query("UPDATE {invite} SET timestamp = %d, mid = %d, email = '%s' WHERE reg_code = '%s'", time(), $uid, $email, $code);
 }
 
@@ -1232,81 +1410,6 @@ function _invite_check_messages($uid) {
     drupal_set_message(t('!user (@email) has joined @site-name!', array('!user' => theme('username', $account), '@email' => $invite->email, '@site-name' => variable_get('site_name', t('Drupal')))));
     db_query("UPDATE {invite} SET received = 1 WHERE email = '%s'", $invite->email);
   }
-}
-
-/**
- * Creates a unique tracking code.
- *
- * @return
- *   An 8-digit long, unique tracking code.
- */
-function _invite_create_regcode() {
-  do {
-    $reg_code = user_password(8);
-    $result = db_query("SELECT COUNT(*) FROM {invite} WHERE reg_code = '%s'", $reg_code);
-  } while (db_result($result));
-
-  return $reg_code;
-}
-
-/**
- * Sends an invite to the specified e-mail address.
- *
- * @param $recipient
- *   The recipient's e-mail address.
- * @param $subject
- *   The e-mail subject.
- * @param $body
- *   The e-mail body.
- */
-function _invite_send_invite($recipient, $subject, $body) {
-  global $user;
-
-  $headers = array();
-
-  // Prevent e-mail looking like spam to SPF-enabled MTAs
-  // see http://drupal.org/node/133789
-  $from_site = variable_get('site_mail', ini_get('sendmail_from'));
-  if ($from_site) {
-    $headers['Sender'] = $headers['Return-Path'] = $headers['Errors-To'] = $from_site;
-  }
-
-  // Manual settings override custom settings below
-  // Note: default value must be NULL to comply with legacy Drupal versions
-  $from = variable_get('invite_manual_from', NULL);
-  $reply_to = variable_get('invite_manual_reply_to', NULL);
-
-  // Set custom From and Reply-To headers
-  if (!$from) {
-    if ($user->uid && variable_get('invite_use_users_email', 0)) {
-      $from = $user->mail;
-    }
-    else if ($from_site) {
-      $from = $from_site;
-    }
-  }
-  if (!$reply_to) {
-    if ($user->uid && variable_get('invite_use_users_email_replyto', 0)) {
-      $reply_to = $user->mail;
-    }
-    else if ($from_site) {
-      $reply_to = $from_site;
-    }
-  }
-  if ($reply_to) {
-    $headers['Reply-To'] = $reply_to;
-  }
-
-  if (!($success = drupal_mail('invite-mail', $recipient, $subject, wordwrap($body, 72), $from, $headers))) {
-    static $error_shown = FALSE;
-    if (!$error_shown) {
-      drupal_set_message(t('Problems occurred while sending the invitation(s). Please contact the site administrator.'), 'error');
-      $error_shown = TRUE;
-    }
-    watchdog('invite', t('Failed sending invitation. To: @email From: @from', array('@email' => '<'. $recipient .'>', '@from' => '<'. $from .'>')));
-  }
-
-  return $success;
 }
 
 /**
@@ -1397,80 +1500,5 @@ function _invite_substitutions($args = array()) {
  */
 function _invite_unblock($uid) {
   db_query("UPDATE {users} SET status = 1 WHERE uid = %d", $uid);
-}
-
-/**
- * Fetches an invite record from the database.
- *
- * @param $code
- *   A registration code to load the invite record for.
- * @return
- *   An invite record.
- */
-function _invite_fetch_invite($code) {
-  $result = db_query("SELECT * FROM {invite} WHERE reg_code = '%s'", $code);
-  if ($invite = db_fetch_object($result)) {
-    $invite->inviter = user_load(array('uid' => $invite->uid));
-    $invite->data = (array)unserialize($invite->data);
-  }
-  return $invite;
-}
-
-/**
- * Validates an invite record.
- *
- * @param $invite
- *   An invite record as returned by _invite_fetch_invite().
- * @return
- *   TRUE if the invite is valid, otherwise this function won't return.
- */
-function _invite_validate($invite) {
-  if (!$invite || !$invite->inviter) {
-    drupal_set_message(t('This invitation has been withdrawn.'));
-    drupal_goto();
-  }
-  else if ($invite->timestamp != 0) {
-    drupal_set_message(t('This invitation has already been used. Please login now with your username and password.'));
-    drupal_goto('user');
-  }
-  else if ($invite->expiry < time()) {
-    drupal_set_message(t('Sorry, this invitation has expired.'));
-    drupal_goto();
-  }
-  else {
-    return TRUE;
-  }
-}
-
-/**
- * Returns an invite record from an invite code stored in the user's session.
- *
- * @return
- *   An invite record, or FALSE if there is no invite code stored in the
- *   user's session.
- */
-function _invite_fetch_invite_from_session() {
-  if (isset($_SESSION[INVITE_SESSION_NAME])) {
-  	return _invite_fetch_invite($_SESSION[INVITE_SESSION_NAME]);
-  }
-  return FALSE;
-}
-
-/**
- * Deletes an invite database record.
- *
- * @param $email
- *   The e-mail address of the invite record to remove.
- * @param $inviter_uid
- *   The user id of the inviting user.
- */
-function _invite_delete($email, $inviter_uid) {
-  global $user;
-  db_query("DELETE FROM {invite} WHERE email = '%s'", $email);
-  $inviter = ($user->uid == $inviter_uid) ? $user : user_load(array('uid' => $inviter_uid));
-
-  // Notify other modules
-  $args = array('inviter' => $inviter, 'email' => $email);
-  module_invoke_all('invite', 'cancel', $args);
 }
 
