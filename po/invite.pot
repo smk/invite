@@ -1,4 +1,4 @@
-# $Id: invite.pot,v 1.1.2.1 2007-09-09 22:57:59 smk Exp $
+# $Id: invite.pot,v 1.1.2.2 2007-09-10 01:12:12 smk Exp $
 #
 # LANGUAGE translation of Drupal (general)
 # Copyright YEAR NAME <EMAIL@ADDRESS>
@@ -11,7 +11,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"POT-Creation-Date: 2007-09-10 00:54+0200\n"
+"POT-Creation-Date: 2007-09-10 01:27+0200\n"
 "PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
 "Last-Translator: NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
@@ -19,18 +19,6 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
-
-#: invite_token.inc:25
-msgid "Token"
-msgstr ""
-
-#: invite_token.inc:25
-msgid "Replacement value"
-msgstr ""
-
-#: invite_token.inc:28
-msgid "tokens"
-msgstr ""
 
 #: invite.module:32
 msgid "Allows your users to send and track invitations to join your site."
@@ -120,8 +108,8 @@ msgstr ""
 msgid "[inviter] has sent you an invite!"
 msgstr ""
 
-#: invite.module:164
-msgid "Type the default subject of the invitation e-mail. Use the syntax [token] if you want to insert a replacement pattern."
+#: invite.module:164;180
+msgid "Use the syntax [token] if you want to insert a replacement pattern."
 msgstr ""
 
 #: invite.module:170
@@ -134,10 +122,6 @@ msgstr ""
 
 #: invite.module:177
 msgid "Mail template"
-msgstr ""
-
-#: invite.module:180
-msgid "Use the syntax [token] if you want to insert a replacement pattern."
 msgstr ""
 
 #: invite.module:183
