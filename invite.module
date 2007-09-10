@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.74 2007-09-10 08:06:09 smk Exp $
+// $Id: invite.module,v 1.10.2.75 2007-09-10 09:19:12 smk Exp $
 
 /**
  * @file
@@ -33,7 +33,7 @@ function invite_help($section) {
  * Implementation of hook_perm().
  */
 function invite_perm() {
-  return array('send invitations');
+  return array('send invitations', 'send mass invitations', 'withdraw accepted invitations');
 }
 
 /**
@@ -194,7 +194,7 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
 
     case 'delete':
       // Only delete invites of existing users if the configuration allows it to
-      $delete_joined = variable_get('invite_allow_join_delete', 0);
+      $delete_joined = user_access('withdraw accepted invitations');
 
       // Delete invite for this user
       if ($delete_joined) {
@@ -301,7 +301,7 @@ function invite_settings() {
 
   $roles = user_roles(0, 'send invitations');
   if (count($roles) == 0) {
-    drupal_set_message(t('Please enable the <em>send invitations</em> permission for at least one role. This can be done on the <a href="!access_url">Access control page</a>.', array('!access_url' => url('admin/user/access'))));
+    drupal_set_message(t('Please enable the <em>send invitations</em> permission for at least one role. This can be done on the <a href="!admin-user-access">Access control page</a>.', array('!admin-user-access' => url('admin/user/access'))));
   }
   $target_roles = user_roles(1);
 
@@ -314,7 +314,7 @@ function invite_settings() {
   );
   $form['general']['invite_target_role_default'] = array(
     '#type' => 'select',
-    '#title' => t('Default invitee target role'),
+    '#title' => t('Default target role'),
     '#default_value' => variable_get('invite_target_role_default', DRUPAL_AUTHENTICATED_RID),
     '#options' => $target_roles,
     '#description' => t('Choose the default role that invited users will be added to when they register. For example, <em>authenticated user</em>.'),
@@ -324,22 +324,17 @@ function invite_settings() {
     '#type' => 'select',
     '#title' => t('Invitation expiry'),
     '#default_value' => variable_get('invite_expiry', 30),
-    '#options' => drupal_map_assoc(array(5, 10, 15, 20, 25, 30, 45, 60)),
+    '#options' => drupal_map_assoc(array(1, 3, 7, 14, 30, 60)),
     '#description' => t('Set the expiry period for user invitations, in days.'),
     '#multiple' => FALSE,
     '#required' => TRUE,
-  );
-  $form['general']['invite_allow_join_delete'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Allow withdrawing accepted invitations'),
-    '#default_value' => variable_get('invite_allow_join_delete', 0),
-    '#description' => t('This option allows users to delete accepted invitations. This will also delete all invitations from/to a user upon termination of its account. Disable to prevent users from deleting their account to be re-invited.'),
   );
 
   // Role settings
   $form['role'] = array(
     '#type' => 'fieldset',
     '#title' => t('Role settings'),
+    '#description' => t('Note: Permission related settings can be found at the <a href="!admin-user-access">Access control page</a>.', array('!admin-user-access' => url('admin/user/access'))),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
@@ -354,7 +349,7 @@ function invite_settings() {
     );
     $form['role'][$role_no_space]['invite_target_role_'. $role_no_space] = array(
       '#type' => 'select',
-      '#title' => t("Invitee target role"),
+      '#title' => t('Target role'),
       '#default_value' => variable_get('invite_target_role_'. $role_no_space, DRUPAL_AUTHENTICATED_RID),
       '#options' => $target_roles,
       '#description' => t('You may choose to add invited users to another role (in addition to the default role set in the general section) when they have been invited by a member of %role.', array('%role' => $role)),
@@ -368,14 +363,6 @@ function invite_settings() {
       '#description' => t('Allows to limit the total number of invitations members of %role can send.', array('%role' => $role)),
       '#multiple' => FALSE,
       '#required' => TRUE,
-    );
-    $form['role'][$role_no_space]['invite_multiple_'. $role_no_space] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Allow multiple e-mail addresses'),
-      // Store 'unlimited' value for _invite_get_max_by_role()
-      '#return_value' => INVITE_UNLIMITED_INVITES,
-      '#default_value' => variable_get('invite_multiple_'. $role_no_space, 0),
-      '#description' => t('Whether members of %role may send bulk invitations.', array('%role' => $role)),
     );
   }
 
@@ -504,7 +491,7 @@ function invite_overview() {
 
   $rows = array();
   $profile_access = user_access('access user profiles');
-  $allow_delete = variable_get('invite_allow_join_delete', 0);
+  $allow_delete = user_access('withdraw accepted invitations');
 
   $result = db_query("SELECT i.*, u.uid FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid AND u.uid != 0 WHERE i.uid = %d ORDER BY i.expiry DESC", $user->uid);
 
@@ -572,7 +559,7 @@ function invite_form($op = 'page') {
   global $user;
 
   $max_invites = invite_max_invites();
-  $allow_multiple = invite_allow_multiple();
+  $allow_multiple = user_access('send mass invitations');
 
   // Check that the user is within limits
   if ($max_invites != INVITE_UNLIMITED_INVITES) {
@@ -663,17 +650,15 @@ function invite_form($op = 'page') {
       }
       $form['email'] = array(
         '#title' => t('To'),
+        '#type' => 'textfield',
+        '#maxlength' => 32,
         '#default_value' => $failed_emails,
-        '#description' => format_plural($allow_multiple, 'Type the e-mail address of the person you would like to invite.', 'Type the e-mail address(es) of the person(s) you would like to invite. Addresses should be separated by newlines or commas.'),
+        '#description' => format_plural((int)$allow_multiple + 1, 'Type the e-mail address of the person you would like to invite.', 'Type the e-mail addresses of the persons you would like to invite. Addresses should be separated by newlines or commas.'),
         '#required' => TRUE,
       );
-      if ($allow_multiple != 1) {
+      if ($allow_multiple) {
         $form['email']['#type'] = 'textarea';
-        $form['email']['#rows'] = 2;
-      }
-      else {
-        $form['email']['#type'] = 'textfield';
-        $form['email']['#maxlength'] = 64;
+        $form['email']['#rows'] = 3;
       }
       if ($failed_emails) {
         $form['email']['#attributes']['class'] = 'error';
@@ -707,7 +692,7 @@ function invite_form($op = 'page') {
       );
       $form['message'] = array(
         '#type' => 'textarea',
-        '#description' => format_plural($allow_multiple, 'This message will be added to the mail sent to the person you are inviting.', 'This message will be added to the mail sent to the person(s) you are inviting.'),
+        '#description' => format_plural((int)$allow_multiple + 1, 'This message will be added to the mail sent to the person you are inviting.', 'This message will be added to the mail sent to the persons you are inviting.'),
       );
 
       $form['submit'] = array(
@@ -801,10 +786,9 @@ function invite_form_validate($form_id, &$edit) {
       return;
     }
 
-    // Check limit per turn
-    $allow_multiple = invite_allow_multiple();
-    if ($allow_multiple != INVITE_UNLIMITED_INVITES && count($emails) > $allow_multiple) {
-      form_set_error('email', format_plural($allow_multiple, 'You cannot send more than one invitation per turn.', 'You cannot send more than @count invitations per turn.'));
+    // Check number of e-mails
+    if (!user_access('send mass invitations') && count($emails) > 1) {
+      form_set_error('email', t('You cannot send more than one invitation.'));
       return;
     }
   }
@@ -883,19 +867,25 @@ function invite_form_submit($form_id, $edit) {
  *   The number of invites the user may send.
  */
 function invite_max_invites($uid = NULL) {
-  return _invite_get_max_by_role('maxnum', INVITE_UNLIMITED_INVITES, $uid);
-}
+  global $user;
 
-/**
- * Whether a user may sent multiple invites.
- *
- * @param $uid
- *   A user id.
- * @return
- *   TRUE if the user may send multiple invites.
- */
-function invite_allow_multiple($uid = NULL) {
-  return _invite_get_max_by_role('multiple', 0, $uid);
+  $max = 0;
+  $account = (is_null($uid)) ? $user : user_load(array('uid' => $uid));
+
+  foreach (user_roles(0, 'send invitations') as $role) {
+    $role_no_space = str_replace(' ', '_', $role);
+    if (in_array($role, $account->roles)) {
+      $role_max = variable_get('invite_maxnum_'. $role_no_space, INVITE_UNLIMITED_INVITES);
+      if ($role_max == INVITE_UNLIMITED_INVITES) {
+        return INVITE_UNLIMITED_INVITES;
+      }
+      if ($role_max > $max) {
+        $max = $role_max;
+      }
+    }
+  }
+
+  return $max;
 }
 
 /**
@@ -973,7 +963,7 @@ function invite_delete($email) {
     // Inviter must match current user
     if ($invite->inviter == $user->uid) {
       // Verify that invite may be deleted
-      if (!$invite->timestamp || variable_get('invite_allow_join_delete', 0)) {
+      if (!$invite->timestamp || user_access('withdraw accepted invitations')) {
         _invite_delete($email, $user->uid);
         drupal_set_message(t('Invitation to %email has been withdrawn.', array('%email' => $email)));
       }
@@ -1113,41 +1103,6 @@ function theme_invite_count($count) {
  * @{
  * Module specific helper functions.
  */
-
-/**
- * Lookup role-dependent variable value.
- *
- * @param $var
- *   Variable whose value to return.
- * @param $default
- *   Default value if requested variable is unset.
- * @param $uid
- *   User whose role(s) should be taken into account. Defaults to current user.
- * @return
- *   The numeric maximum of all found variable values.
- */
-function _invite_get_max_by_role($var, $default, $uid = NULL) {
-  global $user;
-
-  $result = 0;
-  $account = (is_null($uid)) ? $user : user_load(array('uid' => $uid));
-
-  foreach (user_roles(0, 'send invitations') as $role) {
-    $role_no_space = str_replace(' ', '_', $role);
-    if (in_array($role, $account->roles)) {
-      $variable = 'invite_'. $var .'_'. $role_no_space;
-      $role_max = variable_get($variable, $default);
-      if ($role_max == INVITE_UNLIMITED_INVITES) {
-        return INVITE_UNLIMITED_INVITES;
-      }
-      if ($role_max > $result) {
-        $result = $role_max;
-      }
-    }
-  }
-
-  return $result;
-}
 
 /**
  * Extract all valid e-mail addresses from a string.
