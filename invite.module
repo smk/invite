@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.72 2007-09-10 06:14:00 smk Exp $
+// $Id: invite.module,v 1.10.2.73 2007-09-10 07:12:54 smk Exp $
 
 /**
  * @file
@@ -9,14 +9,12 @@
 /**
  * Session variable name.
  */
-define('INVITE_SESSION', 'invite_code');
+define('INVITE_SESSION_NAME', 'invite_code');
 
 /**
- * Default values for limits.
+ * Special unlimited value.
  */
-define('INVITE_UNLIMITED_INVITES', 0);
-define('INVITE_MAX_INVITES',       INVITE_UNLIMITED_INVITES);
-define('INVITE_MAX_PER_TURN',      1);
+define('INVITE_UNLIMITED_INVITES', -1);
 
 /**
  * Implementation of hook_help().
@@ -115,33 +113,18 @@ function _invite_settings() {
     $form['user_roles']['invite_maxnum_'. $role_no_space] = array(
       '#type' => 'select',
       '#title' => t('Limit for %role', array('%role' => $role)),
-      '#default_value' => variable_get('invite_maxnum_'. $role_no_space, INVITE_MAX_INVITES),
+      '#default_value' => variable_get('invite_maxnum_'. $role_no_space, INVITE_UNLIMITED_INVITES),
       '#options' => array(5 => 5, 10 => 10, 20 => 20, 50 => 50, 100 => 100, 500 => 500, 1000 => 1000, INVITE_UNLIMITED_INVITES => t('unlimited')),
       '#description' => t('Allows to limit the total number of invitations %role can send.', array('%role' => $role)),
       '#multiple' => FALSE,
       '#required' => TRUE,
     );
-  }
-
-  // Limit number of invites per turn
-  $form['multi_invites'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Multiple invitations'),
-    '#tree' => FALSE,
-    '#collapsible' => TRUE,
-    '#collapsed' => TRUE,
-  );
-
-  foreach ($roles as $role) {
-    $role_no_space = str_replace(' ', '_', $role);
-    $form['multi_invites']['invite_maxmultiple_'. $role_no_space] = array(
-      '#type' => 'select',
-      '#title' => t('Limit per turn for %role', array('%role' => $role)),
-      '#default_value' => variable_get('invite_maxmultiple_'. $role_no_space, INVITE_MAX_PER_TURN),
-      '#options' => array(1 => '1 ('. t('disabled') .')', 5 => 5, 10 => 10, 100 => 100, INVITE_UNLIMITED_INVITES => t('unlimited')),
-      '#description' => t('Allows to limit the maximum number of invitations a %role can send per turn.', array('%role' => $role)),
-      '#multiple' => FALSE,
-      '#required' => TRUE,
+    $form['user_roles']['invite_multiple_'. $role_no_space] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Allow entering multiple e-mails'),
+      // Store 'unlimited' value for _invite_get_max_by_role()
+      '#return_value' => INVITE_UNLIMITED_INVITES,
+      '#default_value' => variable_get('invite_multiple_'. $role_no_space, 0),
     );
   }
 
@@ -331,7 +314,7 @@ function invite_form_alter($form_id, &$form) {
       if (!$invite && $code = arg(2)) {
         if ($invite = _invite_fetch_invite($code)) {
           if (_invite_validate($invite)) {
-            $_SESSION[INVITE_SESSION] = $invite->reg_code;
+            $_SESSION[INVITE_SESSION_NAME] = $invite->reg_code;
           }
         }
       }
@@ -404,7 +387,7 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
         // Unblock user account
         _invite_unblock($account->uid);
 
-        unset($_SESSION[INVITE_SESSION]);
+        unset($_SESSION[INVITE_SESSION_NAME]);
       }
       break;
 
@@ -508,7 +491,7 @@ function invite_action() {
 
     // Check for a valid invite code
     if (_invite_validate($invite)) {
-      $_SESSION[INVITE_SESSION] = $invite->reg_code;
+      $_SESSION[INVITE_SESSION_NAME] = $invite->reg_code;
       drupal_goto('user/register');
     }
   }
@@ -591,13 +574,13 @@ function theme_invite_overview($items) {
 function invite_form($op = 'page') {
   global $user;
 
-  $maximum_invites = _invite_max_invites_by_role();
-  $maximum_per_turn = _invite_max_invites_per_turn();
+  $max_invites = invite_max_invites();
+  $allow_multiple = invite_allow_multiple();
 
   // Check that the user is within limits
-  if ($maximum_invites != INVITE_UNLIMITED_INVITES) {
+  if ($max_invites != INVITE_UNLIMITED_INVITES) {
     $invites_sent = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d", $user->uid));
-    $invites_left = max($maximum_invites - $invites_sent, 0);
+    $invites_left = max($max_invites - $invites_sent, 0);
 
     if ($invites_left == 0) {
       if ($op == 'block') {
@@ -607,7 +590,7 @@ function invite_form($op = 'page') {
       }
       else {
         // Redirect to invites list
-        drupal_set_message(t('Sorry, you reached the maximum number (@max) of invitations.', array('@max' => $maximum_invites)), 'error');
+        drupal_set_message(t('Sorry, you reached the maximum number (@max) of invitations.', array('@max' => $max_invites)), 'error');
         drupal_goto('invite/list');
       }
     }
@@ -626,7 +609,7 @@ function invite_form($op = 'page') {
         '#value' => t('Recommend @site-name to:', array('@site-name' => variable_get('site_name', t('Drupal')))),
       );
       $description = '';
-      if ($maximum_invites != INVITE_UNLIMITED_INVITES) {
+      if ($max_invites != INVITE_UNLIMITED_INVITES) {
         $description = format_plural($invites_left, '1 invite left', '@count invites left');
       }
       $form['email'] = array(
@@ -650,7 +633,7 @@ function invite_form($op = 'page') {
     case 'page':
     default:
       // Remaining invites    
-      if ($maximum_invites != INVITE_UNLIMITED_INVITES) {
+      if ($max_invites != INVITE_UNLIMITED_INVITES) {
         $form['remaining_invites_markup'] = array(
           '#value' => format_plural($invites_left, 'You have 1 invite left.', 'You have @count invites left.'),
         );
@@ -684,10 +667,10 @@ function invite_form($op = 'page') {
       $form['email'] = array(
         '#title' => t('To'),
         '#default_value' => $failed_emails,
-        '#description' => format_plural($maximum_per_turn, 'Type the e-mail address of the person you would like to invite.', 'Type the e-mail address(es) of the person(s) you would like to invite. Addresses should be separated by newlines or commas.'),
+        '#description' => format_plural($allow_multiple, 'Type the e-mail address of the person you would like to invite.', 'Type the e-mail address(es) of the person(s) you would like to invite. Addresses should be separated by newlines or commas.'),
         '#required' => TRUE,
       );
-      if ($maximum_per_turn != 1) {
+      if ($allow_multiple != 1) {
         $form['email']['#type'] = 'textarea';
         $form['email']['#rows'] = 2;
       }
@@ -727,7 +710,7 @@ function invite_form($op = 'page') {
       );
       $form['message'] = array(
         '#type' => 'textarea',
-        '#description' => format_plural($maximum_per_turn, 'This message will be added to the mail sent to the person you are inviting.', 'This message will be added to the mail sent to the person(s) you are inviting.'),
+        '#description' => format_plural($allow_multiple, 'This message will be added to the mail sent to the person you are inviting.', 'This message will be added to the mail sent to the person(s) you are inviting.'),
       );
 
       $form['submit'] = array(
@@ -854,9 +837,9 @@ function invite_form_validate($form_id, &$edit) {
     }
 
     // Check limit per turn
-    $maximum_per_turn = _invite_max_invites_per_turn();
-    if ($maximum_per_turn != INVITE_UNLIMITED_INVITES && count($emails) > $maximum_per_turn) {
-      form_set_error('email', format_plural($maximum_per_turn, 'You cannot send more than one invitation per turn.', 'You cannot send more than @count invitations per turn.'));
+    $allow_multiple = invite_allow_multiple();
+    if ($allow_multiple != INVITE_UNLIMITED_INVITES && count($emails) > $allow_multiple) {
+      form_set_error('email', format_plural($allow_multiple, 'You cannot send more than one invitation per turn.', 'You cannot send more than @count invitations per turn.'));
       return;
     }
   }
@@ -1153,27 +1136,27 @@ function invite_disable() {
  */
 
 /**
- * Returns how many invites a user may send.
+ * Return max number of invites a user may send.
  *
  * @param $uid
- *   The user id to retrieve the invites limit for.
+ *   A user id.
  * @return
  *   The number of invites the user may send.
  */
-function _invite_max_invites_by_role($uid = NULL) {
-  return _invite_get_max_by_role('maxnum', INVITE_MAX_INVITES, $uid);
+function invite_max_invites($uid = NULL) {
+  return _invite_get_max_by_role('maxnum', INVITE_UNLIMITED_INVITES, $uid);
 }
 
 /**
- * Returns how many invites may be sent per turn.
+ * Whether a user may sent multiple invites.
  *
  * @param $uid
- *   The user id to retrieve the per-turn limit for.
+ *   A user id.
  * @return
- *   The number of invites the user may send per turn.
+ *   TRUE if the user may send multiple invites.
  */
-function _invite_max_invites_per_turn($uid = NULL) {
-  return _invite_get_max_by_role('maxmultiple', INVITE_MAX_PER_TURN, $uid);
+function invite_allow_multiple($uid = NULL) {
+  return _invite_get_max_by_role('multiple', 0, $uid);
 }
 
 /**
@@ -1526,8 +1509,8 @@ function _invite_validate($invite) {
  *   user's session.
  */
 function _invite_fetch_invite_from_session() {
-  if (isset($_SESSION[INVITE_SESSION])) {
-  	return _invite_fetch_invite($_SESSION[INVITE_SESSION]);
+  if (isset($_SESSION[INVITE_SESSION_NAME])) {
+  	return _invite_fetch_invite($_SESSION[INVITE_SESSION_NAME]);
   }
   return FALSE;
 }
