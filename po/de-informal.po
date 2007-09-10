@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: de\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2007-09-10 02:45+0100\n"
+"PO-Revision-Date: 2007-09-10 08:19+0100\n"
 "Last-Translator: Stefan Kudwien <smk@unleashedmind.com>\n"
 "Language-Team: Deutsch\n"
 "MIME-Version: 1.0\n"
@@ -12,43 +12,43 @@ msgstr ""
 "X-Poedit-Language: German\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
-#: invite.module:161;935
+#: invite.module:159;938
 msgid "[inviter] has sent you an invite!"
 msgstr "[inviter] möchte Dich einladen!"
 
-#: invite.module:164;180
+#: invite.module:162;178
 msgid "Use the syntax [token] if you want to insert a replacement pattern."
 msgstr "Verwende die Syntax [token], um einen Platzhalter einzufügen."
 
-#: invite.module:299;569
+#: invite.module:297;570
 msgid "Your invitations"
 msgstr "Deine Einladungen"
 
-#: invite.module:575
+#: invite.module:576
 msgid "You have not sent any invitations yet."
 msgstr "Du hast noch keine Einladungen versendet."
 
-#: invite.module:607
+#: invite.module:610
 msgid "Sorry, you reached the maximum number (@max) of invitations."
 msgstr "Du hast die maximale Zahl möglicher Einladungen (%max) erreicht."
 
-#: invite.module:642
+#: invite.module:645
 msgid "View your invites"
 msgstr "Deine Einladungen ansehen"
 
-#: invite.module:708
+#: invite.module:711
 msgid "Type the subject of the invitation e-mail."
 msgstr "Gib den Betreff der E-Mail ein."
 
-#: invite.module:723
+#: invite.module:726
 msgid "Message"
 msgstr "Deine Nachricht"
 
-#: invite.module:1362
+#: invite.module:1379
 msgid "Problems occurred while sending the invitation(s). Please contact the site administrator."
 msgstr "Beim Versenden der Einladung(en) ist ein Problem aufgetreten. Bitte wende Dich an den Administrator der Seite."
 
-#: invite.module:1378
+#: invite.module:1395
 msgid ""
 "Your friend, [inviter], has invited you to join [site-name] at [site-url].\r\n"
 "\r\n"
@@ -68,59 +68,59 @@ msgstr ""
 "----------\r\n"
 "[invite-message]"
 
-#: invite.module:1397
+#: invite.module:1414
 msgid ""
 "<p>This is an overview of the invitations you have sent. The status of each invitation is shown:\r\n"
-"<ul>\r\n"
-"  <li><strong>Accepted</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the e-mail address to take you to his/her profile page.</li>\r\n"
-"  <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation.</li>\r\n"
-"  <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>\r\n"
-"  <li><strong>Deleted</strong>: The user account has been terminated.</li>\r\n"
-"</ul>\r\n"
-"</p>\r\n"
-"<p>At any time, you may withdraw either <em>pending</em> or <em>expired</em> invitations. <em>Accepted</em> invitations can't be withdrawn and count permanently toward your invitation allotment.</p>"
-msgstr ""
-"<p>Dies ist ein Überblick über alle Einladungen, die Du bereits versendet hast. Im Folgenden siehst Du den Status jeder Einladung:\r\n"
 "<dl>\r\n"
-"  <dt>Akzeptiert:</dt><dd>Diese Person ist der Website auf Deine Einladung hin beigetreten. Ein Klick auf die E-Mail-Adresse bringt Dich zu ihrem Profil.</dd>\r\n"
-"  <dt>Offen:</dt><dd>Die Einladung an diese Person wurde verschickt, aber sie hat noch nicht darauf reagiert.</dd>\r\n"
-"  <dt>Abgelaufen:</dt><dd>Die Person hat auf Ihre Einladung innerhalb des vorgegebenen Zeitraums nicht reagiert.</dd>\r\n"
-"  <dt>Gelöscht:</dt><dd>Das Benutzerkonto wurde gelöscht.</dd>\r\n"
+"  <dt>Accepted</dt><dd>Shows that the person you have invited has used your invitation to join the site. Click on the e-mail address to take you to his/her profile page.</dd>\r\n"
+"  <dt>Pending</dt><dd>The invitation has been sent, but your friend has still not accepted the invitation.</dd>\r\n"
+"  <dt>Expired</dt><dd>The invitation has not been used to register on the site within the expiration period.</dd>\r\n"
+"  <dt>Deleted</dt><dd>The user account has been terminated.</dd>\r\n"
 "</dl>\r\n"
 "</p>\r\n"
-"<p>Offene oder abgelaufene Einladungen können jederzeit gelöscht werden. Sobald eine Einladung akzeptiert wurde, kann sie nicht mehr gelöscht werden.</p>"
+"<p>At any time, you may withdraw either pending or expired invitations. Accepted invitations can't be withdrawn and count permanently toward your invitation allotment.</p>"
+msgstr ""
+"<p>Dies ist ein Überblick über alle Einladungen, die Du versendet hast. Im Folgenden siehst Du den Status jeder Einladung:\r\n"
+"<dl>\r\n"
+"  <dt>Akzeptiert</dt><dd>Diese Person ist der Website auf Deine Einladung hin beigetreten. Ein Klick auf die E-Mail-Adresse bringt Dich zu ihrem Profil.</dd>\r\n"
+"  <dt>Offen</dt><dd>Die Einladung an diese Person wurde verschickt, aber sie hat noch nicht darauf reagiert.</dd>\r\n"
+"  <dt>Abgelaufen</dt><dd>Die Person hat auf Ihre Einladung innerhalb des vorgegebenen Zeitraums nicht reagiert.</dd>\r\n"
+"  <dt>Gelöscht</dt><dd>Das Benutzerkonto wurde gelöscht.</dd>\r\n"
+"</dl>\r\n"
+"</p>\r\n"
+"<p>Offene oder abgelaufene Einladungen können jederzeit wiederrufen werden. Sobald eine Einladung akzeptiert wurde, kann sie nicht mehr gelöscht werden.</p>"
 
-#: invite.module:652
+#: invite.module:655
 msgid "You have 1 invite left."
 msgid_plural "You have @count invites left."
 msgstr[0] "Du hast noch eine Einladung frei."
 msgstr[1] "Du hast noch @count Einladungen frei."
 
-#: invite.module:684
+#: invite.module:687
 msgid "Type the e-mail address of the person you would like to invite."
 msgid_plural "Type the e-mail address(es) of the person(s) you would like to invite. Addresses should be separated by newlines or commas."
 msgstr[0] "E-Mail-Adresse der Person, die Du einladen möchtest."
 msgstr[1] "E-Mail-Adresse(n) der Person(en), die Du einladen möchtest. Mehrere Adressen müssen durch Zeilenumbrüche oder Kommata getrennt werden."
 
-#: invite.module:849
+#: invite.module:852
 msgid "You have only 1 invite left."
 msgid_plural "You have only @count invites left."
 msgstr[0] "Du hast nur noch eine Einladung frei."
 msgstr[1] "Du hast nur noch @count Einladungen frei."
 
-#: invite.module:856
+#: invite.module:859
 msgid "You cannot send more than one invitation per turn."
 msgid_plural "You cannot send more than @count invitations per turn."
 msgstr[0] "Du kannst nicht mehr als eine Einladung pro Durchgang versenden."
 msgstr[1] "Du kannst nicht mehr als @count Einladungen pro Durchgang versenden."
 
-#: invite.module:914
+#: invite.module:917
 msgid "Your invitation has been successfully sent. You will be notified when the invitee joins the site."
 msgid_plural "@count invitations have been successfully sent. You will be notified when any invitee joins the site."
 msgstr[0] "Deine Einladung wurde erfolgreich versendet. Du wirst benachrichtigt, wenn sich der Eingeladene angemeldet hat."
 msgstr[1] "@count Einladungen wurden erfolgreich versendet. Du wirst benachrichtigt, wenn sich einer der Eingeladenen angemeldet hat."
 
-#: invite.module:918
+#: invite.module:921
 msgid "The entered e-mail address is invalid. Please correct it."
 msgid_plural "@count entered e-mail addresses are invalid. Please correct them."
 msgstr[0] "Die eingegebene E-Mail-Adresse ist ungültig, bitte korrigiere sie."
