@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.4.2.9 2007-09-09 22:54:36 smk Exp $ */
+/* $Id: README.txt,v 1.4.2.10 2007-09-10 11:15:43 smk Exp $ */
 
 SUMMARY
 
@@ -31,6 +31,12 @@ INSTALLATION
 
 * Give some roles permission to send invites at the Access control page
   (admin/user/access).
+  "send mass invitations": Allows users to send an invitation to multiple
+  recipients (this was formerly a setting known as "limit per turn").
+  "withdraw accepted invitations": This will allow your users to delete
+  accepted invitations. It will also delete all invitations from/to a user upon
+  termination of its account. Disable it to prevent users from deleting their
+  account to be re-invited.
 
 * Invite adds a new registration mode called 'New user registration by
   invitation only' to the User settings page (admin/user/settings), which allows
@@ -42,52 +48,45 @@ INSTALLATION
 
 CONFIGURATION
 
---- User settings ---
+--- General settings ---
 
-* Target roles
+* Target role
   Allows to specify the role invited users will be added to when they
   register, depending on the role of the inviting user. The default is
   'authenticated user'.
+
 * Invitation expiry
   Specify how long sent invitations are valid (in days). After an invitation
   expires the registration link becomes invalid.
-* Allow withdrawing accepted invitations
-  Whether to allow your users to delete accepted invitations. This will also
-  delete all invitations from/to a user upon termination of its account.
-  Disable to prevent users from deleting their account to be re-invited.
 
---- Role limitations ---
+--- Role settings ---
 
-* Limit
+* Target roles
+  Allows to specify an additional role invited users will be added to when they
+  register, depending on the role of the inviting user.
+
+* Invitation limit
   Allows to limit the total number of invitations each role can send.
-
---- Multiple invitations ---
-
-* Limit per turn
-  Allows to limit the number of e-mail addresses a role can invite per turn.
 
 --- E-mail settings ---
 
 * Subject
   The default subject of the invitation e-mail.
+
 * Editable subject
   Whether the user should be able to customize the subject.
+
 * Mail template
   The e-mail body.
+
 * From e-mail address
   Choose whether to send the e-mail on behalf of the user or in the name of the
   site.
+
 * Manually override From/Reply-To e-mail address (Advanced settings)
   Allows to override the sender and reply-to addresses used in all e-mails.
   Make sure the domain matches that of your SMTP server, or your e-mails will
   likely be marked as spam.
-
---- Invite page customization ---
-
-* Invite page title
-  The title of the page (and the menu item) where users invite friends.
-* Invite help text
-  Allows to customize the introductory text that appears above the invite form.
 
 
 GENERAL USE
