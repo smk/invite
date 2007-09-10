@@ -1,10 +1,9 @@
 <?php
-// $Id: invite.module,v 1.14 2007-09-01 03:00:29 smk Exp $
+// $Id: invite.module,v 1.15 2007-09-10 01:57:22 smk Exp $
 
 /**
  * @file
- * The invite.module provides a GMail-style 'Invite a friend' feature. It
- * allows your users to send and track invitations to join your site.
+ * Allows your users to send and track invitations to join your site.
  */
 
 /**
@@ -13,16 +12,11 @@
 define('INVITE_SESSION', 'invite_code');
 
 /**
- * @name Invite limits
- * @{
- * Provide defaults for certain limits.
+ * Default values for limits.
  */
 define('INVITE_UNLIMITED_INVITES', 0);
 define('INVITE_MAX_INVITES',       INVITE_UNLIMITED_INVITES);
 define('INVITE_MAX_PER_TURN',      1);
-/**
- * @}
- */
 
 /**
  * Implementation of hook_help().
@@ -30,7 +24,7 @@ define('INVITE_MAX_PER_TURN',      1);
 function invite_help($section) {
   switch ($section) {
     case 'admin/modules#description':
-      return t('Allows users to send GMail style invitations, and automatically escalates new users who join the site to a role of your designation.');
+      return t('Allows your users to send and track invitations to join your site.');
 
     case 'invite/list':
       return _invite_get_help_text();
@@ -45,7 +39,10 @@ function invite_perm() {
 }
 
 /**
- * Menu callback; renders invite settings form.
+ * Menu callback; display invite settings form.
+ *
+ * @return
+ *   A form definition array.
  */
 function _invite_settings() {
   include(drupal_get_path('module', 'invite') .'/invite_token.inc');
@@ -162,7 +159,7 @@ function _invite_settings() {
     '#default_value' => variable_get('invite_subject', t('[inviter] has sent you an invite!')),
     '#size' => 20,
     '#maxlength' => 64,
-    '#description' => t('Type the default subject of the invitation e-mail. Use the syntax [token] if you want to insert a replacement pattern.'),
+    '#description' => t('Type the default subject of the invitation e-mail.' .' '. t('Use the syntax [token] if you want to insert a replacement pattern.'),
     '#required' => TRUE,
   );
 
@@ -500,7 +497,7 @@ function invite_cron() {
 }
 
 /**
- * Menu callback; handles incoming join requests.
+ * Menu callback; handle incoming requests for accepting an invite.
  */
 function invite_action() {
   global $user;
@@ -520,7 +517,7 @@ function invite_action() {
 }
 
 /**
- * Menu callback; display overview of sent invitations.
+ * Menu callback; display an overview of sent invitations.
  */
 function invite_overview() {
   global $user;
@@ -562,7 +559,10 @@ function invite_overview() {
 }
 
 /**
- * Theme function for the invite overview.
+ * Theme function; display the invite overview table.
+ *
+ * @param $items
+ *   An array of table rows.
  */
 function theme_invite_overview($items) {
 
@@ -585,6 +585,8 @@ function theme_invite_overview($items) {
  *
  * @param $op
  *   The type of form to generate, 'page' or 'block'.
+ * @return
+ *   A form definition array.
  */
 function invite_form($op = 'page') {
   global $user;
@@ -925,12 +927,12 @@ function invite_form_submit($form_id, $edit) {
 }
 
 /**
- * Return the invite email subject.
+ * Return the invite e-mail subject.
  *
  * @param $substitutions
  *   Associative array of substitutions for token replacement.
  * @return
- *   The subject line.
+ *   The e-mail subject.
  */
 function invite_get_subject($substitutions = array()) {
   $subject = t(variable_get('invite_subject', t('[inviter] has sent you an invite!')));
@@ -942,6 +944,8 @@ function invite_get_subject($substitutions = array()) {
  *
  * @param $edit
  *   Associative array of data to store.
+ * @return
+ *   The result of the database operation.
  */
 function invite_save($edit) {
   $edit = (array)$edit;
@@ -1153,6 +1157,8 @@ function invite_disable() {
  *
  * @param $uid
  *   The user id to retrieve the invites limit for.
+ * @return
+ *   The number of invites the user may send.
  */
 function _invite_max_invites_by_role($uid = NULL) {
   return _invite_get_max_by_role('maxnum', INVITE_MAX_INVITES, $uid);
@@ -1163,6 +1169,8 @@ function _invite_max_invites_by_role($uid = NULL) {
  *
  * @param $uid
  *   The user id to retrieve the per-turn limit for.
+ * @return
+ *   The number of invites the user may send per turn.
  */
 function _invite_max_invites_per_turn($uid = NULL) {
   return _invite_get_max_by_role('maxmultiple', INVITE_MAX_PER_TURN, $uid);
@@ -1313,11 +1321,19 @@ function _invite_create_regcode() {
     $reg_code = user_password(8);
     $result = db_query("SELECT COUNT(*) FROM {invite} WHERE reg_code = '%s'", $reg_code);
   } while (db_result($result));
+
   return $reg_code;
 }
 
 /**
- * Prepares and sends an invite to the specified e-mail address.
+ * Sends an invite to the specified e-mail address.
+ *
+ * @param $recipient
+ *   The recipient's e-mail address.
+ * @param $subject
+ *   The e-mail subject.
+ * @param $body
+ *   The e-mail body.
  */
 function _invite_send_invite($recipient, $subject, $body) {
   global $user;

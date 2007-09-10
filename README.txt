@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.8 2007-09-01 03:00:29 smk Exp $ */
+/* $Id: README.txt,v 1.9 2007-09-10 01:57:22 smk Exp $ */
 
 SUMMARY
 
@@ -6,21 +6,22 @@ Invitations are important to create network effects and exponential growth of a
 community of interest. This module adds an 'Invite a friend' feature that 
 allows your users to send and track invitations to join your site.
 
-Users are able to customize the message text and subject of the e-mail, which 
-is then sent either on their behalf or in the name of the site. Administrators 
-are given options to escalate invited users to a specific role and limit the 
-total number of invitations a user can send. This module can also be used to 
-allow new user registrations 'by invitation only', which allows you to maintain 
-a semi-private site.
+Invite allows your users to send and track invitations to your site. Users are
+able to customize the message text and subject of the e-mail, which is then
+sent either on their behalf or in the name of the site. Administrators are
+given options to escalate invited users to a specific role and limit the total
+number of invitations a user can send. This module can also be used to allow
+new user registrations "by invitation only", which allows you to maintain a
+semi-private site.
 
-Also available is a quick invite block, as well as a block listing the top 
-inviters of the site. More statistics are available on the user's profile page, 
-the block will display the absolute rank among the other users in this case.
+Also available is a quick invite block and a block listing the top inviters of
+the site. More statistics are available on the user's profile page, the block
+will then show the absolute rank among the other users in this case.
 
 
-PREREQUISITES
+REQUIREMENTS
 
-Invite requires Token v1.8 (or newer) http://drupal.org/project/token.
+Token 5.x-1.8 (or newer) http://drupal.org/project/token
 
 
 INSTALLATION
@@ -31,12 +32,12 @@ INSTALLATION
 * Give some roles permission to send invites at the Access control page
   (admin/user/access).
 
-* Optionally configure the registration settings at the User settings page
-  (admin/user/settings). Invite adds a new mode to the existing settings called
-  'New user registration by invitation only', which allows you to maintain a
-  semi-private site.
+* Invite adds a new registration mode called 'New user registration by
+  invitation only' to the User settings page (admin/user/settings), which allows
+  you to maintain a semi-private site. You can enable it if you need it.
 
 * Configure the module at User management > Invite settings (admin/user/invite).
+  For an explanation of the configuration settings see below.
 
 
 CONFIGURATION
@@ -143,11 +144,11 @@ function hook_invite($op, $args) {
 
 There are several third-party modules that currently can react on invite events:
 
-* Buddylist                                  http://drupal.org/project/buddylist
-  User Relationships                http://drupal.org/project/user_relationships
+* Buddylist http://drupal.org/project/buddylist
+  User Relationships http://drupal.org/project/user_relationships
   Inviter and invitee are automagically put on their respective buddy list.
 
-* Userpoints                                http://drupal.org/project/userpoints
+* Userpoints http://drupal.org/project/userpoints
   Credit some points for sending registrations and/or when an invited user
   registers.
 
@@ -178,5 +179,5 @@ Project maintainer:
 Stefan Kudwien (smk) <smk@unleashedmind.com>
 
 Original Author:
-David Hill a.k.a. Tatonca  <tatonca_@hotmail.com>
+David Hill a.k.a. Tatonca <tatonca_@hotmail.com>
 

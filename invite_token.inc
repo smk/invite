@@ -1,5 +1,5 @@
 <?php
-// $Id: invite_token.inc,v 1.2 2007-08-21 19:46:22 smk Exp $
+// $Id: invite_token.inc,v 1.3 2007-09-10 01:57:22 smk Exp $
 
 /**
  * For a given context, builds a formatted list of tokens and descriptions
