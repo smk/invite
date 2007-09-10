@@ -2,7 +2,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: de\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2007-09-10 08:19+0100\n"
+"PO-Revision-Date: 2007-09-10 13:00+0100\n"
 "Last-Translator: Stefan Kudwien <smk@unleashedmind.com>\n"
 "Language-Team: Deutsch\n"
 "MIME-Version: 1.0\n"
@@ -12,31 +12,31 @@ msgstr ""
 "X-Poedit-Language: German\n"
 "X-Poedit-SourceCharset: utf-8\n"
 
-#: invite.module:159;938
-msgid "[inviter] has sent you an invite!"
-msgstr "[inviter] möchte Dich einladen!"
-
-#: invite.module:162;178
-msgid "Use the syntax [token] if you want to insert a replacement pattern."
-msgstr "Verwende die Syntax [token], um einen Platzhalter einzufügen."
-
-#: invite.module:297;570
+#: invite.module:81;571
 msgid "Your invitations"
 msgstr "Deine Einladungen"
 
-#: invite.module:576
+#: invite.module:380;939
+msgid "[inviter] has sent you an invite!"
+msgstr "[inviter] möchte Dich einladen!"
+
+#: invite.module:383;397
+msgid "Use the syntax [token] if you want to insert a replacement pattern."
+msgstr "Verwende die Syntax [token], um einen Platzhalter einzufügen."
+
+#: invite.module:577
 msgid "You have not sent any invitations yet."
 msgstr "Du hast noch keine Einladungen versendet."
 
-#: invite.module:610
+#: invite.module:611
 msgid "Sorry, you reached the maximum number (@max) of invitations."
 msgstr "Du hast die maximale Zahl möglicher Einladungen (%max) erreicht."
 
-#: invite.module:645
+#: invite.module:649
 msgid "View your invites"
 msgstr "Deine Einladungen ansehen"
 
-#: invite.module:711
+#: invite.module:713
 msgid "Type the subject of the invitation e-mail."
 msgstr "Gib den Betreff der E-Mail ein."
 
@@ -44,11 +44,11 @@ msgstr "Gib den Betreff der E-Mail ein."
 msgid "Message"
 msgstr "Deine Nachricht"
 
-#: invite.module:1379
+#: invite.module:1009
 msgid "Problems occurred while sending the invitation(s). Please contact the site administrator."
 msgstr "Beim Versenden der Einladung(en) ist ein Problem aufgetreten. Bitte wende Dich an den Administrator der Seite."
 
-#: invite.module:1395
+#: invite.module:1422
 msgid ""
 "Your friend, [inviter], has invited you to join [site-name] at [site-url].\r\n"
 "\r\n"
@@ -68,7 +68,7 @@ msgstr ""
 "----------\r\n"
 "[invite-message]"
 
-#: invite.module:1414
+#: invite.module:1441
 msgid ""
 "<p>This is an overview of the invitations you have sent. The status of each invitation is shown:\r\n"
 "<dl>\r\n"
@@ -90,37 +90,31 @@ msgstr ""
 "</p>\r\n"
 "<p>Offene oder abgelaufene Einladungen können jederzeit wiederrufen werden. Sobald eine Einladung akzeptiert wurde, kann sie nicht mehr gelöscht werden.</p>"
 
-#: invite.module:655
+#: invite.module:659
 msgid "You have 1 invite left."
 msgid_plural "You have @count invites left."
 msgstr[0] "Du hast noch eine Einladung frei."
 msgstr[1] "Du hast noch @count Einladungen frei."
 
-#: invite.module:687
+#: invite.module:693
 msgid "Type the e-mail address of the person you would like to invite."
-msgid_plural "Type the e-mail address(es) of the person(s) you would like to invite. Addresses should be separated by newlines or commas."
+msgid_plural "Type the e-mail addresses of the persons you would like to invite. Addresses should be separated by newlines or commas."
 msgstr[0] "E-Mail-Adresse der Person, die Du einladen möchtest."
-msgstr[1] "E-Mail-Adresse(n) der Person(en), die Du einladen möchtest. Mehrere Adressen müssen durch Zeilenumbrüche oder Kommata getrennt werden."
+msgstr[1] "Gib die E-Mail-Adressen der Personen ein, die Du einladen möchtest. Mehrere Adressen müssen durch Zeilenumbrüche oder Kommata getrennt werden."
 
-#: invite.module:852
+#: invite.module:824
 msgid "You have only 1 invite left."
 msgid_plural "You have only @count invites left."
 msgstr[0] "Du hast nur noch eine Einladung frei."
 msgstr[1] "Du hast nur noch @count Einladungen frei."
 
-#: invite.module:859
-msgid "You cannot send more than one invitation per turn."
-msgid_plural "You cannot send more than @count invitations per turn."
-msgstr[0] "Du kannst nicht mehr als eine Einladung pro Durchgang versenden."
-msgstr[1] "Du kannst nicht mehr als @count Einladungen pro Durchgang versenden."
-
-#: invite.module:917
+#: invite.module:888
 msgid "Your invitation has been successfully sent. You will be notified when the invitee joins the site."
 msgid_plural "@count invitations have been successfully sent. You will be notified when any invitee joins the site."
 msgstr[0] "Deine Einladung wurde erfolgreich versendet. Du wirst benachrichtigt, wenn sich der Eingeladene angemeldet hat."
 msgstr[1] "@count Einladungen wurden erfolgreich versendet. Du wirst benachrichtigt, wenn sich einer der Eingeladenen angemeldet hat."
 
-#: invite.module:921
+#: invite.module:892
 msgid "The entered e-mail address is invalid. Please correct it."
 msgid_plural "@count entered e-mail addresses are invalid. Please correct them."
 msgstr[0] "Die eingegebene E-Mail-Adresse ist ungültig, bitte korrigiere sie."
