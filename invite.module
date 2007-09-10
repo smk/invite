@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.71 2007-09-10 01:54:24 smk Exp $
+// $Id: invite.module,v 1.10.2.72 2007-09-10 06:14:00 smk Exp $
 
 /**
  * @file
@@ -159,7 +159,7 @@ function _invite_settings() {
     '#default_value' => variable_get('invite_subject', t('[inviter] has sent you an invite!')),
     '#size' => 20,
     '#maxlength' => 64,
-    '#description' => t('Type the default subject of the invitation e-mail.' .' '. t('Use the syntax [token] if you want to insert a replacement pattern.'),
+    '#description' => t('Type the default subject of the invitation e-mail.') .' '. t('Use the syntax [token] if you want to insert a replacement pattern.'),
     '#required' => TRUE,
   );
 
@@ -1412,14 +1412,14 @@ To become a member of [site-name], click the link below or paste it into the add
  */
 function _invite_get_help_text() {
   $help = t("<p>This is an overview of the invitations you have sent. The status of each invitation is shown:
-<ul>
-  <li><strong>Accepted</strong>: Shows that the person you have invited has used your invitation to join the site. Click on the e-mail address to take you to his/her profile page.</li>
-  <li><strong>Pending</strong>: The invitation has been sent, but your friend has still not accepted the invitation.</li>
-  <li><strong>Expired</strong>: The invitation has not been used to register on the site within the expiration period.</li>
-  <li><strong>Deleted</strong>: The user account has been terminated.</li>
-</ul>
+<dl>
+  <dt>Accepted</dt><dd>Shows that the person you have invited has used your invitation to join the site. Click on the e-mail address to take you to his/her profile page.</dd>
+  <dt>Pending</dt><dd>The invitation has been sent, but your friend has still not accepted the invitation.</dd>
+  <dt>Expired</dt><dd>The invitation has not been used to register on the site within the expiration period.</dd>
+  <dt>Deleted</dt><dd>The user account has been terminated.</dd>
+</dl>
 </p>
-<p>At any time, you may withdraw either <em>pending</em> or <em>expired</em> invitations. <em>Accepted</em> invitations can't be withdrawn and count permanently toward your invitation allotment.</p>");
+<p>At any time, you may withdraw either pending or expired invitations. Accepted invitations can't be withdrawn and count permanently toward your invitation allotment.</p>");
 
   return variable_get('invite_help_text', $help);
 }
