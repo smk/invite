@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.76 2007-09-10 10:46:20 smk Exp $
+// $Id: invite.module,v 1.10.2.77 2007-09-12 18:22:18 smk Exp $
 
 /**
  * @file
@@ -687,8 +687,6 @@ function invite_form($op = 'page') {
       }
       $form['email'] = array(
         '#title' => t('To'),
-        '#type' => 'textfield',
-        '#maxlength' => 32,
         '#default_value' => $failed_emails,
         '#description' => format_plural((int)$allow_multiple + 1, 'Type the e-mail address of the person you would like to invite.', 'Type the e-mail addresses of the persons you would like to invite. Addresses should be separated by newlines or commas.'),
         '#required' => TRUE,
@@ -696,6 +694,10 @@ function invite_form($op = 'page') {
       if ($allow_multiple) {
         $form['email']['#type'] = 'textarea';
         $form['email']['#rows'] = 3;
+      }
+      else {
+        $form['email']['#type'] = 'textfield';
+        $form['email']['#maxlength'] = 64;
       }
       if ($failed_emails) {
         $form['email']['#attributes']['class'] = 'error';
