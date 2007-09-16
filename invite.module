@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.77 2007-09-12 18:22:18 smk Exp $
+// $Id: invite.module,v 1.10.2.78 2007-09-16 18:33:34 smk Exp $
 
 /**
  * @file
@@ -1102,8 +1102,8 @@ function invite_delete_submit($form_id, $form_values) {
 function invite_get_counts($uid) {
   $time = time();
   $count['accepted'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp > 0", $uid));
-  $count['pending'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp = 0 AND expiry <= %d", $uid, $time));
-  $count['expired'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp = 0 AND expiry > %d", $uid, $time));
+  $count['pending'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp = 0 AND expiry >= %d", $uid, $time));
+  $count['expired'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp = 0 AND expiry < %d", $uid, $time));
   return $count;
 }
 
