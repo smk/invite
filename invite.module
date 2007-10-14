@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.78 2007-09-16 18:33:34 smk Exp $
+// $Id: invite.module,v 1.10.2.79 2007-10-14 02:16:41 smk Exp $
 
 /**
  * @file
@@ -1241,9 +1241,9 @@ function invite_token_values($type = 'all', $object = NULL) {
  */
 function invite_token_list($type = 'all') {
   if ($type == 'invite' || $type == 'all') {
-    $tokens['invite']['inviter']        = t('The name of the inviting user. <em>Note:</em> This is the same as [user].');
+    $tokens['invite']['inviter']        = t("Inviter's name (same as [user]).");
     $tokens['invite']['invite-mail']    = t('The e-mail address of the invited user.');
-    $tokens['invite']['invite-message'] = t('The message text of the inviting user for the invitee.');
+    $tokens['invite']['invite-message'] = t('The personal message for the invitee as raw, unfiltered text.');
     $tokens['invite']['join-link']      = t('The link to the registration page of the site.');
     return $tokens;
   }
