@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.79 2007-10-14 02:16:41 smk Exp $
+// $Id: invite.module,v 1.10.2.80 2007-10-15 02:29:05 smk Exp $
 
 /**
  * @file
@@ -1228,10 +1228,10 @@ function invite_token_values($type = 'all', $object = NULL) {
     // NOTE: Invite is currently only capable of sending plain text e-mails.
     // If you intend to change that, you need to properly escape all user input
     // by adding check_plain() around below values!
-    $values['inviter']        = $object->inviter->name;
-    $values['invite-mail']    = $object->email;
-    $values['invite-message'] = $object->data['message'];
-    $values['join-link']      = url('invite/accept/'. $object->code, NULL, NULL, TRUE);
+    $values['inviter-raw']        = $object->inviter->name;
+    $values['invite-mail']        = $object->email;
+    $values['invite-message-raw'] = $object->data['message'];
+    $values['join-link']          = url('invite/accept/'. $object->code, NULL, NULL, TRUE);
   }
   return $values;
 }
@@ -1241,10 +1241,10 @@ function invite_token_values($type = 'all', $object = NULL) {
  */
 function invite_token_list($type = 'all') {
   if ($type == 'invite' || $type == 'all') {
-    $tokens['invite']['inviter']        = t("Inviter's name (same as [user]).");
-    $tokens['invite']['invite-mail']    = t('The e-mail address of the invited user.');
-    $tokens['invite']['invite-message'] = t('The personal message for the invitee as raw, unfiltered text.');
-    $tokens['invite']['join-link']      = t('The link to the registration page of the site.');
+    $tokens['invite']['inviter-raw']        = t("Inviter's name. WARNING - raw user input.");
+    $tokens['invite']['invite-mail']        = t('The e-mail address of the invited user.');
+    $tokens['invite']['invite-message-raw'] = t('The personal message for the invitee as unfiltered text. WARNING - raw user input.');
+    $tokens['invite']['join-link']          = t('The link to the registration page of the site.');
     return $tokens;
   }
 }
@@ -1421,14 +1421,14 @@ function _invite_check_messages($uid) {
  *   The localized e-mail body.
  */
 function _invite_get_mail_template() {
-  $template = t("Your friend, [inviter], has invited you to join [site-name] at [site-url].
+  $template = t("Your friend, [inviter-raw], has invited you to join [site-name] at [site-url].
 
 To become a member of [site-name], click the link below or paste it into the address bar of your browser.
 
 [join-link]
 
 ----------
-[invite-message]");
+[invite-message-raw]");
 
   return variable_get('invite_default_mail_template', $template);
 }
