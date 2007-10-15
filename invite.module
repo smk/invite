@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.82 2007-10-15 03:06:00 smk Exp $
+// $Id: invite.module,v 1.10.2.83 2007-10-15 04:30:28 smk Exp $
 
 /**
  * @file
@@ -917,9 +917,9 @@ function invite_form_submit($form_id, $edit) {
   foreach ($edit['valid_emails'] as $email) {
     // Create the invite object
     $invite = _invite_substitutions(array(
-      'email'   => $email,
-      'code'    => invite_regcode(),
-      'data'    => array('subject' => $subject, 'message' => $message),
+      'email' => $email,
+      'code'  => invite_regcode(),
+      'data'  => array('subject' => $subject, 'message' => $message),
     ));
 
     // Perform token replacement on mail body
@@ -931,7 +931,7 @@ function invite_form_submit($form_id, $edit) {
       invite_save($invite);
 
       // Notify other modules
-      $args = array('inviter' => $invite->inviter);
+      $args = array('inviter' => $invite->inviter, 'code' => $invite->code);
       module_invoke_all('invite', 'invite', $args);
 
       $count_success++;

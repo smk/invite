@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.4.2.11 2007-10-15 03:06:00 smk Exp $ */
+/* $Id: README.txt,v 1.4.2.12 2007-10-15 04:30:28 smk Exp $ */
 
 SUMMARY
 
@@ -126,6 +126,7 @@ function hook_invite($op, $args) {
     An invitation has been successfully send.
     $args['inviter']: The user account object of the person who did the
                       inviting.
+    $args['code']:    The invite code for the invitee.
 
   case 'escalate':
     Invitee has accepted an invitation and has been promoted to the appropriate
