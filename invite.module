@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.83 2007-10-15 04:30:28 smk Exp $
+// $Id: invite.module,v 1.10.2.84 2007-10-15 06:41:46 smk Exp $
 
 /**
  * @file
@@ -825,7 +825,7 @@ function theme_invite_form($form) {
     $output .= '<div class="invite-message"><div class="opening">';
 
     // Prepare invitation message
-    $message_form = "</div>\n". drupal_render($form['message']) ."\n".'<div class="closing">';
+    $message_form = "</p></div>\n". drupal_render($form['message']) ."\n".'<div class="closing"><p>';
     $body = _filter_autop(t(_invite_get_mail_template()));
 
     // Perform token replacement on message body
@@ -1242,12 +1242,13 @@ function theme_invite_ranks($inviters, $rank = 1) {
   if ($inviters) {
     global $user;
 
+    $header = array();
     $rows = array();
     $prev_count = 0;
     foreach ($inviters as $inviter) {
       $row = array();
       if ($inviter->count != $prev_count) {
-        $row[] = array('data' => "$rank.", 'width' => '1%');
+        $row[] = array('data' => "$rank.", 'style' => 'width: 5%');
         $prev_count = $inviter->count;
         $rank++;
       }
@@ -1255,10 +1256,11 @@ function theme_invite_ranks($inviters, $rank = 1) {
         $row[] = '';
       }
       $row[] = theme('username', user_load(array('uid' => $inviter->uid)));
-      $row[] = array('data' => theme('invite_count', $inviter->count), 'width' => '10%', 'align' => 'right');
+      $row[] = array('data' => theme('invite_count', $inviter->count), 'align' => 'right');
       $rows[] = array('data' => $row, 'class' => ($inviter->uid == $user->uid ? 'current-user' : ''));
     }
-    return theme('table', array(), $rows);
+
+    return theme('table', $header, $rows, array('id' => 'invite-ranks'));
   }
 }
 
