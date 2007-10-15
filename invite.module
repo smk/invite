@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.9.2.51 2007-08-30 23:17:11 smk Exp $
+// $Id: invite.module,v 1.9.2.52 2007-10-15 04:14:27 smk Exp $
 
 /** 
  * @file 
@@ -843,13 +843,7 @@ function _invite_send_invite($op, $user_name, $email, $code, $message) {
   global $base_url, $user;
 
   $headers  = array();
-
-  // Prevent email looking like spam to SPF-enabled MTAs
-  // see http://drupal.org/node/133789
   $from_site = variable_get('site_mail', ini_get('sendmail_from'));
-  if ($from_site) {
-    $headers['Sender'] = $headers['Return-Path'] = $headers['Errors-To'] = $from_site;
-  }
 
   // Manual settings override custom settings below
   // Note: default value must be NULL to comply with legacy Drupal versions
