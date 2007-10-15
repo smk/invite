@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.8 2007-10-14 02:36:42 smk Exp $
+// $Id: invite.install,v 1.9 2007-10-15 02:29:26 smk Exp $
 
 /**
  * Install the initial schema.
@@ -283,6 +283,24 @@ function invite_update_9() {
     'query' => 'The access permissions have been updated by the invite module.',
     'success' => TRUE
   );
+  return $ret;
+}
+
+/**
+ * Update tokens for security.
+ */
+function invite_update_10() {
+  $ret = array();
+  if ($template = variable_get('invite_default_mail_template', NULL)) {
+    $old      = array('[invite-message]', '[inviter]');
+    $new      = array('[invite-message-raw]', '[inviter-raw]');
+    $template = str_replace($old, $new, $template);
+    variable_set('invite_default_mail_template', $template);
+    $ret[] = array(
+      'query' => 'The message tokens for the invite module have been successfully updated.',
+      'success' => TRUE
+    );
+  }
   return $ret;
 }
 
