@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.84 2007-10-15 06:41:46 smk Exp $
+// $Id: invite.module,v 1.10.2.85 2007-10-15 07:47:05 smk Exp $
 
 /**
  * @file
@@ -57,7 +57,7 @@ function invite_help($section) {
  * Implementation of hook_perm().
  */
 function invite_perm() {
-  return array('send invitations', 'send mass invitations', 'withdraw accepted invitations');
+  return array('send invitations', 'send mass invitations', 'track invitations', 'withdraw accepted invitations');
 }
 
 /**
@@ -68,6 +68,7 @@ function invite_menu($may_cache) {
   $items = array();
 
   $send_access = user_access('send invitations');
+  $track_access = user_access('track invitations');
 
   if ($may_cache) {
     $items[] = array(
@@ -104,7 +105,7 @@ function invite_menu($may_cache) {
       'path' => 'invite/list',
       'title' => t('Your invitations'),
       'callback' => 'invite_overview',
-      'access' => $send_access,
+      'access' => $track_access,
       'type' => MENU_LOCAL_TASK,
     );
     $items[] = array(
@@ -112,7 +113,7 @@ function invite_menu($may_cache) {
       'title' => t('Accepted'),
       'callback' => 'invite_overview',
       'callback arguments' => array('accepted'),
-      'access' => $send_access,
+      'access' => $track_access,
       'type' => MENU_DEFAULT_LOCAL_TASK,
       'weight' => -5,
     );
@@ -121,7 +122,7 @@ function invite_menu($may_cache) {
       'title' => t('Pending'),
       'callback' => 'invite_overview',
       'callback arguments' => array('pending'),
-      'access' => $send_access,
+      'access' => $track_access,
       'type' => MENU_LOCAL_TASK,
     );
     $items[] = array(
@@ -129,7 +130,7 @@ function invite_menu($may_cache) {
       'title' => t('Expired'),
       'callback' => 'invite_overview',
       'callback arguments' => array('expired'),
-      'access' => $send_access,
+      'access' => $track_access,
       'type' => MENU_LOCAL_TASK,
       'weight' => 5,
     );
@@ -137,7 +138,7 @@ function invite_menu($may_cache) {
       'path' => 'invite/withdraw',
       'callback' => 'drupal_get_form',
       'callback arguments' => array('invite_delete'),
-      'access' => $send_access,
+      'access' => $track_access,
       'type' => MENU_CALLBACK,
     );
   }
@@ -707,6 +708,7 @@ function invite_form($op = 'page') {
         '#prefix' => '<div><small>',
         '#value' => l(t('View your invites'), 'invite/list'),
         '#suffix' => '</small></div>',
+        '#access' => user_access('track invitations'),
       );
       break;
 

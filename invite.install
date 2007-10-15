@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.3.2.23 2007-10-15 02:59:40 smk Exp $
+// $Id: invite.install,v 1.3.2.24 2007-10-15 07:47:05 smk Exp $
 
 /**
  * Install the initial schema.
@@ -79,6 +79,20 @@ function _invite_update_tokens($variable, $old, $new) {
   if ($template = variable_get($variable, NULL)) {
     $template = str_replace($old, $new, $template);
     variable_set($variable, $template);
+  }
+}
+
+/**
+ * Helper function to add a permission to a role.
+ */
+function _invite_add_permission($rid, $permission) {
+  if ($permission) {
+    $current_perm = db_result(db_query("SELECT perm FROM {permission} WHERE rid = %d", $rid));
+    if ($current_perm != '') {
+      $current_perm .= ', ';
+    }
+    $current_perm .= $permission;
+    db_query("UPDATE {permission} SET perm = '%s' WHERE rid = %d", $current_perm, $rid);
   }
 }
 
@@ -253,36 +267,28 @@ function invite_update_9() {
     }
 
     // Convert settings that have been moved to the permissions table
-    $perm = db_result(db_query("SELECT perm FROM {permission} WHERE rid = %d", $rid));
-    // invite_maxmultiple_*
+    $perms = array();
     if (variable_get('invite_maxmultiple_'. $role_no_space, 1) != 1) {
-      if ($perm != '') {
-        $perm .= ', ';
-      }
-      $perm .= 'send mass invitations';
+      $perms[] = 'send mass invitations';
     }
-    // invite_allow_join_delete
     if (variable_get('invite_allow_join_delete', 0)) {
-      if ($perm != '') {
-        $perm .= ', ';
-      }
-      $perm .= 'withdraw accepted invitations';
+      $perms[] = 'withdraw accepted invitations';
     }
-    db_query("UPDATE {permission} SET perm = '%s' WHERE rid = %d", $perm, $rid);
+    _invite_add_permission($rid, implode(', ', $perms));
   }
   db_query("DELETE from {variable} WHERE name LIKE 'invite_maxmultiple_%%'");
 
   // Expiry periods changed
   $expiry = variable_get('invite_expiry', 30);
   switch ($expiry) {
-  	case  5: $expiry = 7; break;
-  	case 10: $expiry = 14; break;
-  	case 15: $expiry = 14; break;
-  	case 20: $expiry = 30; break;
-  	case 25: $expiry = 30; break;
-  	case 30: $expiry = 30; break;
-  	case 45: $expiry = 60; break;
-  	case 60: $expiry = 60; break;
+    case  5: $expiry =  7; break;
+    case 10: $expiry = 14; break;
+    case 15: $expiry = 14; break;
+    case 20: $expiry = 30; break;
+    case 25: $expiry = 30; break;
+    case 30: $expiry = 30; break;
+    case 45: $expiry = 60; break;
+    case 60: $expiry = 60; break;
   }
   variable_set('invite_expiry', $expiry);
 
@@ -305,6 +311,21 @@ function invite_update_10() {
     'query' => 'The tokens for the invite module have been successfully updated.',
     'success' => TRUE
   ));
+  return $ret;
+}
+
+/**
+ * Add track permission to all roles that currently have send permission.
+ */
+function invite_update_11() {
+  $ret = array();
+  foreach (array_keys(user_roles(0, 'send invitations')) as $rid) {
+    _invite_add_permission($rid, 'track invitations');
+  }
+  $ret[] = array(
+    'query' => 'The access permissions have been updated by the invite module.',
+    'success' => TRUE
+  );
   return $ret;
 }
 
