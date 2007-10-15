@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.9 2007-10-15 02:29:26 smk Exp $
+// $Id: invite.install,v 1.10 2007-10-15 02:59:53 smk Exp $
 
 /**
  * Install the initial schema.
@@ -70,6 +70,16 @@ function invite_uninstall() {
   variable_del('invite_default_mail_template');
   variable_del('invite_help_text');
   variable_del('invite_num_ranks');
+}
+
+/**
+ * Helper function to update tokens.
+ */
+function _invite_update_tokens($variable, $old, $new) {
+  if ($template = variable_get($variable, NULL)) {
+    $template = str_replace($old, $new, $template);
+    variable_set($variable, $template);
+  }
 }
 
 function invite_update_1() {
@@ -184,17 +194,14 @@ function invite_update_6() {
  */
 function invite_update_7() {
   $ret = array();
-  if ($template = variable_get('invite_default_mail_template', NULL)) {
-    $old      = array('@site', '@join_link', '@homepage', '@message', '@inviter');
-    $new      = array('[site-name]', '[join-link]', '[site-url]', '[invite-message]', '[inviter]');
-    $template = str_replace($old, $new, $template);
-    variable_set('invite_default_mail_template', $template);
-    $ret[] = array(
-      'query' => 'The message tokens for the invite module have been successfully converted.',
-      'success' => TRUE
-    );
-    drupal_set_message(strtr('Please note that invite now depends on the %token module.', array('%token' => l('token', 'http://drupal.org/project/token', array('target' => '_blank'), NULL, NULL, TRUE))), 'error');
-  }
+  $old = array('@site', '@join_link', '@homepage', '@message', '@inviter');
+  $new = array('[site-name]', '[join-link]', '[site-url]', '[invite-message]', '[inviter]');
+  _invite_update_tokens('invite_default_mail_template', $old, $new);
+  $ret[] = array(
+    'query' => 'The message tokens for the invite module have been successfully updated.',
+    'success' => TRUE
+  );
+  drupal_set_message(strtr('Please note that invite now depends on the %token module.', array('%token' => l('token', 'http://drupal.org/project/token', array('target' => '_blank'), NULL, NULL, TRUE))), 'error');
   return $ret;
 }
 
@@ -290,17 +297,14 @@ function invite_update_9() {
  * Update tokens for security.
  */
 function invite_update_10() {
-  $ret = array();
-  if ($template = variable_get('invite_default_mail_template', NULL)) {
-    $old      = array('[invite-message]', '[inviter]');
-    $new      = array('[invite-message-raw]', '[inviter-raw]');
-    $template = str_replace($old, $new, $template);
-    variable_set('invite_default_mail_template', $template);
-    $ret[] = array(
-      'query' => 'The message tokens for the invite module have been successfully updated.',
-      'success' => TRUE
-    );
-  }
+  $old = array('[invite-message]', '[inviter]');
+  $new = array('[invite-message-raw]', '[inviter-raw]');
+  _invite_update_tokens('invite_default_mail_template', $old, $new);
+  _invite_update_tokens('invite_subject', $old, $new);
+  $ret = array(array(
+    'query' => 'The tokens for the invite module have been successfully updated.',
+    'success' => TRUE
+  ));
   return $ret;
 }
 
