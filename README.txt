@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.4.2.10 2007-09-10 11:15:43 smk Exp $ */
+/* $Id: README.txt,v 1.4.2.11 2007-10-15 03:06:00 smk Exp $ */
 
 SUMMARY
 
@@ -100,7 +100,8 @@ To invite a friend :
 5. This will send an invitation e-mail which you can now track from the
    'Your invitations' page.
 
-Invitations show up in one of the states accepted, pending, expired, or deleted.
+Invitations show up in one of the states accepted, pending, expired, and the
+special case deleted.
 
 * Accepted: Shows that the person you have invited has accepted the invitation
   to join the site. Click on the e-mail address to watch the user's profile
@@ -111,7 +112,8 @@ Invitations show up in one of the states accepted, pending, expired, or deleted.
   period.
 * Deleted: The user account has been terminated.
 
-At any time, you may withdraw either 'pending' or 'expired' invitations. 'Accepted' invitations can only be withdrawn if the configuration allows it to.
+At any time, you may withdraw either pending or expired invitations.
+Accepted invitations can only be withdrawn if the configuration allows you to.
 
 
 INVITE API

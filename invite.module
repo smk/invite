@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.81 2007-10-15 02:39:56 smk Exp $
+// $Id: invite.module,v 1.10.2.82 2007-10-15 03:06:00 smk Exp $
 
 /**
  * @file
@@ -18,15 +18,39 @@ define('INVITE_UNLIMITED_INVITES', -1);
 
 /**
  * Implementation of hook_help().
+ *
+ * Returns appropriate help text for all three invite status pages.
  */
 function invite_help($section) {
-  switch ($section) {
-    case 'admin/modules#description':
-      return t('Allows your users to send and track invitations to join your site.');
-
-    case 'invite/list':
-      return _invite_get_help_text();
+  // Show module help
+  if ($section == 'admin/help#invite') {
+    $file = drupal_get_path('module', 'invite') .'/README.txt';
+    if (file_exists($file)) {
+      return _filter_autop(file_get_contents($file));
+    }
+    return;
   }
+
+  // Show introductory text on overview pages
+  switch ($section) {
+    case 'invite/list':
+    case 'invite/list/accepted':
+      $output = '<p>'. t("The invitations shown on this page have been used to join the site. Clicking on an e-mail address takes you to the user's profile page.");
+      break;
+    case 'invite/list/pending':
+      $output = '<p>'. t("The invitations shown on this page haven't been accepted yet.");
+      break;
+    case 'invite/list/expired':
+      $output = '<p>'. t('The invitations shown on this page have not been used to register on the site within the expiration period of @count days.', array('@count' => variable_get('invite_expiry', 30)));
+      break;
+    default:
+      return;
+  }
+  $output .= ' '. t('The status <em>deleted</em> means the user account has been terminated.') .'</p>';
+  if (!user_access('withdraw accepted invitations')) {
+    $output .= '<p>'. t("At any time, you may withdraw either pending or expired invitations. Accepted invitations can't be withdrawn and count permanently toward your invitation allotment.") .'</p>';
+  }
+  return $output;
 }
 
 /**
@@ -82,6 +106,32 @@ function invite_menu($may_cache) {
       'callback' => 'invite_overview',
       'access' => $send_access,
       'type' => MENU_LOCAL_TASK,
+    );
+    $items[] = array(
+      'path' => 'invite/list/accepted',
+      'title' => t('Accepted'),
+      'callback' => 'invite_overview',
+      'callback arguments' => array('accepted'),
+      'access' => $send_access,
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => -5,
+    );
+    $items[] = array(
+      'path' => 'invite/list/pending',
+      'title' => t('Pending'),
+      'callback' => 'invite_overview',
+      'callback arguments' => array('pending'),
+      'access' => $send_access,
+      'type' => MENU_LOCAL_TASK,
+    );
+    $items[] = array(
+      'path' => 'invite/list/expired',
+      'title' => t('Expired'),
+      'callback' => 'invite_overview',
+      'callback arguments' => array('expired'),
+      'access' => $send_access,
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 5,
     );
     $items[] = array(
       'path' => 'invite/withdraw',
@@ -453,13 +503,6 @@ function invite_settings() {
     '#description' => t('The title of the page where users invite friends.'),
     '#required' => TRUE,
   );
-  $form['custom']['invite_help_text'] = array(
-    '#type' => 'textarea',
-    '#title' => t('Invite help text'),
-    '#default_value' => _invite_get_help_text(),
-    '#required' => FALSE,
-    '#description' => t('Customize the introductory text that appears on the invite page.'),
-  );
 
   return system_settings_form($form);
 }
@@ -517,29 +560,40 @@ function invite_load_from_session() {
 
 /**
  * Menu callback; display an overview of sent invitations.
+ *
+ * @param $what
+ *   String denoting which invites to list: accepted, pending, or expired.
  */
-function invite_overview() {
+function invite_overview($what = 'accepted') {
   global $user;
 
   $rows = array();
+  $time = time();
   $profile_access = user_access('access user profiles');
   $allow_delete = user_access('withdraw accepted invitations');
 
-  $result = db_query("SELECT i.*, u.uid FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid AND u.uid != 0 WHERE i.uid = %d ORDER BY i.expiry DESC", $user->uid);
+  switch ($what) {
+  	case 'accepted':
+  	default:
+      $sql = "SELECT i.*, u.uid FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid AND u.uid != 0 WHERE i.uid = %d AND i.timestamp > 0 ORDER BY u.uid DESC, i.expiry DESC";
+  		break;
+  	case 'pending':
+      $sql = "SELECT * FROM {invite} WHERE uid = %d AND timestamp = 0 AND expiry >= %d ORDER BY expiry DESC";
+  		break;
+  	case 'expired':
+      $sql = "SELECT * FROM {invite} WHERE uid = %d AND timestamp = 0 AND expiry < %d ORDER BY expiry DESC";
+  		break;
+  }
+
+  $result = pager_query($sql, 50, 0, NULL, $user->uid, $time);
 
   while ($invite = db_fetch_object($result)) {
     $row = array();
-    $delete_link = l(t('Withdraw'), "invite/withdraw/{$invite->reg_code}");
+    $delete_link = l(t('Withdraw'), "invite/withdraw/{$what}/{$invite->reg_code}");
 
-    if (!$invite->timestamp) {
-      $expired = ($invite->expiry < time());
-
-      $row[]  = check_plain($invite->email);
-      $row[] = $expired ? t('Expired') : t('Pending');
-      $row[] = $delete_link;
-    }
-    else {
-      $account_exists = !empty($invite->uid);
+    if ($invite->timestamp > 0) {
+      // Accepted
+      $account_exists = !is_null($invite->uid);
 
       if ($profile_access) {
         $row[] = $account_exists ? l($invite->email, 'user/'. $invite->mid, array('title' => t('View user profile.'))) : check_plain($invite->email);
@@ -549,6 +603,14 @@ function invite_overview() {
       }
       $row[] = $account_exists ? t('Accepted') : t('Deleted');
       $row[] = $allow_delete ? $delete_link : '';
+    }
+    else {
+      // Pending/expired
+      $expired = ($invite->expiry < $time);
+
+      $row[]  = check_plain($invite->email);
+      $row[] = $expired ? t('Expired') : t('Pending');
+      $row[] = $delete_link;
     }
 
     $rows[] = $row;
@@ -566,17 +628,14 @@ function invite_overview() {
  * @ingroup themeable
  */
 function theme_invite_overview($items) {
-
-  // Display table of invites
-  $output = '<div><fieldset><legend>'. t('Your invitations') .'</legend>';
   if (count($items) > 0) {
     $headers = array(t('E-mail'), t('Status'), '');
-    $output .= theme('table', $headers, $items, array('id' => 'invite_table'));
+    $output  = theme('table', $headers, $items, array('id' => 'invites'));
+    $output .= theme('pager', NULL, 50, 0);
   }
   else {
-    $output .= t('You have not sent any invitations yet.');
+    $output = t('No invitations available.');
   }
-  $output .= '</fieldset></div>';
 
   return $output;
 }
@@ -1036,10 +1095,12 @@ function invite_save($edit) {
 /**
  * Menu callback; display confirm form to delete an invitation.
  *
+ * @param $origin
+ *   String denoting the orginating invite status page.
  * @param $code
  *   A registration code to remove the invitation for.
  */
-function invite_delete($code) {
+function invite_delete($origin, $code) {
   global $user;
 
   $invite = invite_load($code);
@@ -1052,12 +1113,12 @@ function invite_delete($code) {
         '#type' => 'value',
         '#value' => $invite,
       );
-      $description = !$invite->timestamp ? t("The invitee won't be able to register any more using this invitation.") : '';
+      $description = (!$invite->timestamp && $invite->expiry > time()) ? t("The invitee won't be able to register any more using this invitation.") : '';
 
       return confirm_form(
         $form,
         t('Are you sure you want to withdraw the invitation to %email?', array('%email' => $invite->email)),
-        'invite/list',
+        "invite/list/{$origin}",
         $description .' '. t('This action cannot be undone.'),
         t('Withdraw'),
         t('Cancel')
@@ -1431,26 +1492,6 @@ To become a member of [site-name], click the link below or paste it into the add
 [invite-message-raw]");
 
   return variable_get('invite_default_mail_template', $template);
-}
-
-/**
- * Returns the introductory help text for the invites page.
- *
- * @return
- *   The localized intro text.
- */
-function _invite_get_help_text() {
-  $help = t("<p>This is an overview of the invitations you have sent. The status of each invitation is shown:
-<dl>
-  <dt>Accepted</dt><dd>Shows that the person you have invited has used your invitation to join the site. Click on the e-mail address to take you to his/her profile page.</dd>
-  <dt>Pending</dt><dd>The invitation has been sent, but your friend has still not accepted the invitation.</dd>
-  <dt>Expired</dt><dd>The invitation has not been used to register on the site within the expiration period.</dd>
-  <dt>Deleted</dt><dd>The user account has been terminated.</dd>
-</dl>
-</p>
-<p>At any time, you may withdraw either pending or expired invitations. Accepted invitations can't be withdrawn and count permanently toward your invitation allotment.</p>");
-
-  return variable_get('invite_help_text', $help);
 }
 
 /**
