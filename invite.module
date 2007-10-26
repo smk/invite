@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.85 2007-10-15 07:47:05 smk Exp $
+// $Id: invite.module,v 1.10.2.86 2007-10-26 07:34:12 smk Exp $
 
 /**
  * @file
@@ -955,9 +955,11 @@ function invite_form_submit($form_id, $edit) {
     $message = format_plural($count_failed, 'The entered e-mail address is invalid. Please correct it.', '@count entered e-mail addresses are invalid. Please correct them.');
     drupal_set_message($message, 'error');
   }
-  else {
-    drupal_goto('invite/list');
+  else if (user_access('track invitations')) {
+    return 'invite/list';
   }
+
+  return 'invite';
 }
 
 /**
