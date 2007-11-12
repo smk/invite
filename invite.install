@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.3.2.24 2007-10-15 07:47:05 smk Exp $
+// $Id: invite.install,v 1.3.2.25 2007-11-12 21:47:22 smk Exp $
 
 /**
  * Install the initial schema.
@@ -75,10 +75,12 @@ function invite_uninstall() {
 /**
  * Helper function to update tokens.
  */
-function _invite_update_tokens($variable, $old, $new) {
-  if ($template = variable_get($variable, NULL)) {
-    $template = str_replace($old, $new, $template);
-    variable_set($variable, $template);
+function _invite_update_tokens($variables, $old, $new) {
+  foreach ((array)$variables as $variable) {
+    if ($value = variable_get($variable, NULL)) {
+      $value = str_replace($old, $new, $value);
+      variable_set($variable, $value);
+    }
   }
 }
 
@@ -303,10 +305,12 @@ function invite_update_9() {
  * Update tokens for security.
  */
 function invite_update_10() {
+  // E-mail template
   $old = array('[invite-message]', '[inviter]');
   $new = array('[invite-message-raw]', '[inviter-raw]');
   _invite_update_tokens('invite_default_mail_template', $old, $new);
-  _invite_update_tokens('invite_subject', $old, $new);
+  // E-mail name and subject
+  _invite_update_tokens(array('invite_email_name', 'invite_subject'), '[inviter]', '[inviter-raw]');
   $ret = array(array(
     'query' => 'The tokens for the invite module have been successfully updated.',
     'success' => TRUE
