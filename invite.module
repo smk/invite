@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.86 2007-10-26 07:34:12 smk Exp $
+// $Id: invite.module,v 1.10.2.87 2007-11-12 21:03:57 smk Exp $
 
 /**
  * @file
@@ -173,16 +173,18 @@ function invite_form_alter($form_id, &$form) {
       }
 
       if ($invite) {
-        // Figure out form field position
-        if (isset($form['account'])) {
-          $field = &$form['account'];
-        }
-        else {
-          $field = &$form;
-        }
-        // Preset email field
-        if (isset($field['mail'])) {
-          $field['mail']['#default_value'] = $invite->email;
+        // Preset email field only if caching is disabled
+        if (variable_get('cache', CACHE_DISABLED) == CACHE_DISABLED) {
+          // Figure out form field position
+          if (isset($form['account'])) {
+            $field = &$form['account'];
+          }
+          else {
+            $field = &$form;
+          }
+          if (isset($field['mail'])) {
+            $field['mail']['#default_value'] = $invite->email;
+          }
         }
       }
       else if (variable_get('user_register', 1) == 'inviteonly') {
