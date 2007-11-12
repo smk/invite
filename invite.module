@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.87 2007-11-12 21:03:57 smk Exp $
+// $Id: invite.module,v 1.10.2.88 2007-11-12 23:19:09 smk Exp $
 
 /**
  * @file
@@ -209,28 +209,6 @@ function invite_form_alter($form_id, &$form) {
  */
 function invite_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
-    case 'view':
-      if (user_access('send invitations', $account)) {
-        $counts = invite_get_counts($account->uid);
-        $items['accepted'] = array(
-          'title' => t('Successful'),
-          'value' => $counts['accepted'],
-          'class' => 'successful',
-        );
-        $items['pending'] = array(
-          'title' => t('Pending'),
-          'value' => $counts['pending'],
-          'class' => 'pending',
-        );
-        $items['expired'] = array(
-          'title' => t('Unsuccessful'),
-          'value' => $counts['expired'],
-          'class' => 'expired',
-        );
-        return array(t('Invitation counts') => $items);
-      }
-      break;
-
     case 'insert':
       if ($invite = invite_load_from_session()) {
         // Update invite status
@@ -271,7 +249,6 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
 function invite_block($op = 'list', $delta = 0, $edit = array()) {
   if ($op == 'list') {
     $blocks[0] = array('info' => t('Invite a friend'));
-    $blocks[1] = array('info' => t('Top inviters/User rank'));
     return $blocks;
   }
   else if ($op == 'view') {
@@ -284,44 +261,8 @@ function invite_block($op = 'list', $delta = 0, $edit = array()) {
           );
         }
         break;
-      case 1:
-        if (arg(0) == 'user' && is_numeric(arg(1)) && $account = user_load(array('uid' => arg(1)))) {
-          $block = array(
-            'subject' => t("@user's invite rank", array('@user' => $account->name)),
-            'content' => invite_user_rank($account->uid),
-          );
-        }
-        else {
-          $block = array(
-            'subject' => t('Top inviters'),
-            'content' => invite_top_inviters(),
-          );
-        }
-        break;
     }
     return $block;
-  }
-  else if ($op == 'configure') {
-    switch ($delta) {
-      case 1:
-        $form['invite_num_ranks'] = array(
-          '#type' => 'textfield',
-          '#title' => t('Number of inviters'),
-          '#default_value' => variable_get('invite_num_ranks', 5),
-          '#size' => 3,
-          '#maxlength' => 3,
-          '#description' => t('Show this number of inviters in the Top inviters and User rank blocks.'),
-          '#required' => TRUE,
-        );
-        return $form;
-    }
-  }
-  else if ($op == 'save') {
-    switch ($delta) {
-      case 1:
-        variable_set('invite_num_ranks', (int)$edit['invite_num_ranks']);
-        break;
-    }
   }
 }
 
@@ -1156,131 +1097,6 @@ function invite_delete_submit($form_id, $form_values) {
 
   drupal_set_message(t('Invitation to %email has been withdrawn.', array('%email' => $invite->email)));
   drupal_goto('invite/list');
-}
-
-/**
- * Calculate the number of successful/pending/unsuccessful invitations.
- *
- * @param $uid
- *   The user id to calculate counts for.
- * @return
- *   An array consisting of three elements: accepted, pending and expired.
- */
-function invite_get_counts($uid) {
-  $time = time();
-  $count['accepted'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp > 0", $uid));
-  $count['pending'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp = 0 AND expiry >= %d", $uid, $time));
-  $count['expired'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp = 0 AND expiry < %d", $uid, $time));
-  return $count;
-}
-
-/**
- * Render the "Top inviters" block.
- */
-function invite_top_inviters() {
-  $inviters = array();
-  $result = db_query_range("SELECT uid, COUNT(uid) AS count FROM {invite} WHERE timestamp > 0 GROUP BY uid ORDER BY count DESC", 0, variable_get('invite_num_ranks', 5));
-  while ($row = db_fetch_object($result)) {
-    $inviters[] = $row;
-  }
-  return theme('invite_ranks', $inviters);
-}
-
-/**
- * Render the displayed user's rank block.
- */
-function invite_user_rank($uid) {
-  $inviters = array();
-  $max = variable_get('invite_num_ranks', 5);
-
-  // Get user's invite count
-  $user_invite_count = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp > 0", $uid));
-
-  // Calculate user's rank
-  $rank = 1 + db_num_rows(db_query("SELECT DISTINCT COUNT(uid) FROM {invite} WHERE timestamp > 0 GROUP BY uid HAVING COUNT(uid) > %d", $user_invite_count));
-
-  // Fetch users with more invites
-  $i = 0;
-  $prev_count = 0;
-  $result = db_query_range("SELECT uid, COUNT(uid) AS count FROM {invite} WHERE timestamp > 0 GROUP BY uid HAVING COUNT(uid) > %d ORDER BY count ASC", $user_invite_count, 0, $max - 1);
-  while ($row = db_fetch_object($result)) {
-    if ($row->count != $prev_count) {
-      $prev_count = $row->count;
-      $rank--; // Decrement initial rank
-    }
-    array_unshift($inviters, $row);
-  }
-
-  // Add current user, now we have invite_num_ranks users at max
-  $inviters[] = (object)array('uid' => $uid, 'count' => $user_invite_count);
-  $user_idx = count($inviters);
-
-  // Add users with equal or less invites
-  $i = 0;
-  $prev_count = $user_invite_count;
-  $result = db_query_range("SELECT uid, COUNT(uid) AS count FROM {invite} WHERE timestamp > 0 GROUP BY uid HAVING COUNT(uid) <= %d AND uid != %d ORDER BY count DESC", $user_invite_count, $uid, 0, $max - 1);
-  while ($row = db_fetch_object($result)) {
-    $inviters[] = $row;
-  }
-
-  // Slice result
-  $start = max($user_idx - 1 - floor($max / 2), 0);
-  if (count($inviters) - $user_idx < floor($max / 2)) {
-  	$start -= max(count($inviters) - $user_idx, floor($max / 2));
-  	$start = max($start, 0);
-  }
-  $inviters = array_slice($inviters, $start, $max);
-
-  return theme('invite_ranks', $inviters, $rank);
-}
-
-/**
- * Theme the Top inviters/user rank block.
- *
- * @param $inviters
- *   An array of arrays consisting of the user id and invite count.
- * @param $rank
- *   The rank of the first inviter in the list.
- *
- * @ingroup themeable
- */
-function theme_invite_ranks($inviters, $rank = 1) {
-  if ($inviters) {
-    global $user;
-
-    $header = array();
-    $rows = array();
-    $prev_count = 0;
-    foreach ($inviters as $inviter) {
-      $row = array();
-      if ($inviter->count != $prev_count) {
-        $row[] = array('data' => "$rank.", 'style' => 'width: 5%');
-        $prev_count = $inviter->count;
-        $rank++;
-      }
-      else {
-        $row[] = '';
-      }
-      $row[] = theme('username', user_load(array('uid' => $inviter->uid)));
-      $row[] = array('data' => theme('invite_count', $inviter->count), 'align' => 'right');
-      $rows[] = array('data' => $row, 'class' => ($inviter->uid == $user->uid ? 'current-user' : ''));
-    }
-
-    return theme('table', $header, $rows, array('id' => 'invite-ranks'));
-  }
-}
-
-/**
- * Theme an invite count.
- *
- * @param $count
- *   A number.
- *
- * @ingroup themeable
- */
-function theme_invite_count($count) {
-  $title = format_plural($count, '1 invite', '@count invites');
-  return '<span class="count" title="'. $title .'">'. $count .'</span>';
 }
 
 /**
