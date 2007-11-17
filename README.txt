@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.10 2007-10-14 02:36:42 smk Exp $ */
+/* $Id: README.txt,v 1.11 2007-11-17 10:14:45 smk Exp $ */
 
 SUMMARY
 
@@ -33,6 +33,13 @@ INSTALLATION
   (admin/user/access).
   "send mass invitations": Allows users to send an invitation to multiple
   recipients (this was formerly a setting known as "limit per turn").
+  "track invitations": To give users access to the overview pages and
+  associated actions (withdraw etc). Useful to hide overviews from anonymous
+  users.
+  "view invite statistics": Allows users to view invite statistics on their
+  profile pages as well as view the Top inviters/User rank block.
+  "view own invite statistics": Same as above, but limits viewing statistics to
+  the user's own profile.
   "withdraw accepted invitations": This will allow your users to delete
   accepted invitations. It will also delete all invitations from/to a user upon
   termination of its account. Disable it to prevent users from deleting their
@@ -100,7 +107,8 @@ To invite a friend :
 5. This will send an invitation e-mail which you can now track from the
    'Your invitations' page.
 
-Invitations show up in one of the states accepted, pending, expired, or deleted.
+Invitations show up in one of the states accepted, pending, expired, and the
+special case deleted.
 
 * Accepted: Shows that the person you have invited has accepted the invitation
   to join the site. Click on the e-mail address to watch the user's profile
@@ -111,7 +119,8 @@ Invitations show up in one of the states accepted, pending, expired, or deleted.
   period.
 * Deleted: The user account has been terminated.
 
-At any time, you may withdraw either 'pending' or 'expired' invitations. 'Accepted' invitations can only be withdrawn if the configuration allows it to.
+At any time, you may withdraw either pending or expired invitations.
+Accepted invitations can only be withdrawn if the configuration allows you to.
 
 
 INVITE API
@@ -124,6 +133,7 @@ function hook_invite($op, $args) {
     An invitation has been successfully send.
     $args['inviter']: The user account object of the person who did the
                       inviting.
+    $args['code']:    The invite code for the invitee.
 
   case 'escalate':
     Invitee has accepted an invitation and has been promoted to the appropriate
