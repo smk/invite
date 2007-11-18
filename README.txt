@@ -1,27 +1,21 @@
-/* $Id: README.txt,v 1.4.2.14 2007-11-12 23:19:09 smk Exp $ */
+/* $Id: README.txt,v 1.4.2.15 2007-11-18 20:02:46 smk Exp $ */
 
-SUMMARY
+-- SUMMARY --
 
 Invitations are important to create network effects and exponential growth of a 
 community of interest. This module adds an 'Invite a friend' feature that 
 allows your users to send and track invitations to join your site.
 
-Invite allows your users to send and track invitations to your site. Users are
-able to customize the message text and subject of the e-mail, which is then
-sent either on their behalf or in the name of the site. Administrators are
-given options to escalate invited users to a specific role and limit the total
-number of invitations a user can send. This module can also be used to allow
-new user registrations "by invitation only", which allows you to maintain a
-semi-private site.
-
-Also available is a quick invite block and a block listing the top inviters of
-the site. More statistics are available on the user's profile page, the block
-will then show the absolute rank among the other users in this case.
+For a full description visit the project page:
+  http://drupal.org/project/invite
+Bug reports, feature suggestions and latest developments:
+  http://drupal.org/project/invite/issues
 
 
-REQUIREMENTS
+-- REQUIREMENTS --
 
-Token 5.x-1.8 (or newer) http://drupal.org/project/token
+* Token 5.x-1.9 (or newer)
+  http://drupal.org/project/token
 
 
 INSTALLATION
@@ -53,7 +47,7 @@ INSTALLATION
   For an explanation of the configuration settings see below.
 
 
-CONFIGURATION
+-- CONFIGURATION --
 
 --- General settings ---
 
@@ -96,7 +90,7 @@ CONFIGURATION
   likely be marked as spam.
 
 
-GENERAL USE
+-- USAGE --
 
 To invite a friend :
 
@@ -123,7 +117,7 @@ At any time, you may withdraw either pending or expired invitations.
 Accepted invitations can only be withdrawn if the configuration allows you to.
 
 
-INVITE API
+-- INVITE API --
 
 The Invite module exposes hook_invite() that allows any module to react to the
 invite lifecycle.
@@ -151,7 +145,7 @@ function hook_invite($op, $args) {
                       cancelled.
 }
 
-There are several third-party modules that currently can react on invite events:
+There are several third-party modules that can react on invite events:
 
 * Buddylist http://drupal.org/project/buddylist
   User Relationships http://drupal.org/project/user_relationships
@@ -162,7 +156,7 @@ There are several third-party modules that currently can react on invite events:
   registers.
 
 
-TWEAKS
+-- TROUBLESHOOTING --
 
 When the site is set to allow new accounts by invitation only, it would be nice 
 to remove the 'Create new account' tab that shows up if a user clicks on the 
@@ -179,14 +173,11 @@ function phptemplate_menu_item_link($item, $link_item) {
 This prevents the 'Create new account' menu item from being rendered.
 
 
-CONTACT
+-- CONTACT --
 
-For bug reports, feature suggestions and latest developments visit the project 
-page: http://drupal.org/project/invite.
+Current maintainer:
+Stefan Kudwien (smk-ka) - dev@unleashedmind.com
 
-Project maintainer:
-Stefan Kudwien (smk) <smk@unleashedmind.com>
-
-Original Author:
-David Hill a.k.a. Tatonca <tatonca_@hotmail.com>
+Original author:
+David Hill (tatonca) - tatonca_@hotmail.com
 
