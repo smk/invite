@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.90 2007-12-01 04:12:11 smk Exp $
+// $Id: invite.module,v 1.10.2.91 2007-12-01 05:30:29 smk Exp $
 
 /**
  * @file
@@ -1089,12 +1089,12 @@ function invite_delete_submit($form_id, $form_values) {
   $invite = $form_values['invite'];
 
   db_query("DELETE FROM {invite} WHERE reg_code = '%s'", $invite->reg_code);
+  drupal_set_message(t('Invitation to %email has been withdrawn.', array('%email' => $invite->email)));
 
   // Notify other modules
   $args = array('inviter' => $invite->inviter, 'email' => $invite->email);
   module_invoke_all('invite', 'cancel', $args);
 
-  drupal_set_message(t('Invitation to %email has been withdrawn.', array('%email' => $invite->email)));
   drupal_goto('invite/list');
 }
 

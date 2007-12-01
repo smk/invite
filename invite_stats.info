@@ -1,6 +1,6 @@
-; $Id: invite_stats.info,v 1.1.2.1 2007-11-12 23:19:09 smk Exp $
+; $Id: invite_stats.info,v 1.1.2.2 2007-12-01 05:30:29 smk Exp $
 name = Invite Statistics
 description = "Displays some statistics about sent invitations."
 dependencies = invite
-package = Mail
+package = Invite
 

@@ -1,6 +1,6 @@
-; $Id: invite.info,v 1.1.2.4 2007-09-09 22:54:36 smk Exp $
+; $Id: invite.info,v 1.1.2.5 2007-12-01 05:30:29 smk Exp $
 name = Invite
 description = "Allow your users to send and track invitations to join your site."
 dependencies = token
-package = Mail
+package = Invite
 
