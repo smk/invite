@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.89 2007-11-17 09:15:46 smk Exp $
+// $Id: invite.module,v 1.10.2.90 2007-12-01 04:12:11 smk Exp $
 
 /**
  * @file
@@ -505,10 +505,10 @@ function invite_load_from_session() {
 /**
  * Menu callback; display an overview of sent invitations.
  *
- * @param $what
- *   String denoting which invites to list: accepted, pending, or expired.
+ * @param $page
+ *   Which invites to list: accepted, pending, or expired.
  */
-function invite_overview($what = 'accepted') {
+function invite_overview($page = 'accepted') {
   global $user;
 
   $rows = array();
@@ -516,7 +516,7 @@ function invite_overview($what = 'accepted') {
   $profile_access = user_access('access user profiles');
   $allow_delete = user_access('withdraw accepted invitations');
 
-  switch ($what) {
+  switch ($page) {
   	case 'accepted':
   	default:
       $sql = "SELECT i.*, u.uid FROM {invite} i LEFT JOIN {users} u ON u.uid = i.mid AND u.uid != 0 WHERE i.uid = %d AND i.timestamp > 0 ORDER BY u.uid DESC, i.expiry DESC";
@@ -533,30 +533,30 @@ function invite_overview($what = 'accepted') {
 
   while ($invite = db_fetch_object($result)) {
     $row = array();
-    $delete_link = l(t('Withdraw'), "invite/withdraw/{$what}/{$invite->reg_code}");
+    switch ($page) {
+    	case 'accepted':
+    	default:
+        $account_exists = !is_null($invite->uid);
 
-    if ($invite->timestamp > 0) {
-      // Accepted
-      $account_exists = !is_null($invite->uid);
+        if ($profile_access) {
+          $row[] = $account_exists ? l($invite->email, 'user/'. $invite->mid, array('title' => t('View user profile.'))) : check_plain($invite->email);
+        }
+        else {
+          $row[] = check_plain($invite->email);
+        }
+        $row[] = $account_exists ? t('Accepted') : t('Deleted');
+        $row[] = $allow_delete ? l(t('Withdraw'), "invite/withdraw/{$page}/{$invite->reg_code}") : '';
+        break;
 
-      if ($profile_access) {
-        $row[] = $account_exists ? l($invite->email, 'user/'. $invite->mid, array('title' => t('View user profile.'))) : check_plain($invite->email);
-      }
-      else {
+    	case 'pending':
+    	case 'expired':
+        $expired = ($invite->expiry < $time);
+
         $row[] = check_plain($invite->email);
-      }
-      $row[] = $account_exists ? t('Accepted') : t('Deleted');
-      $row[] = $allow_delete ? $delete_link : '';
+        $row[] = $expired ? t('Expired') : t('Pending');
+        $row[] = l(t('Withdraw'), "invite/withdraw/{$page}/{$invite->reg_code}");
+        break;
     }
-    else {
-      // Pending/expired
-      $expired = ($invite->expiry < $time);
-
-      $row[]  = check_plain($invite->email);
-      $row[] = $expired ? t('Expired') : t('Pending');
-      $row[] = $delete_link;
-    }
-
     $rows[] = $row;
   }
 
@@ -610,9 +610,8 @@ function invite_form($op = 'page') {
         return $form;
       }
       else {
-        // Redirect to invites list
         drupal_set_message(t('Sorry, you reached the maximum number (@max) of invitations.', array('@max' => $max_invites)), 'error');
-        drupal_goto('invite/list');
+        drupal_goto(user_access('track invitations') ? 'invite/list' : '<front>');
       }
     }
   }
