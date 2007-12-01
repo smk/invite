@@ -1,19 +1,21 @@
-# $Id: invite.pot,v 1.1.2.5 2007-11-17 10:08:23 smk Exp $
+# $Id: invite.pot,v 1.1.2.6 2007-12-01 16:47:28 smk Exp $
 #
 # LANGUAGE translation of Drupal (general)
 # Copyright YEAR NAME <EMAIL@ADDRESS>
 # Generated from files:
 #  invite_token.inc,v 1.1.2.1 2007/07/22 19:36:21 smk
-#  invite.module,v 1.10.2.89 2007/11/17 09:15:46 smk
+#  invite.module,v 1.10.2.91 2007/12/01 05:30:29 smk
 #  invite_stats.module,v 1.1.2.1 2007/11/12 23:19:09 smk
-#  invite.info,v 1.1.2.4 2007/09/09 22:54:36 smk
-#  invite_stats.info,v 1.1.2.1 2007/11/12 23:19:09 smk
+#  invite_cancel_account.module,v 1.1.2.1 2007/12/01 05:30:29 smk
+#  invite.info,v 1.1.2.5 2007/12/01 05:30:29 smk
+#  invite_cancel_account.info,v 1.1.2.1 2007/12/01 05:30:29 smk
+#  invite_stats.info,v 1.1.2.2 2007/12/01 05:30:29 smk
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"POT-Creation-Date: 2007-11-17 10:43+0100\n"
+"POT-Creation-Date: 2007-12-01 17:40+0100\n"
 "PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
 "Last-Translator: NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
@@ -70,7 +72,7 @@ msgstr ""
 msgid "Your invitations"
 msgstr ""
 
-#: invite.module:113;548
+#: invite.module:113;547
 msgid "Accepted"
 msgstr ""
 
@@ -170,11 +172,11 @@ msgstr ""
 msgid "E-mail settings"
 msgstr ""
 
-#: invite.module:373;716;726
+#: invite.module:373;715;725
 msgid "Subject"
 msgstr ""
 
-#: invite.module:374;947
+#: invite.module:374;946
 msgid "[inviter-raw] has sent you an invite!"
 msgstr ""
 
@@ -262,16 +264,16 @@ msgstr ""
 msgid "The title of the page where users invite friends."
 msgstr ""
 
-#: invite.module:536;1070
-msgid "Withdraw"
-msgstr ""
-
-#: invite.module:543
+#: invite.module:542
 msgid "View user profile."
 msgstr ""
 
-#: invite.module:548
+#: invite.module:547
 msgid "Deleted"
+msgstr ""
+
+#: invite.module:548;557;1069
+msgid "Withdraw"
 msgstr ""
 
 #: invite.module:576
@@ -286,179 +288,179 @@ msgstr ""
 msgid "No invitations available."
 msgstr ""
 
-#: invite.module:614
+#: invite.module:613
 msgid "Sorry, you reached the maximum number (@max) of invitations."
 msgstr ""
 
-#: invite.module:633
+#: invite.module:632
 msgid "Recommend @site-name to:"
 msgstr ""
 
-#: invite.module:633;1306
+#: invite.module:632;1305
 msgid "Drupal"
 msgstr ""
 
-#: invite.module:648
+#: invite.module:647
 msgid "Send invite"
 msgstr ""
 
-#: invite.module:652
+#: invite.module:651
 msgid "View your invites"
 msgstr ""
 
-#: invite.module:681
+#: invite.module:680
 msgid "From"
 msgstr ""
 
-#: invite.module:693
+#: invite.module:692
 msgid "To"
 msgstr ""
 
-#: invite.module:719
+#: invite.module:718
 msgid "Type the subject of the invitation e-mail."
 msgstr ""
 
-#: invite.module:734
+#: invite.module:733
 msgid "Message"
 msgstr ""
 
-#: invite.module:743
+#: invite.module:742
 msgid "Submit"
 msgstr ""
 
-#: invite.module:836
+#: invite.module:835
 msgid "You cannot send more than one invitation."
 msgstr ""
 
-#: invite.module:1017
+#: invite.module:1016
 msgid "Problems occurred while sending the invitation(s). Please contact the site administrator."
 msgstr ""
 
-#: invite.module:1020
+#: invite.module:1019
 msgid "Failed sending invitation. To: @email From: @from"
 msgstr ""
 
-#: invite.module:1063
+#: invite.module:1062
 msgid "The invitee won't be able to register any more using this invitation."
 msgstr ""
 
-#: invite.module:1067
+#: invite.module:1066
 msgid "Are you sure you want to withdraw the invitation to %email?"
 msgstr ""
 
-#: invite.module:1069
+#: invite.module:1068
 msgid "This action cannot be undone."
 msgstr ""
 
-#: invite.module:1071
+#: invite.module:1070
 msgid "Cancel"
 msgstr ""
 
-#: invite.module:1075
+#: invite.module:1074
 msgid "Invitations to registered users cannot be withdrawn."
 msgstr ""
 
-#: invite.module:1079
+#: invite.module:1078
 msgid "Detected malicious attempt to delete an invitation."
 msgstr ""
 
-#: invite.module:1079
+#: invite.module:1078
 msgid "view"
 msgstr ""
 
-#: invite.module:1098
+#: invite.module:1092
 msgid "Invitation to %email has been withdrawn."
 msgstr ""
 
-#: invite.module:1129
+#: invite.module:1128
 msgid "Inviter's name. WARNING - raw user input."
 msgstr ""
 
-#: invite.module:1130
+#: invite.module:1129
 msgid "The e-mail address of the invited user."
 msgstr ""
 
-#: invite.module:1131
+#: invite.module:1130
 msgid "The personal message for the invitee as unfiltered text. WARNING - raw user input."
 msgstr ""
 
-#: invite.module:1132
+#: invite.module:1131
 msgid "The link to the registration page of the site."
 msgstr ""
 
-#: invite.module:1221
+#: invite.module:1220
 msgid "This invitation has been withdrawn."
 msgstr ""
 
-#: invite.module:1225
+#: invite.module:1224
 msgid "This invitation has already been used. Please login now with your username and password."
 msgstr ""
 
-#: invite.module:1229
+#: invite.module:1228
 msgid "Sorry, this invitation has expired."
 msgstr ""
 
-#: invite.module:1306
+#: invite.module:1305
 msgid "!user (@email) has joined @site-name!"
 msgstr ""
 
-#: invite.module:1318
-msgid "Your friend, [inviter-raw], has invited you to join [site-name] at [site-url].\n\nTo become a member of [site-name], click the link below or paste it into the address bar of your browser.\n\n[join-link]\n\n----------\n[invite-message-raw]"
+#: invite.module:1317
+msgid "Your friend, [inviter-raw], has invited you to join [site-name] at [site-url].\r\n\r\nTo become a member of [site-name], click the link below or paste it into the address bar of your browser.\r\n\r\n[join-link]\r\n\r\n----------\r\n[invite-message-raw]"
 msgstr ""
 
-#: invite.module:1020;1079;0
+#: invite.module:1019;1078;0
 msgid "invite"
 msgstr ""
 
-#: invite.module:637
+#: invite.module:636
 msgid "1 invite left"
 msgid_plural "@count invites left"
 msgstr[0] ""
 msgstr[1] ""
 
-#: invite.module:663
+#: invite.module:662
 msgid "You have 1 invite left."
 msgid_plural "You have @count invites left."
 msgstr[0] ""
 msgstr[1] ""
 
-#: invite.module:695
+#: invite.module:694
 msgid "Type the e-mail address of the person you would like to invite."
 msgid_plural "Type the e-mail addresses of the persons you would like to invite. Addresses should be separated by newlines or commas."
 msgstr[0] ""
 msgstr[1] ""
 
-#: invite.module:738
+#: invite.module:737
 msgid "This message will be added to the mail sent to the person you are inviting."
 msgid_plural "This message will be added to the mail sent to the persons you are inviting."
 msgstr[0] ""
 msgstr[1] ""
 
-#: invite.module:804
+#: invite.module:803
 msgid "The following recipient is already a member:"
 msgid_plural "The following recipients are already members:"
 msgstr[0] ""
 msgstr[1] ""
 
-#: invite.module:816
+#: invite.module:815
 msgid "The following recipient has already been invited:"
 msgid_plural "The following recipients have already been invited:"
 msgstr[0] ""
 msgstr[1] ""
 
-#: invite.module:830
+#: invite.module:829
 msgid "You have only 1 invite left."
 msgid_plural "You have only @count invites left."
 msgstr[0] ""
 msgstr[1] ""
 
-#: invite.module:894
+#: invite.module:893
 msgid "Your invitation has been successfully sent. You will be notified when the invitee joins the site."
 msgid_plural "@count invitations have been successfully sent. You will be notified when any invitee joins the site."
 msgstr[0] ""
 msgstr[1] ""
 
-#: invite.module:898
+#: invite.module:897
 msgid "The entered e-mail address is invalid. Please correct it."
 msgid_plural "@count entered e-mail addresses are invalid. Please correct them."
 msgstr[0] ""
@@ -478,6 +480,10 @@ msgstr ""
 
 #: invite.module:60
 msgid "withdraw accepted invitations"
+msgstr ""
+
+#: invite_cancel_account.module:0
+msgid "invite_cancel_account"
 msgstr ""
 
 #: invite_stats.module:28
@@ -530,7 +536,7 @@ msgstr ""
 msgid "invite_stats"
 msgstr ""
 
-#: invite.info:0
+#: invite.info:0;0 invite_cancel_account.info:0 invite_stats.info:0
 msgid "Invite"
 msgstr ""
 
@@ -538,8 +544,12 @@ msgstr ""
 msgid "Allow your users to send and track invitations to join your site."
 msgstr ""
 
-#: invite.info:0 invite_stats.info:0
-msgid "Mail"
+#: invite_cancel_account.info:0
+msgid "Cancel User Accounts"
+msgstr ""
+
+#: invite_cancel_account.info:0
+msgid "Allows your users to terminate user accounts by withdrawing their invitation. WARNING - This module is put into effect when you enable it."
 msgstr ""
 
 #: invite_stats.info:0
