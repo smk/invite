@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.4.2.16 2007-12-01 16:47:28 smk Exp $ */
+/* $Id: README.txt,v 1.4.2.17 2007-12-02 00:26:44 smk Exp $ */
 
 -- SUMMARY --
 
@@ -18,36 +18,41 @@ Bug reports, feature suggestions and latest developments:
   http://drupal.org/project/token
 
 
-INSTALLATION
+-- INSTALLATION --
 
-* Copy the invite module to your modules directory and enable it on the Modules
-  page (admin/build/modules).
+1. Copy the invite module to your modules directory and enable it on the Modules
+   page (admin/build/modules).
 
-* Give some roles permission to send invites at the Access control page
-  (admin/user/access).
+2. Give some roles permission to send invites at the Access control page
+   (admin/user/access). The following permissions can be controlled:
 
-  "send mass invitations": Allows users to send an invitation to multiple
-  recipients (this was formerly a setting known as "limit per turn").
-  "track invitations": To give users access to the overview pages and
-  associated actions (withdraw etc). Useful to hide overviews from anonymous
-  users.
-  "withdraw accepted invitations": This will allow your users to delete
-  accepted invitations. It will also delete all invitations from/to a user upon
-  termination of its account. Disable it to prevent users from deleting their
-  account to be re-invited. With the help of the Cancel User Accounts module
-  it is possible to terminate user accounts by withdrawing an invitation.
+   send mass invitations - Allows users to send an invitation to multiple
+     recipients (this was formerly a setting known as "limit per turn").
 
-  "view invite statistics": Allows users to view invite statistics on their
-  profile pages as well as view the Top inviters/User rank block.
-  "view own invite statistics": Same as above, but limits viewing statistics to
-  the user's own profile.
+   track invitations - To give users access to the overview pages and
+     associated actions (withdraw etc). Useful to hide overviews from anonymous
+     users.
 
-* Invite adds a new registration mode called 'New user registration by
-  invitation only' to the User settings page (admin/user/settings), which allows
-  you to maintain a semi-private site. You can enable it if you need it.
+   withdraw accepted invitations - This will allow your users to delete
+     accepted invitations. It will also delete all invitations from/to a user
+     upon termination of its account. Disable it to prevent users from deleting
+     their account to be re-invited. With the help of the Cancel User Accounts
+     module it is possible to terminate user accounts by withdrawing an
+     invitation.
+ 
+   view invite statistics - Allows users to view invite statistics on their
+     profile pages as well as view the Top inviters/User rank block.
 
-* Configure the module at User management > Invite settings (admin/user/invite).
-  For an explanation of the configuration settings see below.
+   view own invite statistics - Same as above, but limits viewing statistics to
+     the user's own profile.
+
+3. Invite adds a new registration mode called 'New user registration by
+   invitation only' to the User settings page (admin/user/settings), which
+   allows you to maintain a semi-private site. You can enable it if you need it.
+
+4. Configure the module at User management > Invite settings
+   (admin/user/invite). For an explanation of the configuration settings see
+   below.
 
 
 -- CONFIGURATION --
