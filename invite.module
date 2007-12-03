@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.2 2007-12-03 09:53:03 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.3 2007-12-03 10:11:21 smk Exp $
 
 /**
  * @file
@@ -329,20 +329,16 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
       break;
 
     case 'delete':
-      // Only delete invites of existing users if the configuration allows it to
-      $delete_joined = user_access('withdraw accepted invitations');
-
-      // Delete invite for this user
-      if ($delete_joined) {
-        db_query("DELETE FROM {invite} WHERE invitee = %d", $account->uid);
+      // Delete invite for this user if the originating user has the permission
+      $origin = db_result(db_query("SELECT uid FROM {invite} WHERE invitee = %d", $account->uid));
+      if ($origin && $inviter = user_load(array('uid' => $origin))) {
+        if (user_access('withdraw accepted invitations', $inviter)) {
+          db_query("DELETE FROM {invite} WHERE invitee = %d", $account->uid);
+        }
       }
 
       // Delete any invites originating from this user
-      $sql = "DELETE FROM {invite} WHERE uid = %d";
-      if (!$delete_joined) {
-        $sql .= " AND joined != 0";
-      }
-      db_query($sql, $account->uid);
+      db_query("DELETE FROM {invite} WHERE uid = %d", $account->uid);
 
       // Clean up the notification queue
       db_query("DELETE FROM {invite_notifications} WHERE uid = %d OR invitee = %d", $account->uid, $account->uid);
