@@ -1,7 +1,11 @@
-// $Id: CHANGELOG.TXT,v 1.1.2.2 2007-12-03 02:55:49 smk Exp $
+// $Id: CHANGELOG.TXT,v 1.1.2.2.2.1 2007-12-03 07:28:59 smk Exp $
 
-Invite 5.x-1.xx, xxxx-xx-xx
----------------------------
+Invite 5.x-2.x, xxxx-xx-xx
+--------------------------
+New features:
+- #98765: Allowing multiple invites to the same e-mail address.
+- New, less resource intensive notification system.
+
 Bugs fixed:
 - #197198: Fixed misleading error message when no permissions have been set up.
 - #196877: Prevent caching of user/register page (better approach).
