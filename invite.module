@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.5 2007-12-03 12:14:10 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.6 2007-12-03 14:06:29 smk Exp $
 
 /**
  * @file
@@ -71,16 +71,31 @@ function invite_menu($may_cache) {
 
   $send_access = user_access('send invitations');
   $track_access = user_access('track invitations');
+  $admin_access = user_access('administer site configuration');
 
   if ($may_cache) {
     $items[] = array(
       'path' => 'admin/user/invite',
-      'title' => 'Invite settings',
-      'description' => t('Manage Invite settings'),
+      'title' => t('Invitations'),
+      'callback' => 'invite_admin_overview',
+      'access' => $admin_access,
+      'type' => MENU_NORMAL_ITEM,
+    );
+    $items[] = array(
+      'path' => 'admin/user/invite/list',
+      'title' => t('List'),
+      'access' => $admin_access,
+      'type' => MENU_DEFAULT_LOCAL_TASK,
+      'weight' => -5,
+    );
+    $items[] = array(
+      'path' => 'admin/user/invite/settings',
+      'title' => t('Settings'),
       'callback' => 'drupal_get_form',
       'callback arguments' => 'invite_settings',
-      'access' => user_access('administer site configuration'),
-      'type' => MENU_NORMAL_ITEM,
+      'access' => $admin_access,
+      'type' => MENU_LOCAL_TASK,
+      'weight' => 5,
     );
     $items[] = array(
       'path' => 'invite',
@@ -143,6 +158,16 @@ function invite_menu($may_cache) {
         'access' => $track_access,
         'type' => MENU_LOCAL_TASK,
         'weight' => 5,
+      );
+    }
+    else if (arg(0) == 'admin' && arg(2) == 'invite' && arg(3) == 'details' && arg(4)) {
+      $items[] = array(
+        'path' => 'admin/user/invite/details/'. arg(4),
+        'title' => t('User details'),
+        'callback' => 'invite_admin_details',
+        'callback arguments' => array(arg(4)),
+        'access' => $admin_access,
+        'type' => MENU_LOCAL_TASK,
       );
     }
   }
@@ -407,6 +432,115 @@ function invite_block($op = 'list', $delta = 0, $edit = array()) {
     }
     return $block;
   }
+}
+
+/**
+ * Return a list of all users that have invited someone.
+ */
+function invite_admin_overview() {
+  $header = array(
+    array('data' => t('Username'), 'field' => 'u.name', 'sort' => 'asc'),
+    array('data' => t('Total'), 'field' => 'invites'),
+    t('Successful'),
+    t('Pending'),
+    t('Expired'),
+    t('Operations'),
+  );
+  
+  $now = time();
+  $sql = "SELECT i.uid, u.name, COUNT(*) AS invites FROM {invite} i INNER JOIN {users} u ON u.uid = i.uid GROUP BY i.uid";
+  $sql .= tablesort_sql($header);
+  $result = pager_query($sql, 50, 0, NULL);
+  $rows = array();
+  
+  while ($row = db_fetch_object($result)) {
+    $cells = array();
+    $cells[] = theme('username', $row);
+    $cells[] = $row->invites;
+    $stats = invite_stats($row->uid);
+    $cells[] = $stats['accepted'];
+    $cells[] = $stats['pending'];
+    $cells[] = $stats['expired'];
+    $cells[] = l(t('details'), "admin/user/invite/details/$row->uid");
+    $rows[] = $cells;
+  }
+  
+  $output = theme('table', $header, $rows, array('id' => 'invite'));
+  if (!$rows) {
+    $output .= t('No invites available.');
+  }
+  else {
+    $output .= theme('pager', array(), 50, 0);
+  }
+
+  return $output;
+}
+
+/**
+ * Return a list of invites by a user.
+ *
+ * @param $uid
+ *   A user id.
+ */
+function invite_admin_details($uid) {
+  $now = time();
+  $status_sort = '';
+  if ($_GET['order'] == t('Status')) {
+    $sort = db_escape_string($_GET['sort']);
+    if ($_GET['sort'] == 'asc') {
+      $status_sort = "IF(i.joined != 0, 0, 1) $sort, IF(i.expiry < $now, 0, 1) $sort, i.canceled";
+    }
+    else {
+      $status_sort = "i.canceled $sort, IF(i.expiry < $now, 0, 1) $sort, IF(i.joined != 0, 0, 1)";
+    }
+  }
+  $header = array(
+    array('data' => t('E-mail'), 'field' => 'i.email', 'sort' => 'asc'),
+    array('data' => t('Username'), 'field' => 'if(u.name IS NULL, 0, 1) DESC, u.name'),
+    array('data' => t('Invited'), 'field' => 'i.expiry'),
+    array('data' => t('Status'), 'field' => $status_sort),
+  );
+  
+  $expiry_period = variable_get('invite_expiry', 30) * 60 * 60 * 24;
+  $sql = "SELECT if(u.name IS NULL, 0, 1) AS test, i.email, i.invitee AS uid, u.name, i.expiry, i.joined, i.canceled FROM {invite} i LEFT JOIN {users} u ON u.uid = i.invitee AND u.uid != 0 WHERE i.uid = %d";
+  $sql .= tablesort_sql($header);
+  $result = pager_query($sql, 50, 0, NULL, $uid);
+  $rows = array();
+  
+  while ($row = db_fetch_object($result)) {
+    $cells = array();
+    $cells[] = check_plain($row->email);
+    $cells[] = $row->joined ? theme('username', $row) : '';
+    $cells[] = format_date($row->expiry - $expiry_period, 'small');
+    $cells[] = $row->canceled ? t('Withdrawn') : ($row->joined ? t('Joined') : ($row->expiry < $now ? t('Expired') : t('Pending')));
+    $rows[] = $cells;
+  }
+  
+  $output = theme('table', $header, $rows, array('id' => 'invite'));
+  if (!$rows) {
+    $output .= t('No invites available.');
+  }
+  else {
+    $output .= theme('pager', array(), 50, 0);
+  }
+
+  return $output;
+}
+
+/**
+ * Return counts of successful/pending/unsuccessful invitations.
+ *
+ * @param $uid
+ *   The user id to calculate counts for.
+ * @return
+ *   An array consisting of three elements: accepted, pending and expired.
+ */
+function invite_stats($uid) {
+  $now = time();
+  $stats['accepted'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined != 0", $uid));
+  $stats['pending'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined = 0 AND expiry >= %d", $uid, $now));
+  $stats['expired'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined = 0 AND expiry < %d", $uid, $now));
+  return $stats;
 }
 
 /**
