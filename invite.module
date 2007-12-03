@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.1 2007-12-03 07:28:59 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.2 2007-12-03 09:53:03 smk Exp $
 
 /**
  * @file
@@ -12,9 +12,9 @@
 define('INVITE_SESSION_NAME', 'invite_code');
 
 /**
- * Special unlimited value.
+ * Special value for unlimited invites.
  */
-define('INVITE_UNLIMITED_INVITES', -1);
+define('INVITE_UNLIMITED', -1);
 
 /**
  * Implementation of hook_help().
@@ -482,8 +482,8 @@ function invite_settings() {
     $form['role'][$role_no_space]['invite_maxnum_'. $role_no_space] = array(
       '#type' => 'select',
       '#title' => t('Invitation limit'),
-      '#default_value' => variable_get('invite_maxnum_'. $role_no_space, INVITE_UNLIMITED_INVITES),
-      '#options' => array(5 => 5, 10 => 10, 20 => 20, 50 => 50, 100 => 100, 500 => 500, 1000 => 1000, INVITE_UNLIMITED_INVITES => t('unlimited')),
+      '#default_value' => variable_get('invite_maxnum_'. $role_no_space, INVITE_UNLIMITED),
+      '#options' => array(5 => 5, 10 => 10, 20 => 20, 50 => 50, 100 => 100, 500 => 500, 1000 => 1000, INVITE_UNLIMITED => t('unlimited')),
       '#description' => t('Allows to limit the total number of invitations members of %role can send.', array('%role' => $role)),
       '#multiple' => FALSE,
       '#required' => TRUE,
@@ -673,41 +673,34 @@ function theme_invite_overview($items) {
 function invite_form($op = 'page') {
   global $user;
 
-  $max_invites = invite_max_invites();
+  $remaining_invites = invite_get_remaining();
 
-  // Check that the user is within limits
-  if ($max_invites != INVITE_UNLIMITED_INVITES) {
-    $invites_sent = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d", $user->uid));
-    $invites_left = max($max_invites - $invites_sent, 0);
-
-    if ($invites_left == 0) {
-      if ($op == 'block') {
-        // Hide the block
-        $form['#access'] = FALSE;
-        return $form;
-      }
-      else {
-        drupal_set_message(t('Sorry, you reached the maximum number (@max) of invitations.', array('@max' => $max_invites)), 'error');
-        drupal_goto(user_access('track invitations') ? 'invite/list' : '<front>');
-      }
+  if ($remaining_invites == 0) {
+    if ($op == 'block') {
+      $form['#access'] = FALSE; // Hides the block
+      return $form;
+    }
+    else {
+      drupal_set_message(t("Sorry, you've reached the maximum number of invitations."), 'error');
+      drupal_goto(user_access('track invitations') ? 'invite/list' : '');
     }
   }
-  else {
-    $invites_left = INVITE_UNLIMITED_INVITES;
+
+  $form = array();
+
+  if ($remaining_invites != INVITE_UNLIMITED) {
+    $form['remaining_invites'] = array(
+      '#type' => 'value',
+      '#value' => $remaining_invites,
+    );
   }
-
-  $form['remaining_invites'] = array(
-    '#type' => 'value',
-    '#value' => $invites_left,
-  );
-
   switch ($op) {
     case 'page':
     default:
-      $form += invite_page_form($max_invites, $invites_left);
+      $form += invite_page_form($remaining_invites);
       break;
     case 'block':
-      $form += invite_block_form($max_invites, $invites_left);
+      $form += invite_block_form($remaining_invites);
       break;
   }
 
@@ -715,37 +708,52 @@ function invite_form($op = 'page') {
 }
 
 /**
- * Return max number of invites a user may send.
+ * Calculate the remaining invites of a user.
  *
  * @param $uid
- *   A user id.
+ *   A user id, or the current user if omitted.
  * @return
- *   The number of invites the user may send.
+ *   The number of remaining invites.
  */
-function invite_max_invites($uid = NULL) {
+function invite_get_remaining($uid = NULL) {
   global $user;
 
   $account = (is_null($uid)) ? $user : user_load(array('uid' => $uid));
   if ($account->uid == 1) {
-    return INVITE_UNLIMITED_INVITES;
+    return INVITE_UNLIMITED;
   }
 
-  $max = 0;
-
-  foreach (user_roles(0, 'send invitations') as $role) {
-    $role_no_space = str_replace(' ', '_', $role);
-    if (in_array($role, $account->roles)) {
-      $role_max = variable_get('invite_maxnum_'. $role_no_space, INVITE_UNLIMITED_INVITES);
-      if ($role_max == INVITE_UNLIMITED_INVITES) {
-        return INVITE_UNLIMITED_INVITES;
+  // Check user property for remaining invites
+  $data = unserialize($account->data);
+  if (isset($data['invites'])) {
+    $remaining = $data['invites'];
+  }
+  else {
+    // Calculate configured role limit
+    $role_limit = 0;
+    foreach (user_roles(0, 'send invitations') as $role) {
+      $role_no_space = str_replace(' ', '_', $role);
+      if (in_array($role, $account->roles)) {
+        $role_max = variable_get('invite_maxnum_'. $role_no_space, INVITE_UNLIMITED);
+        if ($role_max == INVITE_UNLIMITED) {
+          return INVITE_UNLIMITED;
+        }
+        $role_limit = max($role_max, $role_limit);
       }
-      if ($role_max > $max) {
-        $max = $role_max;
+    }
+
+    if ($role_limit > 0) {
+      // Legacy support
+      $sent = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d", $account->uid));
+      $remaining = max($role_limit - $sent, 0);
+      if ($sent > 0) {
+        // Update user property for faster lookup next time
+        user_save($account, array('invites' => $remaining));
       }
     }
   }
 
-  return $max;
+  return $remaining;
 }
 
 /**
@@ -754,12 +762,12 @@ function invite_max_invites($uid = NULL) {
  * @return
  *   A form definition.
  */
-function invite_page_form($max_invites, $invites_left) {
+function invite_page_form($remaining_invites) {
   global $user;
 
   // Remaining invites    
-  if ($max_invites != INVITE_UNLIMITED_INVITES) {
-    $form['remaining_invites_markup']['#value'] = format_plural($invites_left, 'You have 1 invite left.', 'You have @count invites left.');
+  if ($remaining_invites != INVITE_UNLIMITED) {
+    $form['remaining_invites_markup']['#value'] = format_plural($remaining_invites, 'You have 1 invite remaining.', 'You have @count invites remaining.');
   }
 
   // Sender e-mail address
@@ -851,15 +859,15 @@ function invite_page_form($max_invites, $invites_left) {
  * @return
  *   A form definition.
  */
-function invite_block_form($max_invites, $invites_left) {
+function invite_block_form($remaining_invites) {
   $form['#action'] = url('invite');
 
   $form['invite'] = array(
     '#value' => t('Recommend @site-name to:', array('@site-name' => variable_get('site_name', t('Drupal')))),
   );
   $description = '';
-  if ($max_invites != INVITE_UNLIMITED_INVITES) {
-    $description = format_plural($invites_left, '1 invite left', '@count invites left');
+  if ($remaining_invites != INVITE_UNLIMITED) {
+    $description = format_plural($remaining_invites, '1 invite remaining', '@count invites remaining');
   }
   $form['email'] = array(
     '#type' => 'textfield',
@@ -921,7 +929,7 @@ function theme_invite_form($form) {
 }
 
 /**
- * Forms API callback; validates the incoming form data.
+ * Forms API callback; validate submitted form data.
  *
  * Filters out e-mails that are already registered or have been invited before.
  * Checks the invite limit of the user and the max. number of invites per turn.
@@ -960,7 +968,7 @@ function invite_form_validate($form_id, &$edit) {
     }
 
     // Check invite limit, fail to let the user choose which ones to send
-    if ($edit['remaining_invites'] != INVITE_UNLIMITED_INVITES && count($emails) > $edit['remaining_invites']) {
+    if (isset($edit['remaining_invites']) && count($emails) > $edit['remaining_invites']) {
       form_set_error('email', format_plural($edit['remaining_invites'], 'You have only 1 invite left.', 'You have only @count invites left.'));
       return;
     }
@@ -1045,17 +1053,18 @@ function _invite_validate_emails($sql, &$emails) {
 }
 
 /**
- * Forms API callback; processes the incoming form data.
- *
- * Sends out invitation e-mails.
+ * Forms API callback; process submitted form data.
  */
 function invite_form_submit($form_id, $edit) {
-  $failed_emails = array();
-  $count_failed = $count_success = 0;
+  global $user;
 
+  $failed_emails = array();
+  $num_failed = $num_succeeded = 0;
+
+  // Get e-mails that failed validation
   if (isset($_SESSION['invite_failed_emails'])) {
     $failed_emails = (array)unserialize($_SESSION['invite_failed_emails']);
-    $count_failed = count($failed_emails);
+    $num_failed = count($failed_emails);
   }
 
   $subject = isset($edit['subject']) ? trim($edit['subject']) : invite_get_subject();
@@ -1081,23 +1090,28 @@ function invite_form_submit($form_id, $edit) {
       $args = array('inviter' => $invite->inviter, 'code' => $invite->code);
       module_invoke_all('invite', 'invite', $args);
 
-      $count_success++;
+      $num_succeeded++;
     }
     else {
       $failed_emails[] = $email;
     }
   }
 
+  // Store failed e-mails for re-display
   if ($failed_emails) {
     $_SESSION['invite_failed_emails'] = serialize($failed_emails);
   }
 
-  if ($count_success) {
-    $message = format_plural($count_success, 'Your invitation has been successfully sent. You will be notified when the invitee joins the site.', '@count invitations have been successfully sent. You will be notified when any invitee joins the site.');
+  if ($num_succeeded) {
+    if (isset($edit['remaining_invites'])) {
+      // Update user property if user is limited
+      user_save($user, array('invites' => $edit['remaining_invites'] - $num_succeeded));
+    }
+    $message = format_plural($num_succeeded, 'Your invitation has been successfully sent. You will be notified when the invitee joins the site.', '@count invitations have been successfully sent. You will be notified when any invitee joins the site.');
     drupal_set_message($message);
   }
-  if ($count_failed) {
-    $message = format_plural($count_failed, 'The entered e-mail address is invalid. Please correct it.', '@count entered e-mail addresses are invalid. Please correct them.');
+  if ($num_failed) {
+    $message = format_plural($num_failed, 'The entered e-mail address is invalid. Please correct it.', '@count entered e-mail addresses are invalid. Please correct them.');
     drupal_set_message($message, 'error');
   }
   else if (user_access('track invitations')) {
