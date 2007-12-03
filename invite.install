@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.3.2.26.2.1 2007-12-03 07:28:59 smk Exp $
+// $Id: invite.install,v 1.3.2.26.2.2 2007-12-03 11:01:12 smk Exp $
 
 /**
  * Install the initial schema.
@@ -353,7 +353,9 @@ function invite_update_11() {
  */
 
 /**
- * Allow multiple invitations for the same e-mail address.
+ * 1. Allow multiple invitations for the same e-mail address.
+ * 2. Changed some column names to be more descriptive.
+ * 3. Added a column to flag canceled invites.
  */
 function invite_update_200() {
   $ret = array();
@@ -361,29 +363,16 @@ function invite_update_200() {
     case 'mysql':
     case 'mysqli':
       $ret[] = update_sql("ALTER TABLE {invite} DROP PRIMARY KEY, ADD INDEX email (email)");
+      $ret[] = update_sql("ALTER TABLE {invite} CHANGE mid invitee int(10) NOT NULL default '0'");
+      $ret[] = update_sql("ALTER TABLE {invite} CHANGE timestamp joined int(10) NOT NULL default '0'");
+      $ret[] = update_sql("ALTER TABLE {invite} ADD canceled tinyint(1) NOT NULL default '0'");
       break;
     case 'pgsql':
       $ret[] = update_sql("ALTER TABLE {invite} DROP CONSTRAINT {invite}_pkey");
       $ret[] = update_sql("CREATE INDEX {invite}_email_idx ON {invite}(email)");
-      break;
-  }
-  return $ret;
-}
-
-/**
- * Changed some column names to be more descriptive.
- */
-function invite_update_201() {
-  $ret = array();
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-      $ret[] = update_sql("ALTER TABLE {invite} CHANGE mid invitee int(10) NOT NULL default '0'");
-      $ret[] = update_sql("ALTER TABLE {invite} CHANGE timestamp joined int(10) NOT NULL default '0'");
-      break;
-    case 'pgsql':
       db_change_column($ret, 'invite', 'mid', 'invitee', 'INTEGER', array('not null' => TRUE, 'default' => '0'));
       db_change_column($ret, 'invite', 'timestamp', 'joined', 'INTEGER', array('not null' => TRUE, 'default' => '0'));
+      db_add_column($ret, 'invite', 'canceled', 'smallint', array('default' => 0, 'not null' => TRUE));
       break;
   }
   return $ret;
@@ -392,7 +381,7 @@ function invite_update_201() {
 /**
  * Revamped notification system.
  */
-function invite_update_202() {
+function invite_update_201() {
   $ret = array();
   switch ($GLOBALS['db_type']) {
     case 'mysql':

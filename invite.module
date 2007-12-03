@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.3 2007-12-03 10:11:21 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.4 2007-12-03 11:01:12 smk Exp $
 
 /**
  * @file
@@ -251,7 +251,7 @@ function invite_form_alter($form_id, &$form) {
  *   An invite record.
  */
 function invite_load($code) {
-  $result = db_query("SELECT * FROM {invite} WHERE reg_code = '%s'", $code);
+  $result = db_query("SELECT * FROM {invite} WHERE reg_code = '%s' AND canceled = 0", $code);
   if ($invite = db_fetch_object($result)) {
     $invite->inviter = user_load(array('uid' => $invite->uid));
     $invite->data = (array)unserialize($invite->data);
@@ -309,13 +309,12 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
         // Update the invitation and set its status to accepted
         db_query("UPDATE {invite} SET email = '%s', invitee = %d, joined = %d WHERE reg_code = '%s'", $edit['mail'], $account->uid, time(), $invite->reg_code);
 
+        // Delete all invites to these e-mail addresses, except this one
+        db_query("DELETE FROM {invite} WHERE (email = '%s' OR email = '%s') AND reg_code != '%s'", $invite->email, $edit['mail'], $invite->reg_code);
+
         // Add all users that invited this particular e-mail address to the
         // notification queue
-        db_query("INSERT INTO {invite_notifications} (uid, invitee) SELECT uid, %d from {invite} WHERE email = '%s' OR email = '%s'", $account->uid, $invite->email, $edit['mail']);
-
-        // Delete all invites to these e-mail addresses, except the
-        // 'successful' one
-        db_query("DELETE FROM {invite} WHERE (email = '%s' OR email = '%s') AND joined = 0", $invite->email, $edit['mail']);
+        db_query("INSERT INTO {invite_notifications} (uid, invitee) SELECT uid, %d from {invite} WHERE (email = '%s' OR email = '%s') AND canceled = 0", $account->uid, $invite->email, $edit['mail']);
 
         // Escalate invitee's role
         _invite_escalate_role($account);
@@ -593,13 +592,13 @@ function invite_overview($page = 'accepted') {
   switch ($page) {
   	case 'accepted':
   	default:
-      $sql = "SELECT i.*, u.uid AS user FROM {invite} i LEFT JOIN {users} u ON u.uid = i.invitee AND u.uid != 0 WHERE i.uid = %d AND i.joined != 0 ORDER BY u.uid DESC";
+      $sql = "SELECT i.*, u.uid AS account FROM {invite} i LEFT JOIN {users} u ON u.uid = i.invitee AND u.uid != 0 WHERE i.uid = %d AND i.joined != 0 AND canceled = 0 ORDER BY u.uid DESC";
   		break;
   	case 'pending':
-      $sql = "SELECT * FROM {invite} WHERE uid = %d AND joined = 0 AND expiry >= %d ORDER BY expiry DESC";
+      $sql = "SELECT * FROM {invite} WHERE uid = %d AND joined = 0 AND canceled = 0 AND expiry >= %d ORDER BY expiry DESC";
   		break;
   	case 'expired':
-      $sql = "SELECT * FROM {invite} WHERE uid = %d AND joined = 0 AND expiry < %d ORDER BY expiry DESC";
+      $sql = "SELECT * FROM {invite} WHERE uid = %d AND joined = 0 AND canceled = 0 AND expiry < %d ORDER BY expiry DESC";
   		break;
   }
 
@@ -610,7 +609,7 @@ function invite_overview($page = 'accepted') {
     switch ($page) {
     	case 'accepted':
     	default:
-        $account_exists = !is_null($invite->user);
+        $account_exists = !is_null($invite->account);
 
         if ($profile_access && $account_exists) {
           $row[] = l($invite->email, 'user/'. $invite->invitee, array('title' => t('View user profile.')));
@@ -948,8 +947,9 @@ function invite_form_validate($form_id, &$edit) {
       drupal_set_message($error, 'error');
     }
 
-    // Filter out already invited users, but pass validation
-    $failed_emails = _invite_validate_emails("SELECT email FROM {invite} WHERE email IN (%s) AND uid = %d", $emails, $user->uid);
+    // Filter out already invited users, but pass validation.
+    // The record will be replaced later on
+    $failed_emails = _invite_validate_emails("SELECT email FROM {invite} WHERE email IN (%s) AND uid = %d AND canceled = 0", $emails, $user->uid);
     if (count($failed_emails)) {
       $error = format_plural(count($failed_emails), 'You did already invite the following recipient:', 'You did already invite the following recipients:') .'<br />';
       $error .= implode(', ', array_map('check_plain', $failed_emails));
@@ -1215,9 +1215,10 @@ function invite_send_invite($recipient, $subject, $body) {
  */
 function invite_save($edit) {
   $edit = (array)$edit;
-  $expiry = time() + (variable_get('invite_expiry', 30)*60*60*24);
+  $expiry = time() + (variable_get('invite_expiry', 30) * 60 * 60 * 24);
   $data = serialize($edit['data']);
-
+  // Delete any previous invites to this e-mail address first
+  db_query("DELETE FROM {invite} WHERE uid = %d AND email = '%s'", $edit['inviter']->uid, $edit['email']);
   return db_query("INSERT INTO {invite} (email, reg_code, uid, expiry, data) VALUES ('%s', '%s', %d, %d, '%s')", $edit['email'], $edit['code'], $edit['inviter']->uid, $expiry, $data);
 }
 
@@ -1271,7 +1272,7 @@ function invite_delete($origin, $code) {
 function invite_delete_submit($form_id, $form_values) {
   $invite = $form_values['invite'];
 
-  db_query("DELETE FROM {invite} WHERE reg_code = '%s'", $invite->reg_code);
+  db_query("UPDATE {invite} SET canceled = 1 WHERE reg_code = '%s'", $invite->reg_code);
   drupal_set_message(t('Invitation to %email has been withdrawn.', array('%email' => $invite->email)));
 
   // Notify other modules
