@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.4 2007-12-03 11:01:12 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.5 2007-12-03 12:14:10 smk Exp $
 
 /**
  * @file
@@ -22,35 +22,37 @@ define('INVITE_UNLIMITED', -1);
  * Returns appropriate help text for all three invite status pages.
  */
 function invite_help($section) {
-  // Show module help
-  if ($section == 'admin/help#invite') {
+  global $user;
+
+  if (arg(0) == 'user' && is_numeric(arg(1)) && arg(1) == $user->uid) {
+    // Display introductory text on overview pages
+    switch ($section) {
+      case 'user/'. arg(1) .'/invites':
+      case 'user/'. arg(1) .'/invites/accepted':
+        $output = '<p>'. t("The invitations shown on this page have been used to join the site. Clicking on an e-mail address takes you to the user's profile page.");
+        break;
+      case 'user/'. arg(1) .'/invites/pending':
+        $output = '<p>'. t("The invitations shown on this page haven't been accepted yet.");
+        break;
+      case 'user/'. arg(1) .'/invites/expired':
+        $output = '<p>'. t('The invitations shown on this page have not been used to register on the site within the expiration period of @count days.', array('@count' => variable_get('invite_expiry', 30)));
+        break;
+      default:
+        return;
+    }
+    $output .= ' '. t('The status <em>deleted</em> means the user account has been terminated.') .'</p>';
+    if (!user_access('withdraw accepted invitations')) {
+      $output .= '<p>'. t("At any time, you may withdraw either pending or expired invitations. Accepted invitations can't be withdrawn and count permanently toward your invitation allotment.") .'</p>';
+    }
+    return $output;
+  }
+  else if ($section == 'admin/help#invite') {
+    // Display module help
     $file = drupal_get_path('module', 'invite') .'/README.txt';
     if (file_exists($file)) {
       return _filter_autop(file_get_contents($file));
     }
-    return;
   }
-
-  // Show introductory text on overview pages
-  switch ($section) {
-    case 'invite/list':
-    case 'invite/list/accepted':
-      $output = '<p>'. t("The invitations shown on this page have been used to join the site. Clicking on an e-mail address takes you to the user's profile page.");
-      break;
-    case 'invite/list/pending':
-      $output = '<p>'. t("The invitations shown on this page haven't been accepted yet.");
-      break;
-    case 'invite/list/expired':
-      $output = '<p>'. t('The invitations shown on this page have not been used to register on the site within the expiration period of @count days.', array('@count' => variable_get('invite_expiry', 30)));
-      break;
-    default:
-      return;
-  }
-  $output .= ' '. t('The status <em>deleted</em> means the user account has been terminated.') .'</p>';
-  if (!user_access('withdraw accepted invitations')) {
-    $output .= '<p>'. t("At any time, you may withdraw either pending or expired invitations. Accepted invitations can't be withdrawn and count permanently toward your invitation allotment.") .'</p>';
-  }
-  return $output;
 }
 
 /**
@@ -81,12 +83,6 @@ function invite_menu($may_cache) {
       'type' => MENU_NORMAL_ITEM,
     );
     $items[] = array(
-      'path' => 'invite/accept',
-      'callback' => 'invite_controller',
-      'access' => TRUE,
-      'type' => MENU_CALLBACK,
-    );
-    $items[] = array(
       'path' => 'invite',
       'title' => variable_get('invite_page_title', t('Invite a friend')),
       'callback' => 'drupal_get_form',
@@ -95,56 +91,60 @@ function invite_menu($may_cache) {
       'type' => MENU_NORMAL_ITEM,
     );
     $items[] = array(
-      'path' => 'invite/add',
-      'title' => t('New invitation'),
-      'access' => $send_access,
-      'type' => MENU_DEFAULT_LOCAL_TASK,
-      'weight' => -1,
-    );
-    $items[] = array(
-      'path' => 'invite/list',
-      'title' => t('Your invitations'),
-      'callback' => 'invite_overview',
-      'access' => $track_access,
-      'type' => MENU_LOCAL_TASK,
-    );
-    $items[] = array(
-      'path' => 'invite/list/accepted',
-      'title' => t('Accepted'),
-      'callback' => 'invite_overview',
-      'callback arguments' => array('accepted'),
-      'access' => $track_access,
-      'type' => MENU_DEFAULT_LOCAL_TASK,
-      'weight' => -5,
-    );
-    $items[] = array(
-      'path' => 'invite/list/pending',
-      'title' => t('Pending'),
-      'callback' => 'invite_overview',
-      'callback arguments' => array('pending'),
-      'access' => $track_access,
-      'type' => MENU_LOCAL_TASK,
-    );
-    $items[] = array(
-      'path' => 'invite/list/expired',
-      'title' => t('Expired'),
-      'callback' => 'invite_overview',
-      'callback arguments' => array('expired'),
-      'access' => $track_access,
-      'type' => MENU_LOCAL_TASK,
-      'weight' => 5,
+      'path' => 'invite/accept',
+      'callback' => 'invite_controller',
+      'access' => TRUE,
+      'type' => MENU_CALLBACK,
     );
     $items[] = array(
       'path' => 'invite/withdraw',
       'callback' => 'drupal_get_form',
-      'callback arguments' => array('invite_delete'),
+      'callback arguments' => array('invite_cancel'),
       'access' => $track_access,
       'type' => MENU_CALLBACK,
     );
   }
-  else if ($user->uid && $send_access) {
+  else {
     // Check for newly registered users
-    invite_display_notification($user->uid);
+    if ($send_access && $user->uid) {
+      invite_display_notification($user->uid);
+    }
+
+    if (arg(0) == 'user' && is_numeric(arg(1)) && arg(1) == $user->uid) {
+      $items[] = array(
+        'path' => 'user/'. arg(1) .'/invites',
+        'title' => t('Track invitations'),
+        'callback' => 'invite_overview',
+        'access' => $track_access,
+        'type' => MENU_LOCAL_TASK,
+      );
+      $items[] = array(
+        'path' => 'user/'. arg(1) .'/invites/accepted',
+        'title' => t('Accepted'),
+        'callback' => 'invite_overview',
+        'callback arguments' => array('accepted'),
+        'access' => $track_access,
+        'type' => MENU_DEFAULT_LOCAL_TASK,
+        'weight' => -5,
+      );
+      $items[] = array(
+        'path' => 'user/'. arg(1) .'/invites/pending',
+        'title' => t('Pending'),
+        'callback' => 'invite_overview',
+        'callback arguments' => array('pending'),
+        'access' => $track_access,
+        'type' => MENU_LOCAL_TASK,
+      );
+      $items[] = array(
+        'path' => 'user/'. arg(1) .'/invites/expired',
+        'title' => t('Expired'),
+        'callback' => 'invite_overview',
+        'callback arguments' => array('expired'),
+        'access' => $track_access,
+        'type' => MENU_LOCAL_TASK,
+        'weight' => 5,
+      );
+    }
   }
 
   return $items;
@@ -677,7 +677,7 @@ function invite_form($op = 'page') {
     }
     else {
       drupal_set_message(t("Sorry, you've reached the maximum number of invitations."), 'error');
-      drupal_goto(user_access('track invitations') ? 'invite/list' : '');
+      drupal_goto(referer_uri());
     }
   }
 
@@ -855,6 +855,8 @@ function invite_page_form($remaining_invites) {
  *   A form definition.
  */
 function invite_block_form($remaining_invites) {
+  global $user;
+
   $form['#action'] = url('invite');
 
   $form['invite'] = array(
@@ -877,9 +879,9 @@ function invite_block_form($remaining_invites) {
   );
   $form['link'] = array(
     '#prefix' => '<div><small>',
-    '#value' => l(t('View your invites'), 'invite/list'),
+    '#value' => l(t('View your invites'), "user/$user->uid/invites"),
     '#suffix' => '</small></div>',
-    '#access' => user_access('track invitations'),
+    '#access' => user_access('track invitations') && $user->uid,
   );
 
   return $form;
@@ -1110,8 +1112,9 @@ function invite_form_submit($form_id, $edit) {
     $message = format_plural($num_failed, 'The entered e-mail address is invalid. Please correct it.', '@count entered e-mail addresses are invalid. Please correct them.');
     drupal_set_message($message, 'error');
   }
-  else if (user_access('track invitations')) {
-    return 'invite/list';
+  else if (user_access('track invitations') && $user->uid) {
+    // Everything went well: redirect to pending invites page
+    return "user/$user->uid/invites/pending";
   }
 
   return 'invite';
@@ -1230,7 +1233,7 @@ function invite_save($edit) {
  * @param $code
  *   A registration code to remove the invitation for.
  */
-function invite_delete($origin, $code) {
+function invite_cancel($origin, $code) {
   global $user;
 
   $invite = invite_load($code);
@@ -1239,6 +1242,7 @@ function invite_delete($origin, $code) {
   if ($invite->inviter->uid == $user->uid) {
     // Verify the invitation may be deleted
     if (!$invite->joined || user_access('withdraw accepted invitations')) {
+      $form['#redirect'] = "user/$user->uid/invites/$origin";
       $form['invite'] = array(
         '#type' => 'value',
         '#value' => $invite,
@@ -1248,7 +1252,7 @@ function invite_delete($origin, $code) {
       return confirm_form(
         $form,
         t('Are you sure you want to withdraw the invitation to %email?', array('%email' => $invite->email)),
-        "invite/list/{$origin}",
+        "user/$user->uid/invites/{$origin}",
         $description .' '. t('This action cannot be undone.'),
         t('Withdraw'),
         t('Cancel')
@@ -1263,13 +1267,13 @@ function invite_delete($origin, $code) {
     drupal_access_denied();
   }
 
-  drupal_goto('invite/list');
+  drupal_goto("user/$user->uid/invites/$origin");
 }
 
 /**
  * Submit handler to delete an invitation.
  */
-function invite_delete_submit($form_id, $form_values) {
+function invite_cancel_submit($form_id, $form_values) {
   $invite = $form_values['invite'];
 
   db_query("UPDATE {invite} SET canceled = 1 WHERE reg_code = '%s'", $invite->reg_code);
@@ -1278,8 +1282,6 @@ function invite_delete_submit($form_id, $form_values) {
   // Notify other modules
   $args = array('inviter' => $invite->inviter, 'email' => $invite->email);
   module_invoke_all('invite', 'cancel', $args);
-
-  drupal_goto('invite/list');
 }
 
 /**
