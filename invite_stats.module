@@ -1,5 +1,5 @@
 <?php
-// $Id: invite_stats.module,v 1.1.2.1 2007-11-12 23:19:09 smk Exp $
+// $Id: invite_stats.module,v 1.1.2.1.2.1 2007-12-03 09:21:57 smk Exp $
 
 /**
  * @file
@@ -21,8 +21,9 @@ function invite_stats_user($op, &$edit, &$account, $category = NULL) {
 
   switch ($op) {
     case 'view':
-      if (user_access('view invite statistics')
-        || ($account->uid == $user->uid && user_access('view own invite statistics'))) {
+      $view_access = user_access('view invite statistics');
+      $view_own_access = user_access('view own invite statistics') && $account->uid == $user->uid;
+      if ($view_access || $view_own_access) {
         $count = invite_stats($account->uid);
         $items['accepted'] = array(
           'title' => t('Successful'),
@@ -107,10 +108,10 @@ function invite_stats_block($op = 'list', $delta = 0, $edit = array()) {
  *   An array consisting of three elements: accepted, pending and expired.
  */
 function invite_stats($uid) {
-  $time = time();
-  $count['accepted'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp > 0", $uid));
-  $count['pending'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp = 0 AND expiry >= %d", $uid, $time));
-  $count['expired'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp = 0 AND expiry < %d", $uid, $time));
+  $now = time();
+  $count['accepted'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined != 0", $uid));
+  $count['pending'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined = 0 AND expiry >= %d", $uid, $now));
+  $count['expired'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined = 0 AND expiry < %d", $uid, $now));
   return $count;
 }
 
@@ -119,7 +120,7 @@ function invite_stats($uid) {
  */
 function invite_stats_display_top_inviters() {
   $inviters = array();
-  $result = db_query_range("SELECT uid, COUNT(uid) AS count FROM {invite} WHERE timestamp > 0 GROUP BY uid ORDER BY count DESC", 0, variable_get('invite_num_ranks', 5));
+  $result = db_query_range("SELECT uid, COUNT(uid) AS count FROM {invite} WHERE joined != 0 GROUP BY uid ORDER BY count DESC", 0, variable_get('invite_num_ranks', 5));
   while ($row = db_fetch_object($result)) {
     $inviters[] = $row;
   }
@@ -134,15 +135,15 @@ function invite_stats_display_user_rank($uid) {
   $max = variable_get('invite_num_ranks', 5);
 
   // Get user's invite count
-  $user_invite_stats_count = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND timestamp > 0", $uid));
+  $user_invite_stats_count = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined != 0", $uid));
 
   // Calculate user's rank
-  $rank = 1 + db_num_rows(db_query("SELECT DISTINCT COUNT(uid) FROM {invite} WHERE timestamp > 0 GROUP BY uid HAVING COUNT(uid) > %d", $user_invite_stats_count));
+  $rank = 1 + db_num_rows(db_query("SELECT DISTINCT COUNT(uid) FROM {invite} WHERE joined != 0 GROUP BY uid HAVING COUNT(uid) > %d", $user_invite_stats_count));
 
   // Fetch users with more invites
   $i = 0;
   $prev_count = 0;
-  $result = db_query_range("SELECT uid, COUNT(uid) AS count FROM {invite} WHERE timestamp > 0 GROUP BY uid HAVING COUNT(uid) > %d ORDER BY count ASC", $user_invite_stats_count, 0, $max - 1);
+  $result = db_query_range("SELECT uid, COUNT(uid) AS count FROM {invite} WHERE joined != 0 GROUP BY uid HAVING COUNT(uid) > %d ORDER BY count ASC", $user_invite_stats_count, 0, $max - 1);
   while ($row = db_fetch_object($result)) {
     if ($row->count != $prev_count) {
       $prev_count = $row->count;
@@ -158,7 +159,7 @@ function invite_stats_display_user_rank($uid) {
   // Add users with equal or less invites
   $i = 0;
   $prev_count = $user_invite_stats_count;
-  $result = db_query_range("SELECT uid, COUNT(uid) AS count FROM {invite} WHERE timestamp > 0 GROUP BY uid HAVING COUNT(uid) <= %d AND uid != %d ORDER BY count DESC", $user_invite_stats_count, $uid, 0, $max - 1);
+  $result = db_query_range("SELECT uid, COUNT(uid) AS count FROM {invite} WHERE joined != 0 GROUP BY uid HAVING COUNT(uid) <= %d AND uid != %d ORDER BY count DESC", $user_invite_stats_count, $uid, 0, $max - 1);
   while ($row = db_fetch_object($result)) {
     $inviters[] = $row;
   }
