@@ -1,5 +1,5 @@
 <?php
-// $Id: invite_stats.module,v 1.1.2.1.2.1 2007-12-03 09:21:57 smk Exp $
+// $Id: invite_stats.module,v 1.1.2.1.2.2 2007-12-03 13:58:01 smk Exp $
 
 /**
  * @file
@@ -97,22 +97,6 @@ function invite_stats_block($op = 'list', $delta = 0, $edit = array()) {
         break;
     }
   }
-}
-
-/**
- * Return counts of successful/pending/unsuccessful invitations.
- *
- * @param $uid
- *   The user id to calculate counts for.
- * @return
- *   An array consisting of three elements: accepted, pending and expired.
- */
-function invite_stats($uid) {
-  $now = time();
-  $count['accepted'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined != 0", $uid));
-  $count['pending'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined = 0 AND expiry >= %d", $uid, $now));
-  $count['expired'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined = 0 AND expiry < %d", $uid, $now));
-  return $count;
 }
 
 /**
