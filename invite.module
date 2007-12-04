@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.10 2007-12-04 07:33:06 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.11 2007-12-04 10:31:19 smk Exp $
 
 /**
  * @file
@@ -7,9 +7,10 @@
  */
 
 /**
- * Session variable name.
+ * Session variables.
  */
-define('INVITE_SESSION_NAME', 'invite_code');
+define('INVITE_SESSION', 'invite_code');
+define('INVITE_ADMIN_SESSION', 'invite_admin_filter');
 
 /**
  * Special value for unlimited invites.
@@ -76,14 +77,14 @@ function invite_menu($may_cache) {
   if ($may_cache) {
     $items[] = array(
       'path' => 'admin/user/invite',
-      'title' => t('Invitations'),
+      'title' => t('Invites'),
       'callback' => 'invite_admin_overview',
       'access' => $admin_access,
       'type' => MENU_NORMAL_ITEM,
     );
     $items[] = array(
       'path' => 'admin/user/invite/list',
-      'title' => t('List'),
+      'title' => t('Inviters'),
       'access' => $admin_access,
       'type' => MENU_DEFAULT_LOCAL_TASK,
       'weight' => -5,
@@ -170,14 +171,16 @@ function invite_menu($may_cache) {
       );
     }
     else if (arg(0) == 'admin' && arg(2) == 'invite' && arg(3) == 'details' && arg(4)) {
-      $items[] = array(
-        'path' => 'admin/user/invite/details/'. arg(4),
-        'title' => t('User details'),
-        'callback' => 'invite_admin_details',
-        'callback arguments' => array(arg(4)),
-        'access' => $admin_access,
-        'type' => MENU_LOCAL_TASK,
-      );
+      if ($account = user_load(array('uid' => arg(4)))) {
+        $items[] = array(
+          'path' => 'admin/user/invite/details/'. arg(4),
+          'title' => t('Invitees of @name', array('@name' => $account->name)),
+          'callback' => 'invite_admin_details',
+          'callback arguments' => array(arg(4)),
+          'access' => $admin_access,
+          'type' => MENU_LOCAL_TASK,
+        );
+      }
     }
     else if (arg(0) == 'invite' && arg(1) == 'resend' && arg(2)) {
       $items[] = array(
@@ -223,7 +226,7 @@ function invite_controller() {
 
     // Check for a valid invite code
     if (invite_validate($invite)) {
-      $_SESSION[INVITE_SESSION_NAME] = $invite->reg_code;
+      $_SESSION[INVITE_SESSION] = $invite->reg_code;
       drupal_goto('user/register');
     }
   }
@@ -256,7 +259,7 @@ function invite_form_alter($form_id, &$form) {
       if (!$invite && $code = arg(2)) {
         if ($invite = invite_load($code)) {
           if (invite_validate($invite)) {
-            $_SESSION[INVITE_SESSION_NAME] = $invite->reg_code;
+            $_SESSION[INVITE_SESSION] = $invite->reg_code;
           }
         }
       }
@@ -315,8 +318,8 @@ function invite_load($code) {
  *   user's session.
  */
 function invite_load_from_session() {
-  if (isset($_SESSION[INVITE_SESSION_NAME])) {
-  	return invite_load($_SESSION[INVITE_SESSION_NAME]);
+  if (isset($_SESSION[INVITE_SESSION])) {
+  	return invite_load($_SESSION[INVITE_SESSION]);
   }
   return FALSE;
 }
@@ -371,7 +374,7 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
         db_query("UPDATE {users} SET status = 1 WHERE uid = %d", $account->uid);
 
         // Clear session
-        unset($_SESSION[INVITE_SESSION_NAME]);
+        unset($_SESSION[INVITE_SESSION]);
       }
       break;
 
@@ -462,18 +465,28 @@ function invite_block($op = 'list', $delta = 0, $edit = array()) {
  */
 function invite_admin_overview() {
   $header = array(
-    array('data' => t('Username'), 'field' => 'u.name', 'sort' => 'asc'),
+    array('data' => t('Username'), 'field' => 'u1.name', 'sort' => 'asc'),
     array('data' => t('Total'), 'field' => 'invites'),
     t('Successful'),
     t('Pending'),
     t('Expired'),
+    t('Remaining'),
     t('Operations'),
   );
   
   $now = time();
-  $sql = "SELECT i.uid, u.name, COUNT(*) AS invites FROM {invite} i INNER JOIN {users} u ON u.uid = i.uid GROUP BY i.uid";
+  $filter = $filter_args = $query = NULL;
+  $output = drupal_get_form('invite_admin_filter_form');
+  if (isset($_SESSION[INVITE_ADMIN_SESSION])) {
+    $filter = " INNER JOIN {users} u2 ON u2.uid = i.invitee WHERE LOWER(u2.name) LIKE LOWER('%s%%')";
+    $filter_args = $_SESSION[INVITE_ADMIN_SESSION];
+    $query = 'filter='. $filter_args;
+    unset($_SESSION[INVITE_ADMIN_SESSION]);
+  }
+  $sql  = "SELECT i.uid, u1.name, COUNT(*) AS invites, u1.data FROM {invite} i INNER JOIN {users} u1 ON u1.uid = i.uid". $filter ." GROUP BY i.uid";
   $sql .= tablesort_sql($header);
-  $result = pager_query($sql, 50, 0, NULL);
+  $count_sql  = "SELECT COUNT(DISTINCT i.uid) FROM {invite} i". $filter;
+  $result = pager_query($sql, 50, 0, $count_sql, $filter_args);
   $rows = array();
   
   while ($row = db_fetch_object($result)) {
@@ -484,19 +497,51 @@ function invite_admin_overview() {
     $cells[] = $stats['accepted'];
     $cells[] = $stats['pending'];
     $cells[] = $stats['expired'];
-    $cells[] = l(t('details'), "admin/user/invite/details/$row->uid");
+    $remaining = invite_get_remaining_invites($row);
+    $cells[] = ($remaining == INVITE_UNLIMITED) ? '&infin;' : $remaining;
+    $cells[] = l(t('details'), "admin/user/invite/details/$row->uid", array(), $query);
     $rows[] = $cells;
   }
   
-  $output = theme('table', $header, $rows, array('id' => 'invite'));
+  $output .= theme('table', $header, $rows, array('id' => 'invite'));
   if (!$rows) {
-    $output .= t('No invites available.');
+    $output .= t('No inviters found.');
   }
   else {
     $output .= theme('pager', array(), 50, 0);
   }
 
   return $output;
+}
+
+/**
+ * Creates the user filter form for the admin overview.
+ */
+function invite_admin_filter_form() {
+  $form['filter'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Filter'),
+    '#prefix' => '<div class="container-inline">',
+    '#suffix' => '</div>',
+  );
+  $form['filter']['filter'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Find an invited user'),
+    '#default_value' => $_SESSION[INVITE_ADMIN_SESSION],
+    '#autocomplete_path' => 'user/autocomplete',
+    '#size' => 20,
+  );
+  $form['filter']['op'] = array(
+    '#type' => 'submit',
+    '#value' => t('Search'),
+  );
+  return $form;
+}
+
+function invite_admin_filter_form_submit($form_id, $form_values) {
+  if ($form_values['filter']) {
+    $_SESSION[INVITE_ADMIN_SESSION] = $form_values['filter'];
+  }
 }
 
 /**
@@ -520,34 +565,63 @@ function invite_admin_details($uid) {
   $header = array(
     array('data' => t('E-mail'), 'field' => 'i.email', 'sort' => 'asc'),
     array('data' => t('Username'), 'field' => 'if(u.name IS NULL, 0, 1) DESC, u.name'),
-    array('data' => t('Invited'), 'field' => 'i.expiry'),
+    array('data' => t('Created'), 'field' => 'i.created'),
+    array('data' => t('Expires'), 'field' => 'i.expiry'),
     array('data' => t('Status'), 'field' => $status_sort),
   );
   
-  $expiry_period = variable_get('invite_expiry', 30) * 60 * 60 * 24;
-  $sql = "SELECT if(u.name IS NULL, 0, 1) AS test, i.email, i.invitee AS uid, u.name, i.expiry, i.joined, i.canceled FROM {invite} i LEFT JOIN {users} u ON u.uid = i.invitee AND u.uid != 0 WHERE i.uid = %d";
+  $output = '';
+  $filter = $filter_args = NULL;
+  if (isset($_GET['filter']) && $_GET['filter'] != '') {
+    $filter = " AND LOWER(u.name) LIKE '%s%%'";
+    $filter_args = $_GET['filter'];
+    $output .= drupal_get_form('invite_admin_details_filter_form', $uid, $_GET['filter']);
+  }
+  $sql  = "SELECT i.email, i.invitee AS uid, u.name, i.created, i.expiry, i.joined, i.canceled FROM {invite} i LEFT JOIN {users} u ON u.uid = i.invitee AND u.uid != 0 WHERE i.uid = %d". $filter;
   $sql .= tablesort_sql($header);
-  $result = pager_query($sql, 50, 0, NULL, $uid);
+  $result = pager_query($sql, 50, 0, NULL, $uid, $filter_args);
   $rows = array();
   
   while ($row = db_fetch_object($result)) {
     $cells = array();
     $cells[] = check_plain($row->email);
     $cells[] = $row->joined ? theme('username', $row) : '';
-    $cells[] = format_date($row->expiry - $expiry_period, 'small');
+    $cells[] = format_date($row->created, 'custom', 'Y-m-d');
+    $cells[] = format_date($row->expiry, 'custom', 'Y-m-d');
     $cells[] = $row->canceled ? t('Withdrawn') : ($row->joined ? t('Joined') : ($row->expiry < $now ? t('Expired') : t('Pending')));
     $rows[] = $cells;
   }
-  
-  $output = theme('table', $header, $rows, array('id' => 'invite'));
+
+  $output .= theme('table', $header, $rows, array('id' => 'invite'));
   if (!$rows) {
-    $output .= t('No invites available.');
+    $output .= t('No invitees found.');
   }
   else {
     $output .= theme('pager', array(), 50, 0);
   }
 
   return $output;
+}
+
+function invite_admin_details_filter_form($uid, $filter) {
+  $form['#action'] = "admin/user/invite/details/$uid";
+  $form['filter'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Filter'),
+    '#prefix' => '<div class="container-inline">',
+    '#suffix' => '</div>',
+  );
+  $form['filter']['filter'] = array(
+    '#type' => 'item',
+    '#title' => t('Active filter'),
+    '#value' => check_plain($filter),
+  );
+  $form['filter']['op'] = array(
+    '#type' => 'button',
+    '#value' => t('Clear'),
+    '#prefix' => ' ',
+  );
+  return $form;  
 }
 
 /**
@@ -918,6 +992,10 @@ function invite_get_remaining_invites($account) {
  *   The configured maximum of invites.
  */
 function invite_get_role_limit($account) {
+  if (!isset($account->roles)) {
+    $account = user_load(array('uid' => $account->uid));
+  }
+
   $role_limit = 0;
   foreach (user_roles(0, 'send invitations') as $role) {
     $role_no_space = str_replace(' ', '_', $role);
@@ -1436,12 +1514,13 @@ function invite_send_invite($recipient, $subject, $body) {
 function invite_save($edit) {
   $edit = (array)$edit;
   $data = serialize($edit['data']);
-  $expiry = time() + (variable_get('invite_expiry', 30) * 60 * 60 * 24);
+  $now = time();
+  $expiry = $now + (variable_get('invite_expiry', 30) * 60 * 60 * 24);
   if ($edit['resent']) {
     $result = db_query("UPDATE {invite} SET expiry = %d, resent = %d, data = '%s' WHERE reg_code = '%s' AND uid = %d", $expiry, $edit['resent'], $data, $edit['code'], $edit['inviter']->uid);
   }
   else {
-    $result = db_query("INSERT INTO {invite} (reg_code, email, uid, expiry, data) VALUES ('%s', '%s', %d, %d, '%s')", $edit['code'], $edit['email'], $edit['inviter']->uid, $expiry, $data);
+    $result = db_query("INSERT INTO {invite} (reg_code, email, uid, created, expiry, data) VALUES ('%s', '%s', %d, %d, %d, '%s')", $edit['code'], $edit['email'], $edit['inviter']->uid, $now, $expiry, $data);
   }
   return $result;
 }
