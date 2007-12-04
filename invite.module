@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.8 2007-12-04 06:40:55 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.9 2007-12-04 07:17:02 smk Exp $
 
 /**
  * @file
@@ -824,7 +824,7 @@ function invite_form($op = 'page', $edit = array()) {
     $edit = (array)$edit;
   }
 
-  $remaining_invites = invite_get_remaining();
+  $remaining_invites = invite_get_remaining_invites($user);
 
   if ($remaining_invites == 0) {
     if ($op == 'block') {
@@ -868,15 +868,12 @@ function invite_form($op = 'page', $edit = array()) {
 /**
  * Calculate the remaining invites of a user.
  *
- * @param $uid
- *   A user id, or the current user if omitted.
+ * @param $account
+ *   A user object.
  * @return
  *   The number of remaining invites.
  */
-function invite_get_remaining($uid = NULL) {
-  global $user;
-
-  $account = (is_null($uid)) ? $user : user_load(array('uid' => $uid));
+function invite_get_remaining_invites($account) {
   if ($account->uid == 1) {
     return INVITE_UNLIMITED;
   }
@@ -887,18 +884,7 @@ function invite_get_remaining($uid = NULL) {
     $remaining = $data['invites'];
   }
   else {
-    // Calculate configured role limit
-    $role_limit = 0;
-    foreach (user_roles(0, 'send invitations') as $role) {
-      $role_no_space = str_replace(' ', '_', $role);
-      if (in_array($role, $account->roles)) {
-        $role_max = variable_get('invite_maxnum_'. $role_no_space, INVITE_UNLIMITED);
-        if ($role_max == INVITE_UNLIMITED) {
-          return INVITE_UNLIMITED;
-        }
-        $role_limit = max($role_max, $role_limit);
-      }
-    }
+    $role_limit = invite_get_role_limit($account);
 
     if ($role_limit > 0) {
       // Legacy support
@@ -912,6 +898,29 @@ function invite_get_remaining($uid = NULL) {
   }
 
   return $remaining;
+}
+
+/**
+ * Calculate the max. number of invites based on a user's role.
+ *
+ * @param $account
+ *   A user object.
+ * @return
+ *   The configured maximum of invites.
+ */
+function invite_get_role_limit($account) {
+  $role_limit = 0;
+  foreach (user_roles(0, 'send invitations') as $role) {
+    $role_no_space = str_replace(' ', '_', $role);
+    if (in_array($role, $account->roles)) {
+      $role_max = variable_get('invite_maxnum_'. $role_no_space, INVITE_UNLIMITED);
+      if ($role_max == INVITE_UNLIMITED) {
+        return INVITE_UNLIMITED;
+      }
+      $role_limit = max($role_max, $role_limit);
+    }
+  }
+  return $role_limit;
 }
 
 /**
