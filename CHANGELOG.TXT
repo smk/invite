@@ -1,10 +1,14 @@
-// $Id: CHANGELOG.TXT,v 1.1.2.2.2.1 2007-12-03 07:28:59 smk Exp $
+// $Id: CHANGELOG.TXT,v 1.1.2.2.2.2 2007-12-04 05:14:18 smk Exp $
 
 Invite 5.x-2.x, xxxx-xx-xx
 --------------------------
 New features:
+- Added administrator interface showing invite history.
+- Moved the user-specific tracking page to the user profile.
+- #162570: Added a resend button.
+- #134997: Withdrawn invites are now flagged instead of being physically deleted. This gives administrators a complete history of who has been invited and who did or didn't join.
 - #98765: Allowing multiple invites to the same e-mail address.
-- New, less resource intensive notification system.
+- Refactored notification system to be less resource intensive.
 
 Bugs fixed:
 - #197198: Fixed misleading error message when no permissions have been set up.

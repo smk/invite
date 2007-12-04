@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.6 2007-12-03 14:06:29 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.7 2007-12-04 05:14:20 smk Exp $
 
 /**
  * @file
@@ -101,7 +101,7 @@ function invite_menu($may_cache) {
       'path' => 'invite',
       'title' => variable_get('invite_page_title', t('Invite a friend')),
       'callback' => 'drupal_get_form',
-      'callback arguments' => array('invite_form', 'page'),
+      'callback arguments' => array('invite_form', 'page', array()),
       'access' => $send_access,
       'type' => MENU_NORMAL_ITEM,
     );
@@ -167,6 +167,16 @@ function invite_menu($may_cache) {
         'callback' => 'invite_admin_details',
         'callback arguments' => array(arg(4)),
         'access' => $admin_access,
+        'type' => MENU_LOCAL_TASK,
+      );
+    }
+    else if (arg(0) == 'invite' && arg(1) == 'resend' && arg(2)) {
+      $items[] = array(
+        'path' => 'invite/resend/'. arg(2),
+        'title' => t('Resend invitation'),
+        'callback' => 'invite_resend',
+        'callback arguments' => array(arg(2)),
+        'access' => $send_access,
         'type' => MENU_LOCAL_TASK,
       );
     }
@@ -752,7 +762,8 @@ function invite_overview($page = 'accepted') {
           $row[] = check_plain($invite->email);
         }
         $row[] = $account_exists ? t('Accepted') : t('Deleted');
-        $row[] = $allow_delete ? l(t('Withdraw'), "invite/withdraw/$page/$invite->reg_code") : '';
+        $row[] = $allow_delete ? l(t('withdraw'), "invite/withdraw/$page/$invite->reg_code") : '';
+        $row[] = '';
         break;
 
     	case 'pending':
@@ -761,7 +772,8 @@ function invite_overview($page = 'accepted') {
 
         $row[] = check_plain($invite->email);
         $row[] = $expired ? t('Expired') : t('Pending');
-        $row[] = l(t('Withdraw'), "invite/withdraw/$page/$invite->reg_code");
+        $row[] = l(t('withdraw'), "invite/withdraw/$page/$invite->reg_code");
+        $row[] = $expired ? l(t('resend'), "invite/resend/$invite->reg_code") : '';
         break;
     }
     $rows[] = $row;
@@ -780,7 +792,7 @@ function invite_overview($page = 'accepted') {
  */
 function theme_invite_overview($items) {
   if (count($items) > 0) {
-    $headers = array(t('E-mail'), t('Status'), t('Operations'));
+    $headers = array(t('E-mail'), t('Status'), array('data' => t('Operations'), 'colspan' => 2));
     $output  = theme('table', $headers, $items, array('id' => 'invites'));
     $output .= theme('pager', NULL, 50, 0);
   }
@@ -796,11 +808,17 @@ function theme_invite_overview($items) {
  *
  * @param $op
  *   The type of form to generate, 'page' or 'block'.
+ * @param $edit
+ *   Previous values when resending an invite.
  * @return
  *   A form definition.
  */
-function invite_form($op = 'page') {
+function invite_form($op = 'page', $edit = array()) {
   global $user;
+
+  if (!is_array($edit)) {
+    $edit = (array)$edit;
+  }
 
   $remaining_invites = invite_get_remaining();
 
@@ -809,14 +827,21 @@ function invite_form($op = 'page') {
       $form['#access'] = FALSE; // Hides the block
       return $form;
     }
-    else {
+    else if (!$edit) {
+      // Deny access when NOT resending an invite
       drupal_set_message(t("Sorry, you've reached the maximum number of invitations."), 'error');
       drupal_goto(referer_uri());
     }
   }
 
-  $form = array();
-
+  $form['resent'] = array(
+    '#type' => 'value',
+    '#value' => $edit ? $edit['resent'] + 1 : 0,
+  );
+  $form['reg_code'] = array(
+    '#type' => 'value',
+    '#value' => $edit ? $edit['reg_code'] : NULL,
+  );
   if ($remaining_invites != INVITE_UNLIMITED) {
     $form['remaining_invites'] = array(
       '#type' => 'value',
@@ -826,7 +851,7 @@ function invite_form($op = 'page') {
   switch ($op) {
     case 'page':
     default:
-      $form += invite_page_form($remaining_invites);
+      $form += invite_page_form($remaining_invites, $edit);
       break;
     case 'block':
       $form += invite_block_form($remaining_invites);
@@ -888,10 +913,14 @@ function invite_get_remaining($uid = NULL) {
 /**
  * Generate the invite page form.
  *
+ * @param $remaining_invite
+ *   Number of remaining invites.
+ * @param $edit
+ *   Previous values when resending an invite.
  * @return
  *   A form definition.
  */
-function invite_page_form($remaining_invites) {
+function invite_page_form($remaining_invites, $edit = array()) {
   global $user;
 
   // Remaining invites    
@@ -918,34 +947,55 @@ function invite_page_form($remaining_invites) {
   );
 
   // Recipient email address
-  $failed_emails = '';
-  $allow_multiple = user_access('send mass invitations');
-
-  if (isset($_SESSION['invite_failed_emails'])) {
-    $failed_emails = implode("\n", (array)unserialize($_SESSION['invite_failed_emails']));
-    unset($_SESSION['invite_failed_emails']);
-  }
-  $form['email'] = array(
-    '#title' => t('To'),
-    '#default_value' => $failed_emails,
-    '#description' => format_plural($allow_multiple ? 1 : 99, 'Type the e-mail address of the person you would like to invite.', 'Type the e-mail addresses of the persons you would like to invite. Addresses should be separated by newlines or commas.'),
-    '#required' => TRUE,
-  );
-  if ($allow_multiple) {
-    $form['email']['#type'] = 'textarea';
-    $form['email']['#rows'] = 3;
+  if (!$edit) {
+    $failed_emails = '';
+    $allow_multiple = user_access('send mass invitations');
+    if (isset($_SESSION['invite_failed_emails'])) {
+      $failed_emails = implode("\n", (array)unserialize($_SESSION['invite_failed_emails']));
+      unset($_SESSION['invite_failed_emails']);
+    }
+    $form['email'] = array(
+      '#title' => t('To'),
+      '#default_value' => $failed_emails,
+      '#description' => format_plural($allow_multiple ? 1 : 99, 'Type the e-mail address of the person you would like to invite.', 'Type the e-mail addresses of the persons you would like to invite. Addresses should be separated by newlines or commas.'),
+      '#required' => TRUE,
+    );
+    if ($allow_multiple) {
+      $form['email']['#type'] = 'textarea';
+      $form['email']['#rows'] = 3;
+    }
+    else {
+      $form['email']['#type'] = 'textfield';
+      $form['email']['#maxlength'] = 64;
+    }
+    if ($failed_emails) {
+      $form['email']['#attributes']['class'] = 'error';
+    }
   }
   else {
-    $form['email']['#type'] = 'textfield';
-    $form['email']['#maxlength'] = 64;
-  }
-  if ($failed_emails) {
-    $form['email']['#attributes']['class'] = 'error';
+    // The email is not editable when resending an invite
+    $allow_multiple = FALSE;
+    $form['email_markup'] = array(
+      '#type' => 'item',
+      '#title' => t('To'),
+      '#value' => check_plain($edit['email']),
+    );
+    $form['email'] = array(
+      '#type' => 'value',
+      '#value' => $edit['email'],
+    );
   }
 
   // Message subject
   $subject = invite_get_subject();
-
+  if ($edit && !empty($edit['data']['subject'])) {
+    $subject = $edit['data']['subject'];
+  }
+  // Add prefix
+  $prefix = t('Re:');
+  if ($edit && substr($subject, 0, strlen($prefix)) != $prefix) {
+    $subject = $prefix .' '. $subject;
+  }
   if (variable_get('invite_subject_editable', FALSE)) {
     $form['subject'] = array(
       '#type' => 'textfield',
@@ -971,6 +1021,7 @@ function invite_page_form($remaining_invites) {
   );
   $form['message'] = array(
     '#type' => 'textarea',
+    '#default_value' => ($edit && !empty($edit['data']['message'])) ? $edit['data']['message'] : '',
     '#description' => format_plural($allow_multiple ? 1 : 99, 'This message will be added to the mail sent to the person you are inviting.', 'This message will be added to the mail sent to the persons you are inviting.'),
   );
 
@@ -985,6 +1036,8 @@ function invite_page_form($remaining_invites) {
 /**
  * Generate the invite block form.
  *
+ * @param $remaining_invite
+ *   Number of remaining invites.
  * @return
  *   A form definition.
  */
@@ -1035,6 +1088,9 @@ function theme_invite_form($form) {
     $output .= drupal_render($form['remaining_invites_markup']);
     $output .= drupal_render($form['remaining_invites']);
     $output .= drupal_render($form['from']);
+    if (isset($form['email_markup'])) {
+      $output .= drupal_render($form['email_markup']);
+    }
     $output .= drupal_render($form['email']);
     $output .= drupal_render($form['subject']);
 
@@ -1070,45 +1126,46 @@ function invite_form_validate($form_id, &$edit) {
 
   $emails = _invite_get_emails($edit['email']);
 
-  if (count($emails) > 0) {
-    // Filter out already registered users, but pass validation
-    $failed_emails = _invite_validate_emails("SELECT mail AS email FROM {users} WHERE mail IN (%s)", $emails);
-    if (count($failed_emails)) {
-      $error = format_plural(count($failed_emails), 'The following recipient is already a member:', 'The following recipients are already members:') .'<br />';
-      foreach ($failed_emails as $key => $email) {
-        $account = user_load(array('mail' => $email));
-        $failed_emails[$key] = theme('username', $account) .' ('. check_plain($email) .')';
+  if (!$edit['resent']) {
+    if (count($emails) > 0) {
+      // Filter out already registered users, but pass validation
+      $failed_emails = _invite_validate_emails("SELECT mail AS email FROM {users} WHERE mail IN (%s)", $emails);
+      if (count($failed_emails)) {
+        $error = format_plural(count($failed_emails), 'The following recipient is already a member:', 'The following recipients are already members:') .'<br />';
+        foreach ($failed_emails as $key => $email) {
+          $account = user_load(array('mail' => $email));
+          $failed_emails[$key] = theme('username', $account) .' ('. check_plain($email) .')';
+        }
+        $error .= implode(', ', $failed_emails);
+        drupal_set_message($error, 'error');
       }
-      $error .= implode(', ', $failed_emails);
-      drupal_set_message($error, 'error');
-    }
 
-    // Filter out already invited users, but pass validation.
-    // The record will be replaced later on
-    $failed_emails = _invite_validate_emails("SELECT email FROM {invite} WHERE email IN (%s) AND uid = %d AND canceled = 0", $emails, $user->uid);
-    if (count($failed_emails)) {
-      $error = format_plural(count($failed_emails), 'You did already invite the following recipient:', 'You did already invite the following recipients:') .'<br />';
-      $error .= implode(', ', array_map('check_plain', $failed_emails));
-      drupal_set_message($error, 'error');
-    }
+      // Filter out already invited users, but pass validation.
+      $failed_emails = _invite_validate_emails("SELECT email FROM {invite} WHERE email IN (%s) AND uid = %d AND canceled = 0", $emails, $user->uid);
+      if (count($failed_emails)) {
+        $error = format_plural(count($failed_emails), 'You did already invite the following recipient:', 'You did already invite the following recipients:') .'<br />';
+        $error .= implode(', ', array_map('check_plain', $failed_emails));
+        drupal_set_message($error, 'error');
+      }
 
-    // Check that there is at least one valid e-mail remaining after filtering
-    // out dupes
-    if (count($emails) == 0) {
-      form_set_error('email');
-      return;
-    }
+      // Check that there is at least one valid e-mail remaining after filtering
+      // out dupes
+      if (count($emails) == 0) {
+        form_set_error('email');
+        return;
+      }
 
-    // Check invite limit, fail to let the user choose which ones to send
-    if (isset($edit['remaining_invites']) && count($emails) > $edit['remaining_invites']) {
-      form_set_error('email', format_plural($edit['remaining_invites'], 'You have only 1 invite left.', 'You have only @count invites left.'));
-      return;
-    }
+      // Check invite limit, fail to let the user choose which ones to send
+      if (isset($edit['remaining_invites']) && count($emails) > $edit['remaining_invites']) {
+        form_set_error('email', format_plural($edit['remaining_invites'], 'You have only 1 invite left.', 'You have only @count invites left.'));
+        return;
+      }
 
-    // Check number of e-mails
-    if (!user_access('send mass invitations') && count($emails) > 1) {
-      form_set_error('email', t('You cannot send more than one invitation.'));
-      return;
+      // Check number of e-mails
+      if (!user_access('send mass invitations') && count($emails) > 1) {
+        form_set_error('email', t('You cannot send more than one invitation.'));
+        return;
+      }
     }
   }
 
@@ -1204,9 +1261,11 @@ function invite_form_submit($form_id, $edit) {
 
   foreach ($edit['valid_emails'] as $email) {
     // Create the invite object
+    $code = $edit['reg_code'] ? $edit['reg_code'] : invite_regcode();
     $invite = _invite_substitutions(array(
       'email' => $email,
-      'code'  => invite_make_regcode(),
+      'code'  => $code,
+      'resent'  => $edit['resent'],
       'data'  => array('subject' => $subject, 'message' => $message),
     ));
 
@@ -1219,8 +1278,10 @@ function invite_form_submit($form_id, $edit) {
       invite_save($invite);
 
       // Notify other modules
-      $args = array('inviter' => $invite->inviter, 'code' => $invite->code);
-      module_invoke_all('invite', 'invite', $args);
+      if (!$edit['resent']) {
+        $args = array('inviter' => $invite->inviter, 'code' => $invite->code);
+        module_invoke_all('invite', 'invite', $args);
+      }
 
       $num_succeeded++;
     }
@@ -1352,11 +1413,15 @@ function invite_send_invite($recipient, $subject, $body) {
  */
 function invite_save($edit) {
   $edit = (array)$edit;
-  $expiry = time() + (variable_get('invite_expiry', 30) * 60 * 60 * 24);
   $data = serialize($edit['data']);
-  // Delete any previous invites to this e-mail address first
-  db_query("DELETE FROM {invite} WHERE uid = %d AND email = '%s'", $edit['inviter']->uid, $edit['email']);
-  return db_query("INSERT INTO {invite} (email, reg_code, uid, expiry, data) VALUES ('%s', '%s', %d, %d, '%s')", $edit['email'], $edit['code'], $edit['inviter']->uid, $expiry, $data);
+  $expiry = time() + (variable_get('invite_expiry', 30) * 60 * 60 * 24);
+  if ($edit['resent']) {
+    $result = db_query("UPDATE {invite} SET expiry = %d, resent = %d, data = '%s' WHERE reg_code = '%s' AND uid = %d", $expiry, $edit['resent'], $data, $edit['code'], $edit['inviter']->uid);
+  }
+  else {
+    $result = db_query("INSERT INTO {invite} (reg_code, email, uid, expiry, data) VALUES ('%s', '%s', %d, %d, '%s')", $edit['code'], $edit['email'], $edit['inviter']->uid, $expiry, $data);
+  }
+  return $result;
 }
 
 /**
@@ -1416,6 +1481,26 @@ function invite_cancel_submit($form_id, $form_values) {
   // Notify other modules
   $args = array('inviter' => $invite->inviter, 'email' => $invite->email);
   module_invoke_all('invite', 'cancel', $args);
+}
+
+/**
+ * Menu callback; resend an expired invite.
+ *
+ * @param $code
+ *   Registration code of invitate to resend.
+ */
+function invite_resend($code) {
+  global $user;
+
+  $invite = invite_load($code);
+
+  // Inviter must match current user and invitation must have expired
+  if ($invite->uid == $user->uid && $invite->expiry < time()) {
+    return drupal_get_form('invite_form', 'page', $invite);
+  }
+  else {
+    drupal_access_denied();
+  }
 }
 
 /**
@@ -1525,6 +1610,7 @@ function _invite_substitutions($args = array()) {
     'inviter' => $user,
     'email'   => '--recipient-email--',
     'code'    => '--invite-code--',
+    'resent'  => 0,
     'data'    => array('subject' => NULL, 'message' => NULL),
   );
   return (object)array_merge($defaults, $args);
