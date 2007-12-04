@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.9 2007-12-04 07:17:02 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.10 2007-12-04 07:33:06 smk Exp $
 
 /**
  * @file
@@ -159,6 +159,15 @@ function invite_menu($may_cache) {
         'type' => MENU_LOCAL_TASK,
         'weight' => 5,
       );
+      $items[] = array(
+        'path' => 'user/'. arg(1) .'/invites/new',
+        'title' => t('New invitation'),
+        'callback' => 'drupal_get_form',
+        'callback arguments' => array('invite_form', 'page', array()),
+        'access' => $send_access,
+        'type' => MENU_LOCAL_TASK,
+        'weight' => 10,
+      );
     }
     else if (arg(0) == 'admin' && arg(2) == 'invite' && arg(3) == 'details' && arg(4)) {
       $items[] = array(
@@ -177,7 +186,7 @@ function invite_menu($may_cache) {
         'callback' => 'invite_resend',
         'callback arguments' => array(arg(2)),
         'access' => $send_access,
-        'type' => MENU_LOCAL_TASK,
+        'type' => MENU_CALLBACK,
       );
     }
   }
