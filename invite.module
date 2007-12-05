@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.12 2007-12-05 08:53:06 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.13 2007-12-05 08:55:04 smk Exp $
 
 /**
  * @file
@@ -1366,7 +1366,7 @@ function invite_form_submit($form_id, $edit) {
 
   foreach ($edit['valid_emails'] as $email) {
     // Create the invite object
-    $code = $edit['reg_code'] ? $edit['reg_code'] : invite_regcode();
+    $code = $edit['reg_code'] ? $edit['reg_code'] : invite_create_regcode();
     $invite = _invite_substitutions(array(
       'email' => $email,
       'code'  => $code,
@@ -1439,7 +1439,7 @@ function invite_get_subject($substitutions = array()) {
  * @return
  *   An 8-digit long, unique tracking code.
  */
-function invite_make_regcode() {
+function invite_create_regcode() {
   do {
     $reg_code = user_password(8);
     $result = db_query("SELECT COUNT(*) FROM {invite} WHERE reg_code = '%s'", $reg_code);
