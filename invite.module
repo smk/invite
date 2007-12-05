@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.11 2007-12-04 10:31:19 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.12 2007-12-05 08:53:06 smk Exp $
 
 /**
  * @file
@@ -60,7 +60,12 @@ function invite_help($section) {
  * Implementation of hook_perm().
  */
 function invite_perm() {
-  return array('send invitations', 'send mass invitations', 'track invitations', 'withdraw accepted invitations');
+  return array(
+    'send invitations',
+    'send mass invitations',
+    'track invitations',
+    'withdraw accepted invitations'
+  );
 }
 
 /**
@@ -967,12 +972,12 @@ function invite_get_remaining_invites($account) {
     $remaining = $data['invites'];
   }
   else {
-    $role_limit = invite_get_role_limit($account);
+    $remaining = invite_get_role_limit($account);
 
-    if ($role_limit > 0) {
+    if ($remaining > 0) {
       // Legacy support
       $sent = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d", $account->uid));
-      $remaining = max($role_limit - $sent, 0);
+      $remaining = max($remaining - $sent, 0);
       if ($sent > 0) {
         // Update user property for faster lookup next time
         user_save($account, array('invites' => $remaining));
