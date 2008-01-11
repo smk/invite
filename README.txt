@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.4.2.17.2.1 2007-12-04 10:55:15 smk Exp $ */
+/* $Id: README.txt,v 1.4.2.17.2.2 2008-01-11 17:08:27 smk Exp $ */
 
 -- SUMMARY --
 
@@ -135,7 +135,8 @@ function hook_invite($op, $args) {
     An invitation has been successfully send.
     $args['inviter']: The user account object of the person who did the
                       inviting.
-    $args['code']:    The invite code for the invitee.
+    $args['email']:   The e-mail address of the user who got invited.
+    $args['code']:    The tracking code of the invitation.
 
   case 'escalate':
     Invitee has accepted an invitation and has been promoted to the appropriate
@@ -143,7 +144,8 @@ function hook_invite($op, $args) {
     $args['invitee']: The user account object of the person who was invited.
     $args['inviter']: The user account object of the person who did the
                       inviting.
-    $args['roles']:   An array of roles that the invitee has been escalated to.
+    $args['roles']:   An array of roles the invited person has been escalated
+                      to.
    
   case 'cancel':
     Inviter has cancelled an invitation.
@@ -151,6 +153,7 @@ function hook_invite($op, $args) {
                       inviting.
     $args['email']:   The e-mail address of the user whose invitation got
                       cancelled.
+    $args['code']:    The tracking code of the invitation.
 }
 
 There are several third-party modules that can react on invite events:

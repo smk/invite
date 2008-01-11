@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.13 2007-12-05 08:55:04 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.14 2008-01-11 17:08:27 smk Exp $
 
 /**
  * @file
@@ -1384,7 +1384,7 @@ function invite_form_submit($form_id, $edit) {
 
       // Notify other modules
       if (!$edit['resent']) {
-        $args = array('inviter' => $invite->inviter, 'code' => $invite->code);
+        $args = array('inviter' => $invite->inviter, 'email' => $invite->email, 'code' => $invite->code);
         module_invoke_all('invite', 'invite', $args);
       }
 
@@ -1585,7 +1585,7 @@ function invite_cancel_submit($form_id, $form_values) {
   drupal_set_message(t('Invitation to %email has been withdrawn.', array('%email' => $invite->email)));
 
   // Notify other modules
-  $args = array('inviter' => $invite->inviter, 'email' => $invite->email);
+  $args = array('inviter' => $invite->inviter, 'email' => $invite->email, 'code' => $invite->reg_code);
   module_invoke_all('invite', 'cancel', $args);
 }
 
