@@ -1,4 +1,4 @@
-// $Id: CHANGELOG.TXT,v 1.1.2.2.2.3 2007-12-04 06:40:55 smk Exp $
+// $Id: CHANGELOG.TXT,v 1.1.2.2.2.4 2008-02-12 09:20:16 smk Exp $
 
 Invite 5.x-2.x, xxxx-xx-xx
 --------------------------
@@ -8,6 +8,8 @@ New features:
 - #162570: Added a resend button.
 - #134997: Withdrawn invites are now flagged instead of being physically deleted. This gives administrators a complete history of who has been invited and who did or didn't join.
 - #98765: Allowing multiple invites to the same e-mail address.
+- #207419 by Andrew Young: Look up invitation for new users who didn't use invitation link.
+- #214426 by Olivier Tavard: Added french translation.
 - Refactored notification system to be less resource intensive.
 
 Bugs fixed:
