@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93 2007-12-03 02:55:49 smk Exp $
+// $Id: invite.module,v 1.10.2.94 2008-02-12 08:50:12 smk Exp $
 
 /**
  * @file
@@ -211,7 +211,17 @@ function invite_form_alter($form_id, &$form) {
 function invite_user($op, &$edit, &$account, $category = NULL) {
   switch ($op) {
     case 'insert':
-      if ($invite = invite_load_from_session()) {
+      $invite = invite_load_from_session();
+      if (!$invite) {
+        // Try to look up an invitation in case a user has been invited to join
+        // the site, but did go straight to the site and signed up without
+        // using the invite link.
+        $code = db_result(db_query("SELECT reg_code FROM {invite} WHERE email = '%s'", $edit['mail']));
+        if ($code) {
+          $invite = invite_load($code);
+        }
+      }
+      if ($invite) {
         // Update invite status
         _invite_set_accepted($edit['mail'], $account->uid, $invite->reg_code);
 
