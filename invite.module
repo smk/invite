@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.15 2008-02-12 07:32:00 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.16 2008-02-12 07:43:16 smk Exp $
 
 /**
  * @file
@@ -141,9 +141,9 @@ function invite_menu($may_cache) {
     );
   }
   else {
-    // Check for newly registered users
+    // Check for newly registered users and display notification
     if ($send_access && $user->uid) {
-      invite_display_notification($user->uid);
+      invite_notify($user->uid);
     }
 
     if (arg(0) == 'user' && is_numeric(arg(1)) && arg(1) == $user->uid) {
@@ -190,7 +190,7 @@ function invite_menu($may_cache) {
         'weight' => 10,
       );
     }
-    else if (arg(0) == 'admin' && arg(2) == 'invite' && arg(3) == 'details' && arg(4)) {
+    else if (arg(2) == 'invite' && arg(3) == 'details' && arg(4)) {
       if ($account = user_load(array('uid' => arg(4)))) {
         $items[] = array(
           'path' => 'admin/user/invite/details/'. arg(4),
@@ -223,7 +223,7 @@ function invite_menu($may_cache) {
  * @param $uid
  *   The user id to check accepted invitations for.
  */
-function invite_display_notification($uid) {
+function invite_notify($uid) {
   $result = db_query('SELECT invitee FROM {invite_notifications} WHERE uid = %d', $uid);
   while ($row = db_fetch_object($result)) {
     $account = user_load(array('uid' => $row->invitee));
