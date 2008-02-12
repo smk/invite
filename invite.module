@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.14 2008-01-11 17:08:27 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.15 2008-02-12 07:32:00 smk Exp $
 
 /**
  * @file
@@ -23,36 +23,51 @@ define('INVITE_UNLIMITED', -1);
  * Returns appropriate help text for all three invite status pages.
  */
 function invite_help($section) {
-  global $user;
-
-  if (arg(0) == 'user' && is_numeric(arg(1)) && arg(1) == $user->uid) {
-    // Display introductory text on overview pages
-    switch ($section) {
-      case 'user/'. arg(1) .'/invites':
-      case 'user/'. arg(1) .'/invites/accepted':
-        $output = '<p>'. t("The invitations shown on this page have been used to join the site. Clicking on an e-mail address takes you to the user's profile page.");
-        break;
-      case 'user/'. arg(1) .'/invites/pending':
-        $output = '<p>'. t("The invitations shown on this page haven't been accepted yet.");
-        break;
-      case 'user/'. arg(1) .'/invites/expired':
-        $output = '<p>'. t('The invitations shown on this page have not been used to register on the site within the expiration period of @count days.', array('@count' => variable_get('invite_expiry', 30)));
-        break;
-      default:
-        return;
-    }
-    $output .= ' '. t('The status <em>deleted</em> means the user account has been terminated.') .'</p>';
-    if (!user_access('withdraw accepted invitations')) {
-      $output .= '<p>'. t("At any time, you may withdraw either pending or expired invitations. Accepted invitations can't be withdrawn and count permanently toward your invitation allotment.") .'</p>';
-    }
-    return $output;
+  if (arg(0) == 'user' && is_numeric(arg(1)) && arg(2) == 'invites') {
+    return _invite_user_help($section, arg(1));
   }
   else if ($section == 'admin/help#invite') {
-    // Display module help
-    $file = drupal_get_path('module', 'invite') .'/README.txt';
-    if (file_exists($file)) {
-      return _filter_autop(file_get_contents($file));
-    }
+    return _invite_module_help();
+  }
+}
+
+/**
+ * Display introductory text on user profile overview pages.
+ *
+ * @param $section
+ *   The section to display help for.
+ * @param $uid
+ *   A user profile id.
+ */
+function _invite_user_help($section, $uid) {
+  switch ($section) {
+    case "user/$uid/invites":
+    case "user/$uid/invites/accepted":
+      $output = '<p>'. t("The invitations shown on this page have been used to join the site. Clicking on an e-mail address takes you to the user's profile page.");
+      break;
+    case "user/$uid/invites/pending":
+      $output = '<p>'. t("The invitations shown on this page haven't been accepted yet.");
+      break;
+    case "user/$uid/invites/expired":
+      $output = '<p>'. t('The invitations shown on this page have not been used to register on the site within the expiration period of @count days.', array('@count' => variable_get('invite_expiry', 30)));
+      break;
+    default:
+      return;
+  }
+  $output .= ' '. t('The status <em>deleted</em> means the user account has been terminated.') .'</p>';
+  if (!user_access('withdraw accepted invitations')) {
+    $output .= '<p>'. t("At any time, you may withdraw either pending or expired invitations. Accepted invitations can't be withdrawn and count permanently toward your invitation allotment.") .'</p>';
+  }
+  return $output;
+}
+
+/**
+ * Display module help.
+ */
+function _invite_module_help() {
+  $file = drupal_get_path('module', 'invite') .'/README.txt';
+  if (file_exists($file)) {
+    return _filter_autop(check_plain(file_get_contents($file)));
   }
 }
 
