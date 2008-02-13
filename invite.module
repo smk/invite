@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.17 2008-02-12 08:50:32 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.18 2008-02-13 01:51:36 smk Exp $
 
 /**
  * @file
@@ -7,15 +7,20 @@
  */
 
 /**
- * Session variables.
+ * Session names.
  */
 define('INVITE_SESSION', 'invite_code');
 define('INVITE_ADMIN_SESSION', 'invite_admin_filter');
 
 /**
- * Special value for unlimited invites.
+ * Value for unlimited invites.
  */
 define('INVITE_UNLIMITED', -1);
+
+/**
+ * Include token support.
+ */
+require_once drupal_get_path('module', 'invite') .'/invite_token.inc';
 
 /**
  * Implementation of hook_help().
@@ -679,8 +684,6 @@ function invite_stats($uid) {
  *   A form definition array.
  */
 function invite_settings() {
-  include(drupal_get_path('module', 'invite') .'/invite_token.inc');
-
   $roles = user_roles(0, 'send invitations');
   if (count($roles) == 0) {
     drupal_set_message(t('Please enable the <em>send invitations</em> permission for at least one role. This can be done on the <a href="!admin-user-access">Access control page</a>.', array('!admin-user-access' => url('admin/user/access'))));
@@ -1119,9 +1122,11 @@ function invite_page_form($remaining_invites, $edit = array()) {
   }
 
   // Message subject
-  $subject = invite_get_subject();
   if ($edit && !empty($edit['data']['subject'])) {
     $subject = $edit['data']['subject'];
+  }
+  else {
+    $subject = invite_get_subject();
   }
   // Add prefix
   $prefix = t('Re:');
@@ -1645,45 +1650,6 @@ function invite_disable() {
     drupal_set_message(t('User registration option reset to %no_approval.', array('%no_approval' => t('Visitors can create accounts and no administrator approval is required.'))));
   }
 }
-
-/**
- * @{
- * Token functions.
- */
-
-/**
- * Implementation of hook_token_values().
- */
-function invite_token_values($type = 'all', $object = NULL) {
-  $values = array();
-  if ($type == 'invite' && is_object($object)) {
-    // NOTE: Invite is currently only capable of sending plain text e-mails.
-    // If you intend to change that, you need to properly escape all user input
-    // by adding check_plain() around below values!
-    $values['inviter-raw']        = $object->inviter->name;
-    $values['invite-mail']        = $object->email;
-    $values['invite-message-raw'] = $object->data['message'];
-    $values['join-link']          = url('invite/accept/'. $object->code, NULL, NULL, TRUE);
-  }
-  return $values;
-}
-
-/**
- * Implementation of hook_token_list().
- */
-function invite_token_list($type = 'all') {
-  if ($type == 'invite' || $type == 'all') {
-    $tokens['invite']['inviter-raw']        = t("Inviter's name. WARNING - raw user input.");
-    $tokens['invite']['invite-mail']        = t('The e-mail address of the invited user.');
-    $tokens['invite']['invite-message-raw'] = t('The personal message for the invitee as unfiltered text. WARNING - raw user input.');
-    $tokens['invite']['join-link']          = t('The link to the registration page of the site.');
-    return $tokens;
-  }
-}
-
-/**
- * @}
- */
 
 /**
  * @{
