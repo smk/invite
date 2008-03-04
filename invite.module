@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.20 2008-03-04 20:43:28 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.21 2008-03-04 20:46:31 smk Exp $
 
 /**
  * @file
@@ -305,7 +305,7 @@ function invite_form_alter($form_id, &$form) {
       else if (variable_get('user_register', 1) === '1-inviteonly') {
         drupal_set_message(t('Sorry, new user registration by invitation only.'));
         drupal_goto();
-    	}
+      }
       break;
 
     case 'user_login_block':
@@ -345,7 +345,7 @@ function invite_load($code) {
  */
 function invite_load_from_session() {
   if (isset($_SESSION[INVITE_SESSION])) {
-  	return invite_load($_SESSION[INVITE_SESSION]);
+    return invite_load($_SESSION[INVITE_SESSION]);
   }
   return FALSE;
 }
@@ -418,7 +418,7 @@ function invite_accept($invite, $account) {
   // Update the invitation record.
   db_query("UPDATE {invite} SET email = '%s', invitee = %d, joined = %d WHERE reg_code = '%s'", $account->mail, $account->uid, time(), $invite->reg_code);
   // Delete all invites to these e-mail addresses, except this one
-  db_query("DELETE FROM {invite} WHERE (email = '%s' OR email = '%s') AND reg_code != '%s'", $invite->email, $account->mail, $invite->reg_code);
+  db_query("DELETE FROM {invite} WHERE (email = '%s' OR email = '%s') AND reg_code <> '%s'", $invite->email, $account->mail, $invite->reg_code);
   // Add all users that invited this particular e-mail address to the
   // notification queue
   db_query("INSERT INTO {invite_notifications} (uid, invitee) SELECT uid, %d from {invite} WHERE (email = '%s' OR email = '%s') AND canceled = 0", $account->uid, $invite->email, $account->mail);

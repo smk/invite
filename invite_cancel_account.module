@@ -1,5 +1,5 @@
 <?php
-// $Id: invite_cancel_account.module,v 1.1.2.1 2007-12-01 05:30:29 smk Exp $
+// $Id: invite_cancel_account.module,v 1.1.2.1.2.1 2008-03-04 20:49:20 smk Exp $
 
 /**
  * @file
@@ -14,13 +14,13 @@
  */
 function invite_cancel_account_invite($op, $args) {
   switch ($op) {
-  	case 'cancel':
+    case 'cancel':
       if (user_access('withdraw accepted invitations')) {
         if ($account = user_load(array('mail' => $args['email']))) {
           user_delete(array(), $account->uid);
         }
       }
-  		break;
+      break;
   }
 }
 

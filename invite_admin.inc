@@ -1,5 +1,5 @@
 <?php
-// $Id: invite_admin.inc,v 1.1.2.1 2008-02-13 02:14:37 smk Exp $
+// $Id: invite_admin.inc,v 1.1.2.2 2008-03-04 20:46:31 smk Exp $
 
 /**
  * Menu callback; display invite settings form.
@@ -282,7 +282,7 @@ function _invite_admin_details($uid) {
     $filter_args = $_GET['filter'];
     $output .= drupal_get_form('invite_admin_details_filter_form', $uid, $_GET['filter']);
   }
-  $sql  = "SELECT i.email, i.invitee AS uid, u.name, i.created, i.expiry, i.joined, i.canceled FROM {invite} i LEFT JOIN {users} u ON u.uid = i.invitee AND u.uid != 0 WHERE i.uid = %d". $filter;
+  $sql  = "SELECT i.email, i.invitee AS uid, u.name, i.created, i.expiry, i.joined, i.canceled FROM {invite} i LEFT JOIN {users} u ON u.uid = i.invitee AND u.uid <> 0 WHERE i.uid = %d". $filter;
   $sql .= tablesort_sql($header);
   $result = pager_query($sql, 50, 0, NULL, $uid, $filter_args);
   $rows = array();
@@ -344,16 +344,16 @@ function _invite_user_overview($page = 'accepted') {
   $allow_delete = user_access('withdraw accepted invitations');
 
   switch ($page) {
-  	case 'accepted':
-  	default:
-      $sql = "SELECT i.*, u.uid AS account FROM {invite} i LEFT JOIN {users} u ON u.uid = i.invitee AND u.uid != 0 WHERE i.uid = %d AND i.joined != 0 AND canceled = 0 ORDER BY u.uid DESC";
-  		break;
-  	case 'pending':
+    case 'accepted':
+    default:
+      $sql = "SELECT i.*, u.uid AS account FROM {invite} i LEFT JOIN {users} u ON u.uid = i.invitee AND u.uid <> 0 WHERE i.uid = %d AND i.joined <> 0 AND canceled = 0 ORDER BY u.uid DESC";
+      break;
+    case 'pending':
       $sql = "SELECT * FROM {invite} WHERE uid = %d AND joined = 0 AND canceled = 0 AND expiry >= %d ORDER BY expiry DESC";
-  		break;
-  	case 'expired':
+      break;
+    case 'expired':
       $sql = "SELECT * FROM {invite} WHERE uid = %d AND joined = 0 AND canceled = 0 AND expiry < %d ORDER BY expiry DESC";
-  		break;
+      break;
   }
 
   $result = pager_query($sql, 50, 0, NULL, $user->uid, $time);
@@ -361,8 +361,8 @@ function _invite_user_overview($page = 'accepted') {
   while ($invite = db_fetch_object($result)) {
     $row = array();
     switch ($page) {
-    	case 'accepted':
-    	default:
+      case 'accepted':
+      default:
         $account_exists = !is_null($invite->account);
 
         if ($profile_access && $account_exists) {
@@ -376,8 +376,8 @@ function _invite_user_overview($page = 'accepted') {
         $row[] = '';
         break;
 
-    	case 'pending':
-    	case 'expired':
+      case 'pending':
+      case 'expired':
         $expired = ($invite->expiry < $time);
 
         $row[] = check_plain($invite->email);
