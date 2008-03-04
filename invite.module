@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.19 2008-02-13 02:14:37 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.20 2008-03-04 20:43:28 smk Exp $
 
 /**
  * @file
@@ -267,7 +267,8 @@ function invite_form_alter($form_id, &$form) {
     case 'user_admin_settings':
       // Add new registration mode
       // We prepend the option value with a numeric value to make 3rd party
-      // modules like LoginToboggan act like expected. To reliably determine
+      // modules like LoginToboggan act like expected. This works because
+      // checking for ('1-inviteonly' == 1) returns TRUE. To reliably determine
       // the variable value later, we need to use the strict equality operator
       // (===).
       $form['registration']['user_register']['#options']['1-inviteonly'] = t('New user registration by invitation only.');
@@ -387,57 +388,51 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
         // Try to look up an invitation in case a user has been invited to join
         // the site, but did go straight to the site and signed up without
         // using the invite link.
-        $code = db_result(db_query("SELECT reg_code FROM {invite} WHERE email = '%s'", $edit['mail']));
+        $code = db_result(db_query("SELECT reg_code FROM {invite} WHERE email = '%s'", $account->mail));
         if ($code) {
           $invite = invite_load($code);
         }
       }
 
       if ($invite) {
-        // Update the invitation and set its status to accepted
-        db_query("UPDATE {invite} SET email = '%s', invitee = %d, joined = %d WHERE reg_code = '%s'", $edit['mail'], $account->uid, time(), $invite->reg_code);
-
-        // Delete all invites to these e-mail addresses, except this one
-        db_query("DELETE FROM {invite} WHERE (email = '%s' OR email = '%s') AND reg_code != '%s'", $invite->email, $edit['mail'], $invite->reg_code);
-
-        // Add all users that invited this particular e-mail address to the
-        // notification queue
-        db_query("INSERT INTO {invite_notifications} (uid, invitee) SELECT uid, %d from {invite} WHERE (email = '%s' OR email = '%s') AND canceled = 0", $account->uid, $invite->email, $edit['mail']);
-
-        // Escalate invitee's role
-        _invite_escalate_role($account);
-
-        // Unblock user account
-        db_query("UPDATE {users} SET status = 1 WHERE uid = %d", $account->uid);
-
-        // Clear session
+        invite_accept($invite, $account);
         unset($_SESSION[INVITE_SESSION]);
       }
       break;
 
     case 'delete':
-      // Delete invite for this user if the originating user has the permission
-      $origin = db_result(db_query("SELECT uid FROM {invite} WHERE invitee = %d", $account->uid));
-      if ($origin && $inviter = user_load(array('uid' => $origin))) {
-        if (user_access('withdraw accepted invitations', $inviter)) {
-          db_query("DELETE FROM {invite} WHERE invitee = %d", $account->uid);
-        }
-      }
-
-      // Delete any invites originating from this user
-      db_query("DELETE FROM {invite} WHERE uid = %d", $account->uid);
-
-      // Clean up the notification queue
-      db_query("DELETE FROM {invite_notifications} WHERE uid = %d OR invitee = %d", $account->uid, $account->uid);
+      invite_delete($account->uid);
       break;
   }
 }
 
 /**
- * Escalates an invited user's role(s), based on the role(s) of the inviter.
+ * Set an invitation's status to accepted.
+ *
+ * @param $invite
+ *   An invite object.
+ * @param $account
+ *   The user object of the invitee.
+ */
+function invite_accept($invite, $account) {
+  // Update the invitation record.
+  db_query("UPDATE {invite} SET email = '%s', invitee = %d, joined = %d WHERE reg_code = '%s'", $account->mail, $account->uid, time(), $invite->reg_code);
+  // Delete all invites to these e-mail addresses, except this one
+  db_query("DELETE FROM {invite} WHERE (email = '%s' OR email = '%s') AND reg_code != '%s'", $invite->email, $account->mail, $invite->reg_code);
+  // Add all users that invited this particular e-mail address to the
+  // notification queue
+  db_query("INSERT INTO {invite_notifications} (uid, invitee) SELECT uid, %d from {invite} WHERE (email = '%s' OR email = '%s') AND canceled = 0", $account->uid, $invite->email, $account->mail);
+  // Escalate the invitee's role
+  _invite_escalate_role($account);
+  // Unblock user account
+  db_query("UPDATE {users} SET status = 1 WHERE uid = %d", $account->uid);
+}
+
+/**
+ * Escalates an invited user's role, based on the role(s) of the inviter.
  *
  * @param $account
- *   A user object.
+ *   The user object of the invitee.
  */
 function _invite_escalate_role($account) {
   // Default target role
@@ -475,6 +470,26 @@ function _invite_escalate_role($account) {
 }
 
 /**
+ * Physically delete all invites from and to a user.
+ *
+ * @param $uid
+ *   The user id to delete invites for.
+ */
+function invite_delete($uid) {
+  // Delete invite for this user if the originating user has the permission
+  $origin = db_result(db_query("SELECT uid FROM {invite} WHERE invitee = %d", $uid));
+  if ($origin && $inviter = user_load(array('uid' => $origin))) {
+    if (user_access('withdraw accepted invitations', $inviter)) {
+      db_query("DELETE FROM {invite} WHERE invitee = %d", $uid);
+    }
+  }
+  // Delete any invites originating from this user
+  db_query("DELETE FROM {invite} WHERE uid = %d", $uid);
+  // Clean up the notification queue
+  db_query("DELETE FROM {invite_notifications} WHERE uid = %d OR invitee = %d", $uid, $uid);
+}
+
+/**
  * Implementation of hook_block().
  */
 function invite_block($op = 'list', $delta = 0, $edit = array()) {
@@ -495,47 +510,6 @@ function invite_block($op = 'list', $delta = 0, $edit = array()) {
     }
     return $block;
   }
-}
-
-/**
- * Return a list of all users that have invited someone.
- */
-function invite_admin_overview() {
-  require_once drupal_get_path('module', 'invite') .'/invite_admin.inc';
-  return _invite_admin_overview();
-}
-
-/**
- * Return a list of invites by a user.
- *
- * @param $uid
- *   A user id.
- */
-function invite_admin_details($uid) {
-  require_once drupal_get_path('module', 'invite') .'/invite_admin.inc';
-  return _invite_admin_details($uid);
-}
-
-/**
- * Menu callback; display invite settings form.
- *
- * @return
- *   A form definition array.
- */
-function invite_settings() {
-  require_once drupal_get_path('module', 'invite') .'/invite_admin.inc';
-  return _invite_settings();
-}
-
-/**
- * Menu callback; display an overview of sent invitations.
- *
- * @param $page
- *   Which invites to list: accepted, pending, or expired.
- */
-function invite_user_overview($page = 'accepted') {
-  require_once drupal_get_path('module', 'invite') .'/invite_admin.inc';
-  return _invite_user_overview($page);
 }
 
 /**
@@ -594,22 +568,6 @@ function invite_form($op = 'page', $edit = array()) {
   }
 
   return $form;
-}
-
-/**
- * Return counts of successful/pending/unsuccessful invitations.
- *
- * @param $uid
- *   The user id to calculate counts for.
- * @return
- *   An array consisting of three elements: accepted, pending and expired.
- */
-function invite_stats($uid) {
-  $now = time();
-  $stats['accepted'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined != 0", $uid));
-  $stats['pending'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined = 0 AND expiry >= %d", $uid, $now));
-  $stats['expired'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined = 0 AND expiry < %d", $uid, $now));
-  return $stats;
 }
 
 /**
@@ -1271,6 +1229,63 @@ function invite_resend($code) {
 }
 
 /**
+ * Return counts of successful/pending/unsuccessful invitations.
+ *
+ * @param $uid
+ *   The user id to calculate counts for.
+ * @return
+ *   An array consisting of three elements: accepted, pending and expired.
+ */
+function invite_stats($uid) {
+  $now = time();
+  $stats['accepted'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined != 0", $uid));
+  $stats['pending'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined = 0 AND expiry >= %d", $uid, $now));
+  $stats['expired'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined = 0 AND expiry < %d", $uid, $now));
+  return $stats;
+}
+
+/**
+ * Menu callback; return a list of all users that have invited someone.
+ */
+function invite_admin_overview() {
+  require_once drupal_get_path('module', 'invite') .'/invite_admin.inc';
+  return _invite_admin_overview();
+}
+
+/**
+ * Menu callback; return a list of invites by a user.
+ *
+ * @param $uid
+ *   A user id.
+ */
+function invite_admin_details($uid) {
+  require_once drupal_get_path('module', 'invite') .'/invite_admin.inc';
+  return _invite_admin_details($uid);
+}
+
+/**
+ * Menu callback; display invite settings form.
+ *
+ * @return
+ *   A form definition array.
+ */
+function invite_settings() {
+  require_once drupal_get_path('module', 'invite') .'/invite_admin.inc';
+  return _invite_settings();
+}
+
+/**
+ * Menu callback; display an overview of sent invitations.
+ *
+ * @param $page
+ *   Which invites to list: accepted, pending, or expired.
+ */
+function invite_user_overview($page = 'accepted') {
+  require_once drupal_get_path('module', 'invite') .'/invite_admin.inc';
+  return _invite_user_overview($page);
+}
+
+/**
  * Implementation of hook_disable().
  */
 function invite_disable() {
@@ -1279,11 +1294,6 @@ function invite_disable() {
     drupal_set_message(t('User registration option reset to %no_approval.', array('%no_approval' => t('Visitors can create accounts and no administrator approval is required.'))));
   }
 }
-
-/**
- * @{
- * Helper functions.
- */
 
 /**
  * Returns the configured or default e-mail template.
