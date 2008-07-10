@@ -1,5 +1,5 @@
 <?php
-// $Id: invite_token.inc,v 1.1.2.1.2.1 2008-02-13 01:51:36 smk Exp $
+// $Id: invite_token.inc,v 1.1.2.1.2.2 2008-07-10 10:27:28 smk Exp $
 
 /**
  * Implementation of hook_token_values().
@@ -46,7 +46,7 @@ function invite_token_list($type = 'all') {
 function theme_invite_token_help($type = 'all', $prefix = '[', $suffix = ']') {
   token_include();
 
-  // see http://drupal.org/node/127072
+  // @see http://drupal.org/node/127072
   $full_list = array();
   foreach ((array)$type as $t) {
     $full_list = array_merge($full_list, token_get_list($t));

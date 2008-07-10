@@ -1,11 +1,8 @@
 <?php
-// $Id: invite_admin.inc,v 1.1.2.3 2008-07-10 10:23:34 smk Exp $
+// $Id: invite_admin.inc,v 1.1.2.4 2008-07-10 10:27:28 smk Exp $
 
 /**
  * Menu callback; display invite settings form.
- *
- * @return
- *   A form definition array.
  */
 function _invite_settings() {
   $roles = user_roles(0, 'send invitations');
@@ -14,7 +11,7 @@ function _invite_settings() {
   }
   $target_roles = user_roles(1);
 
-  // General settings
+  // General settings.
   $form['general'] = array(
     '#type' => 'fieldset',
     '#title' => t('General settings'),
@@ -39,7 +36,7 @@ function _invite_settings() {
     '#required' => TRUE,
   );
 
-  // Role settings
+  // Role settings.
   $form['role'] = array(
     '#type' => 'fieldset',
     '#title' => t('Role settings'),
@@ -75,7 +72,7 @@ function _invite_settings() {
     );
   }
 
-  // E-mail settings
+  // E-mail settings.
   $form['email'] = array(
     '#type' => 'fieldset',
     '#title' => t('E-mail settings'),
@@ -147,7 +144,7 @@ function _invite_settings() {
     '#description' => t('The e-mail address you want recipients to reply to.'),
   );
 
-  // Invite page customization
+  // Invite page customization.
   $form['custom'] = array(
     '#type' => 'fieldset',
     '#title' => t('Invite page customization'),
