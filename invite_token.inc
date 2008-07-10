@@ -1,5 +1,5 @@
 <?php
-// $Id: invite_token.inc,v 1.1.2.1.2.2 2008-07-10 10:27:28 smk Exp $
+// $Id: invite_token.inc,v 1.1.2.1.2.3 2008-07-10 10:28:44 smk Exp $
 
 /**
  * Implementation of hook_token_values().
@@ -7,11 +7,10 @@
 function invite_token_values($type = 'all', $object = NULL) {
   $values = array();
   if ($type == 'invite' && is_object($object)) {
-    // NOTE: Invite is currently only capable of sending plain text e-mails.
-    // If you intend to change that, you need to properly escape all user input
-    // by adding check_plain() around below values!
+    $values['inviter']            = check_plain($object->inviter->name);
     $values['inviter-raw']        = $object->inviter->name;
     $values['invite-mail']        = $object->email;
+    $values['invite-message']     = check_plain($object->data['message']);
     $values['invite-message-raw'] = $object->data['message'];
     $values['join-link']          = url('invite/accept/'. $object->code, NULL, NULL, TRUE);
   }
@@ -23,10 +22,12 @@ function invite_token_values($type = 'all', $object = NULL) {
  */
 function invite_token_list($type = 'all') {
   if ($type == 'invite' || $type == 'all') {
-    $tokens['invite']['inviter-raw']        = t("Inviter's name. WARNING - raw user input.");
+    $tokens['invite']['inviter']            = t('The user name of the inviter.');
+    $tokens['invite']['inviter-raw']        = t('The user name of the inviter. WARNING - raw user input.');
     $tokens['invite']['invite-mail']        = t('The e-mail address of the invited user.');
+    $tokens['invite']['invite-message']     = t('The personal message for the invitee.');
     $tokens['invite']['invite-message-raw'] = t('The personal message for the invitee as unfiltered text. WARNING - raw user input.');
-    $tokens['invite']['join-link']          = t('The link to the registration page of the site.');
+    $tokens['invite']['join-link']          = t('The link to the registration page, including the invitation code.');
     return $tokens;
   }
 }
