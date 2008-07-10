@@ -1,5 +1,5 @@
 <?php
-// $Id: invite_stats.module,v 1.1.2.1.2.3 2008-03-04 20:49:20 smk Exp $
+// $Id: invite_stats.module,v 1.1.2.1.2.4 2008-07-10 10:23:34 smk Exp $
 
 /**
  * @file
@@ -24,20 +24,19 @@ function invite_stats_user($op, &$edit, &$account, $category = NULL) {
       $view_access = user_access('view invite statistics');
       $view_own_access = user_access('view own invite statistics') && $account->uid == $user->uid;
       if ($view_access || $view_own_access) {
-        $count = invite_stats($account->uid);
         $items['accepted'] = array(
           'title' => t('Successful'),
-          'value' => $count['accepted'],
+          'value' => invite_count($account->uid, 'accepted'),
           'class' => 'successful',
         );
         $items['pending'] = array(
           'title' => t('Pending'),
-          'value' => $count['pending'],
+          'value' => invite_count($account->uid, 'pending'),
           'class' => 'pending',
         );
         $items['expired'] = array(
           'title' => t('Unsuccessful'),
-          'value' => $count['expired'],
+          'value' => invite_count($account->uid, 'expired'),
           'class' => 'expired',
         );
         return array(t('Invitation counts') => $items);

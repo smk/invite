@@ -1,4 +1,4 @@
-// $Id: CHANGELOG.TXT,v 1.1.2.2.2.5 2008-07-10 10:18:06 smk Exp $
+// $Id: CHANGELOG.TXT,v 1.1.2.2.2.6 2008-07-10 10:23:34 smk Exp $
 
 Invite 5.x-2.x, xxxx-xx-xx
 --------------------------
@@ -14,6 +14,8 @@ New features:
   invitation link.
 - #214426 by Olivier Tavard: Added french translation.
 - Refactored notification system to be less resource intensive.
+- invite_stats() has been renamed to invite_count() and returns now a specific
+  count.
 
 Bugs fixed:
 - #171765: Enhanced compatibility with LoginToboggan.

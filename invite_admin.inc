@@ -1,5 +1,5 @@
 <?php
-// $Id: invite_admin.inc,v 1.1.2.2 2008-03-04 20:46:31 smk Exp $
+// $Id: invite_admin.inc,v 1.1.2.3 2008-07-10 10:23:34 smk Exp $
 
 /**
  * Menu callback; display invite settings form.
@@ -198,10 +198,9 @@ function _invite_admin_overview() {
     $cells = array();
     $cells[] = theme('username', $row);
     $cells[] = $row->invites;
-    $stats = invite_stats($row->uid);
-    $cells[] = $stats['accepted'];
-    $cells[] = $stats['pending'];
-    $cells[] = $stats['expired'];
+    $cells[] = invite_count($row->uid, 'accepted');
+    $cells[] = invite_count($row->uid, 'pending');
+    $cells[] = invite_count($row->uid, 'expired');
     $remaining = invite_get_remaining_invites($row);
     $cells[] = ($remaining == INVITE_UNLIMITED) ? '&infin;' : $remaining;
     $cells[] = l(t('details'), "admin/user/invite/details/$row->uid", array(), $query);

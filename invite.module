@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.23 2008-07-10 10:20:56 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.24 2008-07-10 10:23:34 smk Exp $
 
 /**
  * @file
@@ -1234,19 +1234,24 @@ function invite_resend($code) {
 }
 
 /**
- * Return counts of successful/pending/unsuccessful invitations.
+ * Return count of successful, pending, or unsuccessful invitations.
  *
  * @param $uid
- *   The user id to calculate counts for.
+ *   The user id to calculate count for.
+ * @param $op
+ *   The type of count to calculate: accepted, pending or expired.
  * @return
- *   An array consisting of three elements: accepted, pending and expired.
+ *   A count.
  */
-function invite_stats($uid) {
-  $now = time();
-  $stats['accepted'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined != 0", $uid));
-  $stats['pending'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined = 0 AND expiry >= %d", $uid, $now));
-  $stats['expired'] = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined = 0 AND expiry < %d", $uid, $now));
-  return $stats;
+function invite_count($uid, $op) {
+  switch ($op) {
+    case 'accepted':
+      return db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined <> 0", $uid));
+    case 'pending':
+      return db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined = 0 AND expiry >= %d", $uid, time()));
+    case 'expired':
+      return db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d AND joined = 0 AND expiry < %d", $uid, time()));
+  }
 }
 
 /**
