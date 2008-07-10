@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.21 2008-03-04 20:46:31 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.22 2008-07-10 10:18:06 smk Exp $
 
 /**
  * @file
@@ -146,8 +146,8 @@ function invite_menu($may_cache) {
     );
   }
   else {
-    // Check for newly registered users and display notification
-    if ($send_access && $user->uid) {
+    // Notify current user about newly joined invitees.
+    if (!empty($user->invite_sent) && !module_invoke('throttle', 'status')) {
       invite_notify($user->uid);
     }
 
@@ -231,12 +231,12 @@ function invite_menu($may_cache) {
 function invite_notify($uid) {
   $result = db_query('SELECT invitee FROM {invite_notifications} WHERE uid = %d', $uid);
   while ($row = db_fetch_object($result)) {
-    $account = user_load(array('uid' => $row->invitee));
-    if ($account->status == 1) {
+    $account = user_load(array('uid' => $row->invitee, 'status' => 1));
+    if ($account) {
       drupal_set_message(t('!user (@email) has joined @site-name!', array('!user' => theme('username', $account), '@email' => $account->mail, '@site-name' => variable_get('site_name', t('Drupal')))));
+      db_query("DELETE FROM {invite_notifications} WHERE uid = %d AND invitee = %d", $uid, $row->invitee);
     }
   }
-  db_query("DELETE FROM {invite_notifications} WHERE uid = %d", $uid);
 }
 
 /**

@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.3.2.26.2.6 2008-03-04 20:46:31 smk Exp $
+// $Id: invite.install,v 1.3.2.26.2.7 2008-07-10 10:18:06 smk Exp $
 
 /**
  * Install the initial schema.
@@ -29,7 +29,7 @@ function invite_install() {
         CREATE TABLE {invite_notifications} (
           uid int(10) NOT NULL default '0',
           invitee int(10) NOT NULL default '0',
-          KEY (uid)
+          UNIQUE (uid, invitee)
         ) /*!40100 DEFAULT CHARACTER SET utf8 */;"
       );
       break;
@@ -55,10 +55,10 @@ function invite_install() {
       db_query("
         CREATE TABLE {invite_notifications} (
           uid INTEGER NOT NULL DEFAULT 0,
-          invitee INTEGER NOT NULL DEFAULT 0
+          invitee INTEGER NOT NULL DEFAULT 0,
+          UNIQUE (uid, invitee)
         )"
       );
-      db_query("CREATE INDEX {invite_notifications}_uid_idx ON {invite_notifications}(uid)");
       break;
   }
 }
@@ -432,3 +432,21 @@ function invite_update_201() {
   return $ret;
 }
 
+/**
+ * Optimize index of notification table.
+ */
+function invite_update_202() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {invite_notifications} DROP INDEX uid,  ADD UNIQUE uid_invitee (uid, invitee)");
+      break;
+
+    case 'pgsql':
+      $ret[] = update_sql("DROP INDEX {invite_notifications}_uid_idx");
+      $ret[] = update_sql("CREATE UNIQUE INDEX {invite_notifications}_uid_invitee_key ON {invite_notifications}(uid, invitee)");
+      break;
+  }
+  return $ret;
+}
