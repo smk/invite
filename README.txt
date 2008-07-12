@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.4.2.17.2.2 2008-01-11 17:08:27 smk Exp $ */
+/* $Id: README.txt,v 1.4.2.17.2.3 2008-07-12 21:40:13 smk Exp $ */
 
 -- SUMMARY --
 
@@ -9,13 +9,12 @@ allows your users to send and track invitations to join your site.
 For a full description visit the project page:
   http://drupal.org/project/invite
 Bug reports, feature suggestions and latest developments:
-  http://drupal.org/project/invite/issues
+  http://drupal.org/project/issues/invite
 
 
 -- REQUIREMENTS --
 
-* Token 5.x-1.9 (or newer)
-  http://drupal.org/project/token
+* Token module http://drupal.org/project/token
 
 
 -- INSTALLATION --

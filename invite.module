@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.25 2008-07-10 10:27:28 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.26 2008-07-12 21:40:13 smk Exp $
 
 /**
  * @file
@@ -398,7 +398,9 @@ function invite_user($op, &$edit, &$account, $category = NULL) {
 
         // Flag the inviting user, this triggers status notifications and
         // saves us some queries otherwise.
-        user_save($invite->inviter, array('invite_sent' => TRUE));
+        if ($invite->inviter->uid) {
+          user_save($invite->inviter, array('invite_sent' => TRUE));
+        }
 
         unset($_SESSION[INVITE_SESSION]);
       }
