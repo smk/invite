@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.11 2007-11-17 10:14:45 smk Exp $
+// $Id: invite.install,v 1.12 2008-08-20 13:26:11 smk Exp $
 
 /**
  * Install the initial schema.
@@ -10,17 +10,26 @@ function invite_install() {
     case 'mysqli':
       db_query("
         CREATE TABLE {invite} (
-          email varchar(64) NOT NULL default '',
-          reg_code varchar(64) NOT NULL default '',
-          uid int(10) unsigned NOT NULL default '0',
-          mid int(11) unsigned NOT NULL default '0',
-          expiry int(11) NOT NULL default '0',
-          timestamp int(11) NOT NULL default '0',
-          received tinyint(3) unsigned NOT NULL default '0',
+          reg_code varchar(8) NOT NULL default '',
+          email varchar(100) NOT NULL default '',
+          uid int(10) NOT NULL default '0',
+          invitee int(10) NOT NULL default '0',
+          created int(10) NOT NULL default '0',
+          expiry int(10) NOT NULL default '0',
+          joined int(10) NOT NULL default '0',
+          canceled tinyint(1) NOT NULL default '0',
+          resent tinyint(3) NOT NULL default '0',
           data text NOT NULL,
-          PRIMARY KEY  (email),
           UNIQUE (reg_code),
+          KEY (email),
           KEY (uid)
+        ) /*!40100 DEFAULT CHARACTER SET utf8 */;"
+      );
+      db_query("
+        CREATE TABLE {invite_notifications} (
+          uid int(10) NOT NULL default '0',
+          invitee int(10) NOT NULL default '0',
+          UNIQUE (uid, invitee)
         ) /*!40100 DEFAULT CHARACTER SET utf8 */;"
       );
       break;
@@ -28,19 +37,28 @@ function invite_install() {
     case 'pgsql':
       db_query("
         CREATE TABLE {invite} (
-          email VARCHAR(64) NOT NULL DEFAULT '',
-          reg_code VARCHAR(64) NOT NULL DEFAULT '',
+          reg_code VARCHAR(8) NOT NULL DEFAULT '',
+          email VARCHAR(100) NOT NULL DEFAULT '',
           uid INTEGER NOT NULL DEFAULT 0,
-          mid INTEGER NOT NULL DEFAULT 0,
+          invitee INTEGER NOT NULL DEFAULT 0,
+          created INTEGER NOT NULL DEFAULT 0,
           expiry INTEGER NOT NULL DEFAULT 0,
-          timestamp INTEGER NOT NULL DEFAULT 0,
-          received SMALLINT NOT NULL DEFAULT 0,
+          joined INTEGER NOT NULL DEFAULT 0,
+          canceled SMALLINT NOT NULL DEFAULT 0,
+          resent SMALLINT NOT NULL DEFAULT 0,
           data TEXT NOT NULL DEFAULT '',
-          PRIMARY KEY (email),
           UNIQUE (reg_code)
-        );"
+        )"
       );
-      db_query("CREATE INDEX {invite}_uid_idx ON {invite} (uid)");
+      db_query("CREATE INDEX {invite}_email_idx ON {invite}(email)");
+      db_query("CREATE INDEX {invite}_uid_idx ON {invite}(uid)");
+      db_query("
+        CREATE TABLE {invite_notifications} (
+          uid INTEGER NOT NULL DEFAULT 0,
+          invitee INTEGER NOT NULL DEFAULT 0,
+          UNIQUE (uid, invitee)
+        )"
+      );
       break;
   }
 }
@@ -167,7 +185,7 @@ function invite_update_4() {
       break;
   }
   // Prevent displaying a whole bunch of messages for old invites
-  $ret[] = update_sql("UPDATE {invite} SET received = 1 WHERE mid != 0");
+  $ret[] = update_sql("UPDATE {invite} SET received = 1 WHERE mid <> 0");
   return $ret;
 }
 
@@ -241,7 +259,7 @@ function invite_update_8() {
   }
 
   // Convert existing messages
-  $result = db_query("SELECT reg_code, message FROM {invite} WHERE message != ''");
+  $result = db_query("SELECT reg_code, message FROM {invite} WHERE message <> ''");
   while ($row = db_fetch_object($result)) {
     if (substr($row->message, 0, 2) == 'a:') {
       // Already serialized
@@ -335,3 +353,100 @@ function invite_update_11() {
   return $ret;
 }
 
+/**
+ * Change user_register value for enhanced compatibility with LoginToboggan.
+ */
+function invite_update_12() {
+  if (variable_get('user_register', 1) == 'inviteonly') {
+    variable_set('user_register', '1-inviteonly');
+  }
+  return array();
+}
+
+/**
+ * @{
+ * Invite 2.x updates
+ */
+
+/**
+ * 1. Allow multiple invitations for the same e-mail address.
+ * 2. Changed some column names to be more descriptive.
+ * 3. Added a column to flag canceled invites.
+ * 4. Added resent column.
+ */
+function invite_update_200() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {invite} DROP PRIMARY KEY, ADD INDEX email (email)");
+      $ret[] = update_sql("ALTER TABLE {invite} CHANGE mid invitee int(10) NOT NULL default '0'");
+      $ret[] = update_sql("ALTER TABLE {invite} CHANGE timestamp joined int(10) NOT NULL default '0'");
+      $ret[] = update_sql("ALTER TABLE {invite} ADD created int(10) NOT NULL default '0'");
+      $ret[] = update_sql("ALTER TABLE {invite} ADD canceled tinyint(1) NOT NULL default '0'");
+      $ret[] = update_sql("ALTER TABLE {invite} ADD resent tinyint(3) NOT NULL default '0'");
+      break;
+    case 'pgsql':
+      $ret[] = update_sql("ALTER TABLE {invite} DROP CONSTRAINT {invite}_pkey");
+      $ret[] = update_sql("CREATE INDEX {invite}_email_idx ON {invite}(email)");
+      db_change_column($ret, 'invite', 'mid', 'invitee', 'INTEGER', array('not null' => TRUE, 'default' => 0));
+      db_change_column($ret, 'invite', 'timestamp', 'joined', 'INTEGER', array('not null' => TRUE, 'default' => 0));
+      db_add_column($ret, 'invite', 'created', 'INTEGER', array('default' => 0, 'not null' => TRUE));
+      db_add_column($ret, 'invite', 'canceled', 'SMALLINT', array('default' => 0, 'not null' => TRUE));
+      db_add_column($ret, 'invite', 'resent', 'SMALLINT', array('default' => 0, 'not null' => TRUE));
+      break;
+  }
+  return $ret;
+}
+
+/**
+ * Revamped notification system.
+ */
+function invite_update_201() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("
+        CREATE TABLE {invite_notifications} (
+          uid int(10) NOT NULL default '0',
+          invitee int(10) NOT NULL default '0',
+          KEY (uid)
+        ) /*!40100 DEFAULT CHARACTER SET utf8 */;"
+      );
+      break;
+    case 'pgsql':
+      $ret[] = update_sql("
+        CREATE TABLE {invite_notifications} (
+          uid INTEGER NOT NULL DEFAULT 0,
+          invitee INTEGER NOT NULL DEFAULT 0
+        )"
+      );
+      $ret[] = update_sql("CREATE INDEX {invite_notifications}_uid_idx ON {invite_notifications}(uid)");
+      break;
+  }
+  // Convert old data
+  db_query("INSERT INTO {invite_notifications} (uid, invitee) SELECT uid, invitee FROM {invite} WHERE joined != 0 AND received = 0");
+  // Drop old column
+  $ret[] = update_sql("ALTER TABLE {invite} DROP received");
+  return $ret;
+}
+
+/**
+ * Optimize index of notification table.
+ */
+function invite_update_202() {
+  $ret = array();
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      $ret[] = update_sql("ALTER TABLE {invite_notifications} DROP INDEX uid,  ADD UNIQUE uid_invitee (uid, invitee)");
+      break;
+
+    case 'pgsql':
+      $ret[] = update_sql("DROP INDEX {invite_notifications}_uid_idx");
+      $ret[] = update_sql("CREATE UNIQUE INDEX {invite_notifications}_uid_invitee_key ON {invite_notifications}(uid, invitee)");
+      break;
+  }
+  return $ret;
+}

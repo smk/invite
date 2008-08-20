@@ -1,6 +1,5 @@
-; $Id: invite_stats.info,v 1.3 2007-12-01 17:44:36 smk Exp $
+; $Id: invite_stats.info,v 1.4 2008-08-20 13:26:12 smk Exp $
 name = Invite Statistics
 description = "Displays some statistics about sent invitations."
 dependencies = invite
 package = Invite
-

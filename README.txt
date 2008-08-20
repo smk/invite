@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.13 2007-12-03 02:53:35 smk Exp $ */
+/* $Id: README.txt,v 1.14 2008-08-20 13:26:11 smk Exp $ */
 
 -- SUMMARY --
 
@@ -9,13 +9,12 @@ allows your users to send and track invitations to join your site.
 For a full description visit the project page:
   http://drupal.org/project/invite
 Bug reports, feature suggestions and latest developments:
-  http://drupal.org/project/invite/issues
+  http://drupal.org/project/issues/invite
 
 
 -- REQUIREMENTS --
 
-* Token 5.x-1.9 (or newer)
-  http://drupal.org/project/token
+* Token module http://drupal.org/project/token
 
 
 -- INSTALLATION --
@@ -135,7 +134,8 @@ function hook_invite($op, $args) {
     An invitation has been successfully send.
     $args['inviter']: The user account object of the person who did the
                       inviting.
-    $args['code']:    The invite code for the invitee.
+    $args['email']:   The e-mail address of the user who got invited.
+    $args['code']:    The tracking code of the invitation.
 
   case 'escalate':
     Invitee has accepted an invitation and has been promoted to the appropriate
@@ -143,7 +143,8 @@ function hook_invite($op, $args) {
     $args['invitee']: The user account object of the person who was invited.
     $args['inviter']: The user account object of the person who did the
                       inviting.
-    $args['roles']:   An array of roles that the invitee has been escalated to.
+    $args['roles']:   An array of roles the invited person has been escalated
+                      to.
    
   case 'cancel':
     Inviter has cancelled an invitation.
@@ -151,6 +152,7 @@ function hook_invite($op, $args) {
                       inviting.
     $args['email']:   The e-mail address of the user whose invitation got
                       cancelled.
+    $args['code']:    The tracking code of the invitation.
 }
 
 There are several third-party modules that can react on invite events:
@@ -181,11 +183,16 @@ function phptemplate_menu_item_link($item, $link_item) {
 This prevents the 'Create new account' menu item from being rendered.
 
 
--- CONTACT --
-
-Current maintainer:
-Stefan Kudwien (smk-ka) - dev@unleashedmind.com
+-- CREDITS --
 
 Original author:
-David Hill (tatonca) - tatonca_@hotmail.com
+  David Hill (tatonca)
+
+Current maintainer:
+  Stefan M. Kudwien (smk-ka)
+
+Sponsored by UNLEASHED MIND
+  Specialized in consulting and planning of Drupal powered sites, UNLEASHED
+  MIND offers installation, development, theming, customization, and hosting
+  to get you started. Visit http://www.unleashedmind.com for more information.
 
