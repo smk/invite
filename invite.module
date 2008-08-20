@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.27 2008-08-19 12:58:52 smk Exp $
+// $Id: invite.module,v 1.10.2.93.2.28 2008-08-20 14:01:29 smk Exp $
 
 /**
  * @file
@@ -302,7 +302,7 @@ function invite_form_alter($form_id, &$form) {
           $field['mail']['#default_value'] = $invite->email;
         }
       }
-      else if (variable_get('user_register', 1) === '1-inviteonly') {
+      else if (variable_get('user_register', 1) === '1-inviteonly' && !user_access('administer users')) {
         drupal_set_message(t('Sorry, new user registration by invitation only.'));
         drupal_goto();
       }
