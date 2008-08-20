@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.4.2.17.2.3 2008-07-12 21:40:13 smk Exp $ */
+/* $Id: README.txt,v 1.4.2.17.2.4 2008-08-20 13:25:03 smk Exp $ */
 
 -- SUMMARY --
 
@@ -185,19 +185,14 @@ This prevents the 'Create new account' menu item from being rendered.
 
 -- CREDITS --
 
+Original author:
+  David Hill (tatonca)
+
 Current maintainer:
-  Stefan Kudwien (smk-ka) - dev@unleashedmind.com
+  Stefan M. Kudwien (smk-ka)
 
 Sponsored by UNLEASHED MIND
   Specialized in consulting and planning of Drupal powered sites, UNLEASHED
   MIND offers installation, development, theming, customization, and hosting
   to get you started. Visit http://www.unleashedmind.com for more information.
-
-Previous maintainers:
-  Andy Kirkham (AjK)
-  Nick Wilson (Nick Wilson)
-  Robert Douglass (robertDouglass)
-
-Original author:
-  David Hill (tatonca)
 
