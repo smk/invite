@@ -1,4 +1,4 @@
-// $Id: CHANGELOG.TXT,v 1.5 2008-08-20 13:26:11 smk Exp $
+// $Id: CHANGELOG.TXT,v 1.6 2008-08-20 14:03:28 smk Exp $
 
 Invite 6.x-2.x, xxxx-xx-xx
 --------------------------
@@ -21,6 +21,8 @@ Bugs fixed:
 - #171765: Enhanced compatibility with LoginToboggan.
 - #197198: Fixed misleading error message when no permissions have been set up.
 - #196877: Prevent caching of user/register page (better approach).
+- #229803 by will_in_wi: Restored capability for admins to create users when
+  operating in "by invitation only" mode.
 
 Invite 5.x-1.13, 2007-12-01
 ---------------------------
