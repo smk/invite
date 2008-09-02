@@ -1,5 +1,5 @@
 <?php
-// $Id: invite_token.inc,v 1.4 2008-08-20 13:26:12 smk Exp $
+// $Id: invite_token.inc,v 1.5 2008-09-02 17:02:14 smk Exp $
 
 /**
  * Implementation of hook_token_values().
@@ -12,7 +12,7 @@ function invite_token_values($type = 'all', $object = NULL) {
     $values['invite-mail']        = $object->email;
     $values['invite-message']     = check_plain($object->data['message']);
     $values['invite-message-raw'] = $object->data['message'];
-    $values['join-link']          = url('invite/accept/'. $object->code, NULL, NULL, TRUE);
+    $values['join-link']          = url('invite/accept/'. $object->code, array('absolute' => TRUE));
   }
   return $values;
 }
@@ -52,11 +52,11 @@ function theme_invite_token_help($type = 'all', $prefix = '[', $suffix = ']') {
   foreach ((array)$type as $t) {
     $full_list = array_merge($full_list, token_get_list($t));
   }
-  
+
   $headers = array(t('Token'), t('Replacement value'));
   $rows = array();
   foreach ($full_list as $key => $category) {
-    $rows[] = array(array('data' => drupal_ucfirst($key) . ' ' . t('tokens'), 'class' => 'region', 'colspan' => 2));
+    $rows[] = array(array('data' => drupal_ucfirst($key) .' '. t('tokens'), 'class' => 'region', 'colspan' => 2));
     foreach ($category as $token => $description) {
       $row = array();
       $row[] = $prefix . $token . $suffix;

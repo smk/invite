@@ -1,13 +1,13 @@
 <?php
-// $Id: invite_admin.inc,v 1.2 2008-08-20 13:26:12 smk Exp $
+// $Id: invite_admin.inc,v 1.3 2008-09-02 17:02:14 smk Exp $
 
 /**
  * Menu callback; display invite settings form.
  */
-function _invite_settings() {
+function invite_settings() {
   $roles = user_roles(0, 'send invitations');
   if (count($roles) == 0) {
-    drupal_set_message(t('Please enable the <em>send invitations</em> permission for at least one role. This can be done on the <a href="!admin-user-access">Access control page</a>.', array('!admin-user-access' => url('admin/user/access'))));
+    drupal_set_message(t('Please enable the <em>send invitations</em> permission for at least one role. This can be done on the <a href="!permissions-url">Permissions page</a>.', array('!permissions-url' => url('admin/user/permissions'))));
   }
   $target_roles = user_roles(1);
 
@@ -40,7 +40,7 @@ function _invite_settings() {
   $form['role'] = array(
     '#type' => 'fieldset',
     '#title' => t('Role settings'),
-    '#description' => t('Note: Permission related settings can be found at the <a href="!admin-user-access">Access control page</a>.', array('!admin-user-access' => url('admin/user/access'))),
+    '#description' => t('Note: Permission related settings can be found at the <a href="!permissions-url">Permissions page</a>.', array('!permissions-url' => url('admin/user/permissions'))),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
@@ -134,13 +134,13 @@ function _invite_settings() {
   $form['email']['advanced']['invite_manual_from'] = array(
     '#type' => 'textfield',
     '#title' => t('Manually override <em>From</em> e-mail address'),
-    '#default_value' => variable_get('invite_manual_from', NULL),
+    '#default_value' => variable_get('invite_manual_from', ''),
     '#description' => t('The e-mail address the invitation e-mail is sent from.'),
   );
   $form['email']['advanced']['invite_manual_reply_to'] = array(
     '#type' => 'textfield',
     '#title' => t('Manually override <em>Reply-To</em> e-mail address'),
-    '#default_value' => variable_get('invite_manual_reply_to', NULL),
+    '#default_value' => variable_get('invite_manual_reply_to', ''),
     '#description' => t('The e-mail address you want recipients to reply to.'),
   );
 
@@ -165,7 +165,7 @@ function _invite_settings() {
 /**
  * Return a list of all users that have invited someone.
  */
-function _invite_admin_overview() {
+function invite_admin_overview() {
   $header = array(
     array('data' => t('Username'), 'field' => 'u1.name', 'sort' => 'asc'),
     array('data' => t('Total'), 'field' => 'invites'),
@@ -175,7 +175,7 @@ function _invite_admin_overview() {
     t('Remaining'),
     t('Operations'),
   );
-  
+
   $now = time();
   $filter = $filter_args = $query = NULL;
   $output = drupal_get_form('invite_admin_filter_form');
@@ -190,7 +190,7 @@ function _invite_admin_overview() {
   $count_sql  = "SELECT COUNT(DISTINCT i.uid) FROM {invite} i". $filter;
   $result = pager_query($sql, 50, 0, $count_sql, $filter_args);
   $rows = array();
-  
+
   while ($row = db_fetch_object($result)) {
     $cells = array();
     $cells[] = theme('username', $row);
@@ -200,10 +200,10 @@ function _invite_admin_overview() {
     $cells[] = invite_count($row->uid, 'expired');
     $remaining = invite_get_remaining_invites($row);
     $cells[] = ($remaining == INVITE_UNLIMITED) ? '&infin;' : $remaining;
-    $cells[] = l(t('details'), "admin/user/invite/details/$row->uid", array(), $query);
+    $cells[] = l(t('details'), "admin/user/invite/details/$row->uid", array('query' => $query));
     $rows[] = $cells;
   }
-  
+
   $output .= theme('table', $header, $rows, array('id' => 'invite'));
   if (!$rows) {
     $output .= t('No inviters found.');
@@ -228,7 +228,7 @@ function invite_admin_filter_form() {
   $form['filter']['filter'] = array(
     '#type' => 'textfield',
     '#title' => t('Find an invited user'),
-    '#default_value' => $_SESSION[INVITE_ADMIN_SESSION],
+    '#default_value' => isset($_SESSION[INVITE_ADMIN_SESSION]) ? $_SESSION[INVITE_ADMIN_SESSION] : '',
     '#autocomplete_path' => 'user/autocomplete',
     '#size' => 20,
   );
@@ -239,22 +239,22 @@ function invite_admin_filter_form() {
   return $form;
 }
 
-function invite_admin_filter_form_submit($form_id, $form_values) {
-  if ($form_values['filter']) {
-    $_SESSION[INVITE_ADMIN_SESSION] = $form_values['filter'];
+function invite_admin_filter_form_submit($form, &$form_state) {
+  if ($form_state['values']['filter']) {
+    $_SESSION[INVITE_ADMIN_SESSION] = $form_state['values']['filter'];
   }
 }
 
 /**
  * Return a list of invites by a user.
  *
- * @param $uid
- *   A user id.
+ * @param $account
+ *   A user object.
  */
-function _invite_admin_details($uid) {
+function invite_admin_details($account) {
   $now = time();
   $status_sort = '';
-  if ($_GET['order'] == t('Status')) {
+  if (isset($_GET['order']) && $_GET['order'] == t('Status')) {
     $sort = db_escape_string($_GET['sort']);
     if ($_GET['sort'] == 'asc') {
       $status_sort = "IF(i.joined != 0, 0, 1) $sort, IF(i.expiry < $now, 0, 1) $sort, i.canceled";
@@ -270,19 +270,19 @@ function _invite_admin_details($uid) {
     array('data' => t('Expires'), 'field' => 'i.expiry'),
     array('data' => t('Status'), 'field' => $status_sort),
   );
-  
+
   $output = '';
   $filter = $filter_args = NULL;
   if (isset($_GET['filter']) && $_GET['filter'] != '') {
     $filter = " AND LOWER(u.name) LIKE '%s%%'";
     $filter_args = $_GET['filter'];
-    $output .= drupal_get_form('invite_admin_details_filter_form', $uid, $_GET['filter']);
+    $output .= drupal_get_form('invite_admin_details_filter_form', $account->uid, $_GET['filter']);
   }
   $sql  = "SELECT i.email, i.invitee AS uid, u.name, i.created, i.expiry, i.joined, i.canceled FROM {invite} i LEFT JOIN {users} u ON u.uid = i.invitee AND u.uid <> 0 WHERE i.uid = %d". $filter;
   $sql .= tablesort_sql($header);
-  $result = pager_query($sql, 50, 0, NULL, $uid, $filter_args);
+  $result = pager_query($sql, 50, 0, NULL, $account->uid, $filter_args);
   $rows = array();
-  
+
   while ($row = db_fetch_object($result)) {
     $cells = array();
     $cells[] = check_plain($row->email);
@@ -322,7 +322,7 @@ function invite_admin_details_filter_form($uid, $filter) {
     '#value' => t('Clear'),
     '#prefix' => ' ',
   );
-  return $form;  
+  return $form;
 }
 
 /**
@@ -331,7 +331,7 @@ function invite_admin_details_filter_form($uid, $filter) {
  * @param $page
  *   Which invites to list: accepted, pending, or expired.
  */
-function _invite_user_overview($page = 'accepted') {
+function invite_user_overview($page = 'accepted') {
   global $user;
 
   $rows = array();

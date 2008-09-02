@@ -1,8 +1,9 @@
-// $Id: CHANGELOG.TXT,v 1.6 2008-08-20 14:03:28 smk Exp $
+// $Id: CHANGELOG.TXT,v 1.7 2008-09-02 17:02:14 smk Exp $
 
 Invite 6.x-2.x, xxxx-xx-xx
 --------------------------
 New features:
+- #219266 by jcfiala, wojtha, smk-ka: Port to D6.
 - Added administrator interface showing invite history.
 - Moved the user-specific tracking page to the user profile.
 - #162570: Added a resend button.
