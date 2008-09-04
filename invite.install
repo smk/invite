@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.13 2008-09-02 17:02:14 smk Exp $
+// $Id: invite.install,v 1.13.2.1 2008-09-04 18:01:28 smk Exp $
 
 /**
  * Install the initial schema.
@@ -308,7 +308,7 @@ function invite_update_200() {
   db_change_field($ret, 'invite', 'mid', 'invitee', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
   db_change_field($ret, 'invite', 'timestamp', 'joined', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
   db_add_field($ret, 'invite', 'created', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
-  db_add_field($ret, 'invite', 'cancelled', array('type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+  db_add_field($ret, 'invite', 'canceled', array('type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
   db_add_field($ret, 'invite', 'resent', array('type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
   return $ret;
 }
