@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.25 2008-09-02 17:02:14 smk Exp $
+// $Id: invite.module,v 1.25.2.1 2008-09-04 17:54:53 smk Exp $
 
 /**
  * @file
@@ -551,6 +551,8 @@ function invite_block($op = 'list', $delta = 0, $edit = array()) {
 /**
  * Generate the invite forms.
  *
+ * @param $form_satate
+ *   A keyed array containing the current state of the form.
  * @param $op
  *   The type of form to generate, 'page' or 'block'.
  * @param $edit
@@ -1165,12 +1167,15 @@ function invite_save($edit) {
 /**
  * Menu callback; display confirm form to delete an invitation.
  *
+ * @param $form_satate
+ *   A keyed array containing the current state of the form.
  * @param $origin
- *   String denoting the orginating invite status page.
+ *   A string denoting the orginating status page to return the user to
+ *   afterwards.
  * @param $code
  *   A registration code to remove the invitation for.
  */
-function invite_cancel($origin, $code) {
+function invite_cancel(&$form_state, $origin, $code) {
   global $user;
 
   $invite = invite_load($code);
