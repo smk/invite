@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.25.2.1 2008-09-04 17:54:53 smk Exp $
+// $Id: invite.module,v 1.25.2.2 2008-09-30 11:07:33 smk Exp $
 
 /**
  * @file
@@ -144,7 +144,7 @@ function invite_menu() {
 
   // Frontend menu items
   $items['invite'] = array(
-    'title' => t('Invite a friend'),
+    'title' => 'Invite a friend',
     'title callback' => 'invite_page_title',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('invite_form', 'page', array()),
