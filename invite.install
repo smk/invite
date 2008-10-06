@@ -1,5 +1,10 @@
 <?php
-// $Id: invite.install,v 1.13.2.1 2008-09-04 18:01:28 smk Exp $
+// $Id: invite.install,v 1.13.2.2 2008-10-06 13:03:08 smk Exp $
+
+/**
+ * @file
+ * Installation file for invite module.
+ */
 
 /**
  * Install the initial schema.
@@ -191,7 +196,7 @@ function invite_update_8() {
   // Convert existing messages
   $result = db_query("SELECT reg_code, data FROM {invite} WHERE data <> ''");
   while ($row = db_fetch_object($result)) {
-    if (substr($row->message, 0, 2) == 'a:') {
+    if (drupal_substr($row->message, 0, 2) == 'a:') {
       // Already serialized
       continue;
     }
@@ -225,7 +230,7 @@ function invite_update_9() {
     }
     _invite_add_permission($rid, implode(', ', $perms));
   }
-  db_query("DELETE from {variable} WHERE name LIKE 'invite_maxmultiple_%%'");
+  $ret[] = update_sql("DELETE from {variable} WHERE name LIKE 'invite_maxmultiple_%%'");
 
   // Expiry periods changed
   $expiry = variable_get('invite_expiry', 30);
@@ -341,7 +346,7 @@ function invite_update_201() {
     )
   ));
   // Convert old data
-  db_query("INSERT INTO {invite_notifications} (uid, invitee) SELECT uid, invitee FROM {invite} WHERE joined <> 0 AND received = 0");
+  $ret[] = update_sql("INSERT INTO {invite_notifications} (uid, invitee) SELECT uid, invitee FROM {invite} WHERE joined <> 0 AND received = 0");
   // Drop old column
   db_drop_field($ret, 'invite', 'received');
   return $ret;

@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.25.2.2 2008-09-30 11:07:33 smk Exp $
+// $Id: invite.module,v 1.25.2.3 2008-10-06 13:03:08 smk Exp $
 
 /**
  * @file
@@ -756,7 +756,7 @@ function invite_page_form($remaining_invites, $edit = array()) {
   }
   // Add prefix.
   $prefix = t('Re:');
-  if ($edit && substr($subject, 0, strlen($prefix)) != $prefix) {
+  if ($edit && drupal_substr($subject, 0, strlen($prefix)) != $prefix) {
     $subject = $prefix .' '. $subject;
   }
   if (variable_get('invite_subject_editable', FALSE)) {
@@ -790,7 +790,7 @@ function invite_page_form($remaining_invites, $edit = array()) {
 
   $form['submit'] = array(
     '#type' => 'submit',
-    '#value' => t('Submit'),
+    '#value' => t('Send invite'),
   );
 
   return $form;
@@ -1215,7 +1215,7 @@ function invite_cancel(&$form_state, $origin, $code) {
 /**
  * Submit handler to delete an invitation.
  */
-function invite_cancel_submit($form, $form_state) {
+function invite_cancel_submit($form, &$form_state) {
   $invite = $form_state['values']['invite'];
 
   db_query("UPDATE {invite} SET canceled = 1 WHERE reg_code = '%s'", $invite->reg_code);

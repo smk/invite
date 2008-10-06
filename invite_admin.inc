@@ -1,5 +1,10 @@
 <?php
-// $Id: invite_admin.inc,v 1.3 2008-09-02 17:02:14 smk Exp $
+// $Id: invite_admin.inc,v 1.3.2.1 2008-10-06 13:03:08 smk Exp $
+
+/**
+ * @file
+ * Administration functions for invite module.
+ */
 
 /**
  * Menu callback; display invite settings form.
@@ -49,7 +54,7 @@ function invite_settings() {
     $role_no_space = str_replace(' ', '_', $role);
     $form['role'][$role_no_space] = array(
       '#type' => 'fieldset',
-      '#title' => t('@role settings', array('@role' => ucfirst($role))),
+      '#title' => t('@role settings', array('@role' => drupal_ucfirst($role))),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
     );
