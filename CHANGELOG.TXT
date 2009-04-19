@@ -1,7 +1,8 @@
-// $Id: CHANGELOG.TXT,v 1.1.2.5 2009-04-19 20:15:23 sun Exp $
+// $Id: CHANGELOG.TXT,v 1.1.2.6 2009-04-19 20:35:22 sun Exp $
 
 Invite 5.x-1.xx, xxxx-xx-xx
 ---------------------------
+#160837 by lelizondob: Updated Spanish translation.
 #214426 by barako: Updated French translation.
 
 New features:
