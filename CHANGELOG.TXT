@@ -1,7 +1,8 @@
-// $Id: CHANGELOG.TXT,v 1.7.2.5 2009-04-19 21:13:29 sun Exp $
+// $Id: CHANGELOG.TXT,v 1.7.2.6 2009-04-19 21:26:01 sun Exp $
 
 Invite 6.x-2.x, xxxx-xx-xx
 --------------------------
+#364971 by jaydub: Fixed administrative overview query for PostgreSQL.
 
 
 Invite 6.x-2.0-ALPHA-1, 2009-04-19
