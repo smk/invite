@@ -1,4 +1,4 @@
-# $Id: fr.po,v 1.1.2.1 2008-02-12 08:09:40 smk Exp $
+# $Id: fr.po,v 1.1.2.2 2009-04-19 20:15:23 sun Exp $
 # 
 # LANGUAGE translation of Drupal (general)
 # Copyright YEAR NAME <EMAIL@ADDRESS>
@@ -14,12 +14,12 @@
 msgid ""
 ""
 msgstr "Project-Id-Version: fr\n"
-"POT-Creation-Date: 2007-12-28 12:46+0200\n"
-"PO-Revision-Date: 2008-01-25 17:35+0100\n"
+"POT-Creation-Date: 2008-09-10 18:41+0200\n"
+"PO-Revision-Date: 2008-09-10 18:48+0100\n"
 "Last-Translator: Olivier Tavard barakoliv@gmail.com\n"
 "Language-Team: French\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=utf-8\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n > 1);\n"
 
@@ -214,7 +214,7 @@ msgstr "Choisir quelle adresse email sera dans l'en-tête De pour les invitation
 
 #: invite.module:406
 msgid "site"
-msgstr "site		"
+msgstr "site\t\t"
 
 #: invite.module:406
 msgid "inviter"
@@ -306,7 +306,7 @@ msgstr "Envoyer une invitation"
 
 #: invite.module:651
 msgid "View your invites"
-msgstr "Voir vos invitations	"
+msgstr "Voir vos invitations\t"
 
 #: invite.module:680
 msgid "From"
@@ -406,15 +406,22 @@ msgstr "!user (@email) a rejoint @site-name !"
 
 #: invite.module:1317
 msgid ""
-"Your friend, [inviter-raw], has invited you to join [site-name] at [site-url].\r\n"
-"\r\n"
-"To become a member of [site-name], click the link below or paste it into the address bar of your browser.\r\n"
-"\r\n"
-"[join-link]\r\n"
-"\r\n"
-"----------\r\n"
+"Your friend, [inviter-raw], has invited you to join [site-name] at [site-url].\n"
+"\n"
+"To become a member of [site-name], click the link below or paste it into the address bar of your browser.\n"
+"\n"
+"[join-link]\n"
+"\n"
+"----------\n"
 "[invite-message-raw]"
-msgstr "Votre ami vous a invité."
+msgstr "Votre ami, [inviter-raw],vous a invité à rejoindre [site-name] sur [site-url].\n"
+"\n"
+"Pour devenir membre de [site-name], cliquez sur le lien ci-dessous ou copiez le dans la barre d'adresses de votre navigateur.\n"
+"\n"
+"[join-link]\n"
+"\n"
+"\"----------\n"
+"[invite-message-raw]"
 
 #: invite.module:1019
 msgid "invite"

@@ -1,4 +1,4 @@
-/* $Id: README.txt,v 1.4.2.17 2007-12-02 00:26:44 smk Exp $ */
+/* $Id: README.txt,v 1.4.2.18 2009-04-19 20:15:23 sun Exp $ */
 
 -- SUMMARY --
 
@@ -9,7 +9,7 @@ allows your users to send and track invitations to join your site.
 For a full description visit the project page:
   http://drupal.org/project/invite
 Bug reports, feature suggestions and latest developments:
-  http://drupal.org/project/invite/issues
+  http://drupal.org/project/issues/invite
 
 
 -- REQUIREMENTS --
