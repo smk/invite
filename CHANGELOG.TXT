@@ -1,7 +1,9 @@
-// $Id: CHANGELOG.TXT,v 1.7.2.3 2009-04-19 20:20:35 sun Exp $
+// $Id: CHANGELOG.TXT,v 1.7.2.4 2009-04-19 20:51:04 sun Exp $
 
 Invite 6.x-2.x, xxxx-xx-xx
 --------------------------
+#310775 by Barrett, sun: Fixed SQL error when no emails are left after filtering
+  out registered users.
 #323661 by tcconway: Removed "Track" from local task title "Track Invitations".
 #214426 by barako: Updated French translation.
 

@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.25.2.4 2009-04-19 20:20:35 sun Exp $
+// $Id: invite.module,v 1.25.2.5 2009-04-19 20:51:04 sun Exp $
 
 /**
  * @file
@@ -902,7 +902,9 @@ function invite_form_validate($form, &$form_state) {
         $error .= implode(', ', $failed_emails);
         drupal_set_message($error, 'error');
       }
+    }
 
+    if (!empty($emails)) {
       // Filter out already invited users, but pass validation.
       $failed_emails = _invite_validate_emails("SELECT email FROM {invite} WHERE email IN (". db_placeholders($emails, 'varchar') .") AND uid = %d AND canceled = 0", $emails, $user->uid);
       if (count($failed_emails)) {
@@ -910,25 +912,25 @@ function invite_form_validate($form, &$form_state) {
         $error .= implode(', ', array_map('check_plain', $failed_emails));
         drupal_set_message($error, 'error');
       }
+    }
 
-      // Check that there is at least one valid e-mail remaining after filtering
-      // out dupes.
-      if (count($emails) == 0) {
-        form_set_error('email');
-        return;
-      }
+    // Check that there is at least one valid e-mail remaining after filtering
+    // out dupes.
+    if (count($emails) == 0) {
+      form_set_error('email');
+      return;
+    }
 
-      // Check invite limit, fail to let the user choose which ones to send.
-      if (isset($form_state['values']['remaining_invites']) && count($emails) > $form_state['values']['remaining_invites']) {
-        form_set_error('email', format_plural($form_state['values']['remaining_invites'], 'You have only 1 invite left.', 'You have only @count invites left.'));
-        return;
-      }
+    // Check invite limit, fail to let the user choose which ones to send.
+    if (isset($form_state['values']['remaining_invites']) && count($emails) > $form_state['values']['remaining_invites']) {
+      form_set_error('email', format_plural($form_state['values']['remaining_invites'], 'You have only 1 invite left.', 'You have only @count invites left.'));
+      return;
+    }
 
-      // Check number of e-mails.
-      if (!user_access('send mass invitations') && count($emails) > 1) {
-        form_set_error('email', t('You cannot send more than one invitation.'));
-        return;
-      }
+    // Check number of e-mails.
+    if (!user_access('send mass invitations') && count($emails) > 1) {
+      form_set_error('email', t('You cannot send more than one invitation.'));
+      return;
     }
   }
 
