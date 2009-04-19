@@ -1,7 +1,8 @@
-// $Id: CHANGELOG.TXT,v 1.1.2.2.2.9 2009-04-19 20:15:09 sun Exp $
+// $Id: CHANGELOG.TXT,v 1.1.2.2.2.10 2009-04-19 20:20:49 sun Exp $
 
 Invite 5.x-2.x, xxxx-xx-xx
 --------------------------
+#323661 by tcconway: Removed "Track" from local task title "Track Invitations".
 #214426 by barako: Updated French translation.
 
 New features:
