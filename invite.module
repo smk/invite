@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.10.2.93.2.31 2009-04-19 20:51:17 sun Exp $
+// $Id: invite.module,v 1.10.2.93.2.32 2009-04-27 17:24:32 smk Exp $
 
 /**
  * @file
@@ -928,7 +928,7 @@ function _invite_get_emails($string) {
 
   $emails = array_unique(split("[,\n\r]", $string));
   foreach ($emails as $email) {
-    $email = trim($email);
+    $email = preg_replace('/^.*<(.*)>$/', '${1}', trim($email));
     if ($email) {
       if (preg_match($rx, $email, $match)) {
         $valid_emails[] = $match[1];
