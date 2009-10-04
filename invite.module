@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.25.2.8 2009-10-04 12:43:37 smk Exp $
+// $Id: invite.module,v 1.25.2.9 2009-10-04 14:35:51 smk Exp $
 
 /**
  * @file
@@ -175,7 +175,7 @@ function invite_menu() {
   $items['user/%user/invites'] = array(
     'title' => 'Invitations',
     'page callback' => 'invite_user_overview',
-    'access callback' => 'invite_access_callback',
+    'access callback' => 'invite_user_access',
     'access arguments' => array('track invitations', 1),
     'type' => MENU_LOCAL_TASK,
     'file' => 'invite_admin.inc',
@@ -184,7 +184,7 @@ function invite_menu() {
     'title' => 'Accepted',
     'page callback' => 'invite_user_overview',
     'page arguments' => array('accepted'),
-    'access callback' => 'invite_access_callback',
+    'access callback' => 'invite_user_access',
     'access arguments' => array('track invitations', 1),
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'weight' => -5,
@@ -194,7 +194,7 @@ function invite_menu() {
     'title' => 'Pending',
     'page callback' => 'invite_user_overview',
     'page arguments' => array('pending'),
-    'access callback' => 'invite_access_callback',
+    'access callback' => 'invite_user_access',
     'access arguments' => array('track invitations', 1),
     'type' => MENU_LOCAL_TASK,
     'file' => 'invite_admin.inc',
@@ -203,7 +203,7 @@ function invite_menu() {
     'title' => 'Expired',
     'page callback' => 'invite_user_overview',
     'page arguments' => array('expired'),
-    'access callback' => 'invite_access_callback',
+    'access callback' => 'invite_user_access',
     'access arguments' => array('track invitations', 1),
     'type' => MENU_LOCAL_TASK,
     'weight' => 5,
@@ -213,13 +213,55 @@ function invite_menu() {
     'title' => 'New invitation',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('invite_form', 'page', array()),
-    'access callback' => 'invite_access_callback',
+    'access callback' => 'invite_user_access',
     'access arguments' => array('send invitations', 1),
     'type' => MENU_LOCAL_TASK,
     'weight' => 10,
   );
 
   return $items;
+}
+
+/**
+ * Implementation of hook_menu_alter().
+ *
+ * Override the user/register menu access handler with a custom
+ * implementation.
+ */
+function invite_menu_alter(&$items) {
+  if (invite_user_registration_by_invite_only()) {
+    $items['user/register']['access callback'] = 'invite_user_register_access';
+  }
+}
+
+/**
+ * Determine if user registration mode is set to invite only.
+ */
+function invite_user_registration_by_invite_only() {
+  return (variable_get('user_register', 1) === '1-inviteonly');
+}
+
+/**
+ * Access callback; determine access to user registration form.
+ */
+function invite_user_register_access() {
+  $invite = invite_load_from_session();
+
+  // Legacy url support (user/register/regcode).
+  if (!$invite && $code = arg(2)) {
+    if ($invite = invite_load($code)) {
+      if (invite_validate($invite)) {
+        $_SESSION[INVITE_SESSION] = $invite->reg_code;
+      }
+    }
+  }
+  if (!$invite && !user_access('administer users')) {
+    drupal_set_message(t('Sorry, new user registration by invitation only.'));
+    return FALSE;
+  }
+
+  // Let the default handler take care of standard conditions.
+  return user_register_access();
 }
 
 /**
@@ -250,7 +292,7 @@ function invite_admin_details_page_title($account) {
  * @param $account
  *   A user object.
  */
-function invite_access_callback($permission, $account) {
+function invite_user_access($permission, $account) {
   return ($account->uid == $GLOBALS['user']->uid && user_access($permission));
 }
 
@@ -294,13 +336,21 @@ function invite_accept($invite) {
 function invite_form_alter(&$form, $form_state, $form_id) {
   switch ($form_id) {
     case 'user_admin_settings':
-      // Add new registration mode.
-      // We prepend the option value with a numeric value to make 3rd party
-      // modules like LoginToboggan act like expected. This works because
-      // checking for ('1-inviteonly' == 1) returns TRUE. To reliably determine
-      // the variable value later, we need to use the strict equality operator
-      // (===).
-      $form['registration']['user_register']['#options']['1-inviteonly'] = t('New user registration by invitation only.');
+      // Add new registration mode 'by invitation only'. By prepending the
+      // option value with a numeric value, other modules still work as
+      // expected, as long as they are using the non-strict PHP comparison
+      // operator (since '1-inviteonly' == 1 yields TRUE). To determine the real
+      // setting use invite_user_registration_by_invite_only().
+      //
+      // However, setting the new mode is only allowed if no other module
+      // has overridden the menu access handler for the user registration form.
+      $item = menu_get_item('user/register');
+      if (in_array($item['access_callback'], array('user_register_access', 'invite_user_register_access'))) {
+        $form['registration']['user_register']['#options']['1-inviteonly'] = t('New user registration by invitation only.');
+      }
+      // Clear menu cache on submit to allow our custom access handler to
+      // snap in.
+      $form['#submit'][] = 'menu_rebuild';
       break;
 
     case 'user_register':
@@ -318,7 +368,6 @@ function invite_form_alter(&$form, $form_state, $form_id) {
           }
         }
       }
-
       if ($invite) {
         // Preset the e-mail field.
         if (isset($form['account'])) {
@@ -331,15 +380,11 @@ function invite_form_alter(&$form, $form_state, $form_id) {
           $field['mail']['#default_value'] = $invite->email;
         }
       }
-      else if (variable_get('user_register', 1) === '1-inviteonly' && !user_access('administer users')) {
-        drupal_set_message(t('Sorry, new user registration by invitation only.'));
-        drupal_goto();
-      }
       break;
 
     case 'user_login_block':
       // Remove temptation for non members to try and register.
-      if (variable_get('user_register', 1) === '1-inviteonly') {
+      if (invite_user_registration_by_invite_only()) {
         $new_items = array();
         $new_items[] = l(t('Request new password'), 'user/password', array('attributes' => array('title' => t('Request new password via e-mail.'))));
         $form['links']['#value'] = theme('item_list', $new_items);
@@ -1267,7 +1312,7 @@ function invite_count($uid, $op) {
  * Implementation of hook_disable().
  */
 function invite_disable() {
-  if (variable_get('user_register', 1) === '1-inviteonly') {
+  if (invite_user_registration_by_invite_only()) {
     variable_set('user_register', 1);
     drupal_set_message(t('User registration option reset to %no_approval.', array('%no_approval' => t('Visitors can create accounts and no administrator approval is required.'))));
   }
