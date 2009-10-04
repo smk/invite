@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.install,v 1.13.2.2 2008-10-06 13:03:08 smk Exp $
+// $Id: invite.install,v 1.13.2.3 2009-10-04 12:34:24 smk Exp $
 
 /**
  * @file
@@ -169,6 +169,26 @@ function _invite_add_permission($rid, $permission) {
   }
 }
 
+/**
+ * Helper function to update a variable name using role name to role id.
+ */
+function _invite_update_role_name_to_id($variable) {
+  $result = db_query("SELECT * FROM {role} ORDER BY name ASC");
+  while ($role = db_fetch_object($result)) {
+    // Look for both a translated (D6) and untranslated (D5) variables.
+    // A translated one is newer and has therefore precendence.
+    $translated_role = str_replace(' ', '_', t($role->name));
+    $value = variable_get($variable .'_'. $translated_role, NULL);
+    if (is_null($value)) {
+      $untranslated_role = str_replace(' ', '_', $role->name);
+      $value = variable_get($variable .'_'. $untranslated_role, NULL);
+    }
+    if (!is_null($value)) {
+      variable_set($variable .'_'. $role->rid, $value);
+      db_query("DELETE FROM {variable} WHERE name IN('%s', '%s')", $variable .'_'. $translated_role, $variable .'_'. $untranslated_role);
+    }
+  }
+}
 
 /**
  * Switch to token.module.
@@ -359,6 +379,17 @@ function invite_update_202() {
   $ret = array();
   db_drop_index($ret, 'invite_notifications', 'uid');
   db_add_unique_key($ret, 'invite_notifications', 'uid_invitee', array('uid', 'invitee'));
+  return $ret;
+}
+
+/**
+ * Update variable names to use role id instead of translated role name.
+ * @see #322748
+ */
+function invite_update_203() {
+  $ret = array();
+  _invite_update_role_name_to_id('invite_maxnum');
+  _invite_update_role_name_to_id('invite_target_role');
   return $ret;
 }
 

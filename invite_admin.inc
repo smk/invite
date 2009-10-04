@@ -1,5 +1,5 @@
 <?php
-// $Id: invite_admin.inc,v 1.3.2.2 2009-04-19 21:26:01 sun Exp $
+// $Id: invite_admin.inc,v 1.3.2.3 2009-10-04 12:34:25 smk Exp $
 
 /**
  * @file
@@ -10,11 +10,11 @@
  * Menu callback; display invite settings form.
  */
 function invite_settings() {
-  $roles = user_roles(0, 'send invitations');
+  $roles = user_roles(FALSE, 'send invitations');
   if (count($roles) == 0) {
     drupal_set_message(t('Please enable the <em>send invitations</em> permission for at least one role. This can be done on the <a href="!permissions-url">Permissions page</a>.', array('!permissions-url' => url('admin/user/permissions'))));
   }
-  $target_roles = user_roles(1);
+  $target_roles = user_roles(TRUE);
 
   // General settings.
   $form['general'] = array(
@@ -50,26 +50,25 @@ function invite_settings() {
     '#collapsed' => TRUE,
   );
 
-  foreach ($roles as $role) {
-    $role_no_space = str_replace(' ', '_', $role);
-    $form['role'][$role_no_space] = array(
+  foreach ($roles as $rid => $role) {
+    $form['role'][$rid] = array(
       '#type' => 'fieldset',
       '#title' => t('@role settings', array('@role' => drupal_ucfirst($role))),
       '#collapsible' => TRUE,
       '#collapsed' => TRUE,
     );
-    $form['role'][$role_no_space]['invite_target_role_'. $role_no_space] = array(
+    $form['role'][$rid]['invite_target_role_'. $rid] = array(
       '#type' => 'select',
       '#title' => t('Target role'),
-      '#default_value' => variable_get('invite_target_role_'. $role_no_space, DRUPAL_AUTHENTICATED_RID),
+      '#default_value' => variable_get('invite_target_role_'. $rid, DRUPAL_AUTHENTICATED_RID),
       '#options' => $target_roles,
       '#description' => t('You may choose to add invited users to another role (in addition to the default role set in the general section) when they have been invited by a member of %role.', array('%role' => $role)),
       '#required' => TRUE,
     );
-    $form['role'][$role_no_space]['invite_maxnum_'. $role_no_space] = array(
+    $form['role'][$rid]['invite_maxnum_'. $rid] = array(
       '#type' => 'select',
       '#title' => t('Invitation limit'),
-      '#default_value' => variable_get('invite_maxnum_'. $role_no_space, INVITE_UNLIMITED),
+      '#default_value' => variable_get('invite_maxnum_'. $rid, INVITE_UNLIMITED),
       '#options' => array(5 => 5, 10 => 10, 20 => 20, 50 => 50, 100 => 100, 500 => 500, 1000 => 1000, INVITE_UNLIMITED => t('unlimited')),
       '#description' => t('Allows to limit the total number of invitations members of %role can send.', array('%role' => $role)),
       '#multiple' => FALSE,

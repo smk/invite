@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.25.2.6 2009-04-27 17:24:44 smk Exp $
+// $Id: invite.module,v 1.25.2.7 2009-10-04 12:34:24 smk Exp $
 
 /**
  * @file
@@ -470,20 +470,19 @@ function _invite_accept($invite, $account) {
  *   The user object of the invitee.
  */
 function _invite_escalate_role($account) {
-  // Default target role.
-  $roles = array('default');
+  // Add a dummy entry to retrieve the default target role setting.
+  $roles = array('default' => 'default');
 
   // Add roles of inviter.
   $inviter_uid = db_result(db_query("SELECT uid FROM {invite} WHERE invitee = %d", $account->uid));
   if ($inviter_uid && $inviter = user_load(array('uid' => $inviter_uid))) {
-    $roles = array_merge($roles, array_intersect($inviter->roles, user_roles(0, 'send invitations')));
+    $roles = array_merge($roles, array_intersect($inviter->roles, user_roles(FALSE, 'send invitations')));
   }
 
   // Map to configured target roles.
   $targets = array();
-  foreach ($roles as $role) {
-    $role_no_space = str_replace(' ', '_', $role);
-    $target = variable_get('invite_target_role_'. $role_no_space, DRUPAL_AUTHENTICATED_RID);
+  foreach ($roles as $rid => $role) {
+    $target = variable_get('invite_target_role_'. $rid, DRUPAL_AUTHENTICATED_RID);
     if ($target != DRUPAL_AUTHENTICATED_RID) {
       $targets[$target] = $target;
     }
@@ -629,7 +628,6 @@ function invite_get_remaining_invites($account) {
   }
   else {
     $remaining = invite_get_role_limit($account);
-
     if ($remaining > 0) {
       // Legacy support.
       $sent = db_result(db_query("SELECT COUNT(*) FROM {invite} WHERE uid = %d", $account->uid));
@@ -658,10 +656,9 @@ function invite_get_role_limit($account) {
   }
 
   $role_limit = 0;
-  foreach (user_roles(0, 'send invitations') as $role) {
-    $role_no_space = str_replace(' ', '_', $role);
-    if (in_array($role, $account->roles)) {
-      $role_max = variable_get('invite_maxnum_'. $role_no_space, INVITE_UNLIMITED);
+  foreach (user_roles(FALSE, 'send invitations') as $rid => $role) {    
+    if (array_key_exists($rid, $account->roles)) {
+      $role_max = variable_get('invite_maxnum_'. $rid, INVITE_UNLIMITED);
       if ($role_max == INVITE_UNLIMITED) {
         return INVITE_UNLIMITED;
       }
