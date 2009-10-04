@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.25.2.7 2009-10-04 12:34:24 smk Exp $
+// $Id: invite.module,v 1.25.2.8 2009-10-04 12:43:37 smk Exp $
 
 /**
  * @file
@@ -715,7 +715,7 @@ function invite_page_form($remaining_invites, $edit = array()) {
     $form['email'] = array(
       '#title' => t('To'),
       '#default_value' => $failed_emails,
-      '#description' => format_plural($allow_multiple ? 99 : 1, 'Type the e-mail address of the person you would like to invite.', 'Type the e-mail addresses of the persons you would like to invite. Addresses should be separated by newlines or commas.'),
+      '#description' => format_plural($allow_multiple ? 99 : 1, 'Enter the e-mail address of the person you would like to invite.', 'Enter the e-mail addresses of the persons you would like to invite. To specify multiple recipients, enter one e-mail address per line or separate each address with a comma.'),
       '#required' => TRUE,
     );
     if ($allow_multiple) {
