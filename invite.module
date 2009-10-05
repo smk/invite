@@ -1,5 +1,5 @@
 <?php
-// $Id: invite.module,v 1.25.2.9 2009-10-04 14:35:51 smk Exp $
+// $Id: invite.module,v 1.25.2.10 2009-10-05 13:24:15 smk Exp $
 
 /**
  * @file
@@ -950,7 +950,7 @@ function invite_form_validate($form, &$form_state) {
       // Filter out already invited users, but pass validation.
       $failed_emails = _invite_validate_emails("SELECT email FROM {invite} WHERE email IN (". db_placeholders($emails, 'varchar') .") AND uid = %d AND canceled = 0", $emails, $user->uid);
       if (count($failed_emails)) {
-        $error = format_plural(count($failed_emails), 'You did already invite the following recipient:', 'You did already invite the following recipients:') .'<br />';
+        $error = format_plural(count($failed_emails), 'You have already invited the following recipient:', 'You have already invited the following recipients:') .'<br />';
         $error .= implode(', ', array_map('check_plain', $failed_emails));
         drupal_set_message($error, 'error');
       }

@@ -1,4 +1,4 @@
-# $Id: fr.po,v 1.1.2.1 2009-04-19 20:14:49 sun Exp $
+# $Id: fr.po,v 1.1.2.2 2009-10-05 13:24:16 smk Exp $
 # 
 # LANGUAGE translation of Drupal (general)
 # Copyright YEAR NAME <EMAIL@ADDRESS>
@@ -533,8 +533,8 @@ msgstr[0] "Le destinataire suivant est déjà un membre :"
 msgstr[1] "Les destinataires suivants sont déjà membres :"
 
 #: invite.module:909
-msgid "You did already invite the following recipient:"
-msgid_plural "You did already invite the following recipients:"
+msgid "You have already invited the following recipient:"
+msgid_plural "You have already invited the following recipients:"
 msgstr[0] "Vous avez déjà invité le destinataire suivant:"
 msgstr[1] "Vous avez déjà invité les destinataire suivanst:"
 

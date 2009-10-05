@@ -1,4 +1,4 @@
-# $Id: ja.po,v 1.1.2.1 2008-11-14 06:43:49 pineray Exp $
+# $Id: ja.po,v 1.1.2.2 2009-10-05 13:24:16 smk Exp $
 #
 # Japanese translation of Drupal (general)
 # Copyright YEAR NAME <EMAIL@ADDRESS>
@@ -532,8 +532,8 @@ msgstr[0] "以下の受取人はすでにユーザ登録済みです:"
 msgstr[1] "以下の受取人はすでにユーザ登録済みです:"
 
 #: invite.module:909
-msgid "You did already invite the following recipient:"
-msgid_plural "You did already invite the following recipients:"
+msgid "You have already invited the following recipient:"
+msgid_plural "You have already invited the following recipients:"
 msgstr[0] "下記の受信者へは招待状をすでに送信済みです:"
 msgstr[1] "下記の受信者へは招待状をすでに送信済みです:"
 

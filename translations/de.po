@@ -75,7 +75,7 @@ msgstr "Abgelaufen"
 
 #: invite.module:160
 msgid "New user registration by invitation only."
-msgstr "Anmeldung neuer Benutzer nur mit Einladung"
+msgstr "Anmeldung neuer Benutzer nur mit Einladung."
 
 #: invite.module:191
 msgid "Sorry, new user registration by invitation only."
