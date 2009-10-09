@@ -1,0 +1,6 @@
+; $Id: invite_cancel_account.info,v 1.4 2008/09/02 17:02:14 smk Exp $
+name = Cancel User Accounts
+description = "Allows your users to terminate user accounts by withdrawing their invitation. WARNING - This module is put into effect when you enable it."
+dependencies[] = invite
+package = Invite
+core = 6.x
