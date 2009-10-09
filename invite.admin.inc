@@ -3,8 +3,10 @@
 
 /**
  * @file
- * Administration functions for invite module.
+ * Administration functions for the Invite module.
  */
+
+module_load_include('inc', 'invite');
 
 /**
  * Form builder; display invite settings form.
@@ -12,8 +14,6 @@
  * @ingroup forms
  */
 function invite_settings() {
-  module_load_include('inc', 'invite');
-
   $roles = user_roles(FALSE, 'send invitations');
   if (count($roles) == 0) {
     drupal_set_message(t('Please enable the <em>send invitations</em> permission for at least one role. This can be done on the <a href="!permissions-url">Permissions page</a>.', array('!permissions-url' => url('admin/user/permissions'))));

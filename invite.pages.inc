@@ -2,6 +2,13 @@
 // $Id$
 
 /**
+ * @file
+ * Front-end functions for the Invite module.
+ */
+
+module_load_include('inc', 'invite');
+
+/**
  * Form builder; generate the invite page form.
  *
  * @param $edit
@@ -178,7 +185,6 @@ function theme_invite_page_form($form) {
   $output .= drupal_render($form['body']);
   $output .= '<div class="invite-message"><div class="opening">';
   $message_form = "</p></div>\n". drupal_render($form['message']) ."\n<div class=\"closing\"><p>";
-  module_load_include('inc', 'invite');
   $invite = new invite(array('data' => array('message' => $message_form)));
   $output .= $invite->get_message_body(TRUE);
 
