@@ -1,5 +1,10 @@
 <?php
-// $Id: invite.install,v 1.13 2008-09-02 17:02:14 smk Exp $
+// $Id: invite.install,v 1.14 2009-10-09 20:28:19 smk Exp $
+
+/**
+ * @file
+ * Installation file for invite module.
+ */
 
 /**
  * Install the initial schema.
@@ -164,6 +169,26 @@ function _invite_add_permission($rid, $permission) {
   }
 }
 
+/**
+ * Helper function to update a variable name using role name to role id.
+ */
+function _invite_update_role_name_to_id($variable) {
+  $result = db_query("SELECT * FROM {role} ORDER BY name ASC");
+  while ($role = db_fetch_object($result)) {
+    // Look for both a translated (D6) and untranslated (D5) variables.
+    // A translated one is newer and has therefore precendence.
+    $translated_role = str_replace(' ', '_', t($role->name));
+    $value = variable_get($variable .'_'. $translated_role, NULL);
+    if (is_null($value)) {
+      $untranslated_role = str_replace(' ', '_', $role->name);
+      $value = variable_get($variable .'_'. $untranslated_role, NULL);
+    }
+    if (!is_null($value)) {
+      variable_set($variable .'_'. $role->rid, $value);
+      db_query("DELETE FROM {variable} WHERE name IN('%s', '%s')", $variable .'_'. $translated_role, $variable .'_'. $untranslated_role);
+    }
+  }
+}
 
 /**
  * Switch to token.module.
@@ -191,7 +216,7 @@ function invite_update_8() {
   // Convert existing messages
   $result = db_query("SELECT reg_code, data FROM {invite} WHERE data <> ''");
   while ($row = db_fetch_object($result)) {
-    if (substr($row->message, 0, 2) == 'a:') {
+    if (drupal_substr($row->message, 0, 2) == 'a:') {
       // Already serialized
       continue;
     }
@@ -225,7 +250,7 @@ function invite_update_9() {
     }
     _invite_add_permission($rid, implode(', ', $perms));
   }
-  db_query("DELETE from {variable} WHERE name LIKE 'invite_maxmultiple_%%'");
+  $ret[] = update_sql("DELETE from {variable} WHERE name LIKE 'invite_maxmultiple_%%'");
 
   // Expiry periods changed
   $expiry = variable_get('invite_expiry', 30);
@@ -308,7 +333,7 @@ function invite_update_200() {
   db_change_field($ret, 'invite', 'mid', 'invitee', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
   db_change_field($ret, 'invite', 'timestamp', 'joined', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
   db_add_field($ret, 'invite', 'created', array('type' => 'int', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
-  db_add_field($ret, 'invite', 'cancelled', array('type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
+  db_add_field($ret, 'invite', 'canceled', array('type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
   db_add_field($ret, 'invite', 'resent', array('type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, 'not null' => TRUE, 'default' => 0));
   return $ret;
 }
@@ -341,7 +366,7 @@ function invite_update_201() {
     )
   ));
   // Convert old data
-  db_query("INSERT INTO {invite_notifications} (uid, invitee) SELECT uid, invitee FROM {invite} WHERE joined <> 0 AND received = 0");
+  $ret[] = update_sql("INSERT INTO {invite_notifications} (uid, invitee) SELECT uid, invitee FROM {invite} WHERE joined <> 0 AND received = 0");
   // Drop old column
   db_drop_field($ret, 'invite', 'received');
   return $ret;
@@ -354,6 +379,17 @@ function invite_update_202() {
   $ret = array();
   db_drop_index($ret, 'invite_notifications', 'uid');
   db_add_unique_key($ret, 'invite_notifications', 'uid_invitee', array('uid', 'invitee'));
+  return $ret;
+}
+
+/**
+ * Update variable names to use role id instead of translated role name.
+ * @see #322748
+ */
+function invite_update_203() {
+  $ret = array();
+  _invite_update_role_name_to_id('invite_maxnum');
+  _invite_update_role_name_to_id('invite_target_role');
   return $ret;
 }
 
