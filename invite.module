@@ -48,18 +48,22 @@ function invite_help($path, $arg) {
  * Implementation of hook_theme().
  */
 function invite_theme() {
+  $path = drupal_get_path('module', 'invite') . '/includes';
   return array(
     'invite_page_form' => array(
       'arguments' => array('form' => NULL),
       'file' => 'invite.pages.inc',
+      'path' => $path,
     ),
     'invite_user_overview' => array(
       'arguments' => array('items' => NULL),
       'file' => 'invite.admin.inc',
+      'path' => $path,
     ),
     'invite_token_help' => array(
       'arguments' => array('type' => NULL, 'prefix' => NULL, 'suffix' => NULL),
       'file' => 'invite.token.inc',
+      'path' => $path,
     ),
   );
 }

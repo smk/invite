@@ -12,12 +12,14 @@ module_load_include('inc', 'invite', 'includes/invite');
  * Implementation of hook_menu().
  */
 function _invite_menu() {
+  $path = drupal_get_path('module', 'invite') . '/includes';
   // Administration menu items.
   $items['admin/user/invite'] = array(
     'title' => 'Invites',
     'page callback' => 'invite_admin_overview',
     'access arguments' => array('administer site configuration'),
     'file' => 'invite.admin.inc',
+    'file path' => $path,
     'type' => MENU_NORMAL_ITEM,
   );
   $items['admin/user/invite/list'] = array(
@@ -32,6 +34,7 @@ function _invite_menu() {
     'page arguments' => array(4),
     'access arguments' => array('administer site configuration'),
     'file' => 'invite.admin.inc',
+    'file path' => $path,
     'type' => MENU_LOCAL_TASK,
     'weight' => 5,
   );
@@ -41,6 +44,7 @@ function _invite_menu() {
     'page arguments' => array('invite_settings'),
     'access arguments' => array('administer site configuration'),
     'file' => 'invite.admin.inc',
+    'file path' => $path,
     'weight' => 10,
     'type' => MENU_LOCAL_TASK,
   );
@@ -53,6 +57,7 @@ function _invite_menu() {
     'page arguments' => array('invite_page_form', array()),
     'access arguments' => array('send invitations'),
     'file' => 'invite.pages.inc',
+    'file path' => $path,
     'type' => MENU_NORMAL_ITEM,
   );
   $items['invite/accept/%invite'] = array(
@@ -60,6 +65,7 @@ function _invite_menu() {
     'page arguments' => array(2),
     'access callback' => TRUE,
     'file' => 'invite.pages.inc',
+    'file path' => $path,
     'type' => MENU_CALLBACK,
   );
   $items['invite/withdraw'] = array(
@@ -67,6 +73,7 @@ function _invite_menu() {
     'page arguments' => array('invite_cancel_form'),
     'access arguments' => array('track invitations'),
     'file' => 'invite.pages.inc',
+    'file path' => $path,
     'type' => MENU_CALLBACK,
   );
   $items['invite/resend/%invite'] = array(
@@ -75,6 +82,7 @@ function _invite_menu() {
     'page arguments' => array(2),
     'access arguments' => array('send invitations'),
     'file' => 'invite.pages.inc',
+    'file path' => $path,
     'type' => MENU_CALLBACK,
   );
 
@@ -86,6 +94,7 @@ function _invite_menu() {
     'access callback' => 'invite_user_access',
     'access arguments' => array('track invitations', 1),
     'file' => 'invite.admin.inc',
+    'file path' => $path,
     'type' => MENU_LOCAL_TASK,
   );
   $items['user/%user/invites/accepted'] = array(
@@ -100,6 +109,7 @@ function _invite_menu() {
     'access callback' => 'invite_user_access',
     'access arguments' => array('track invitations', 1),
     'file' => 'invite.admin.inc',
+    'file path' => $path,
     'weight' => 5,
     'type' => MENU_LOCAL_TASK,
   );
@@ -110,6 +120,7 @@ function _invite_menu() {
     'access callback' => 'invite_user_access',
     'access arguments' => array('track invitations', 1),
     'file' => 'invite.admin.inc',
+    'file path' => $path,
     'weight' => 10,
     'type' => MENU_LOCAL_TASK,
   );
@@ -120,6 +131,7 @@ function _invite_menu() {
     'access callback' => 'invite_user_access',
     'access arguments' => array('send invitations', 1),
     'file' => 'invite.pages.inc',
+    'file path' => $path,
     'weight' => 15,
     'type' => MENU_LOCAL_TASK,
   );
