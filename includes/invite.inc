@@ -242,7 +242,7 @@ class invite {
    *   token_replace_multiple().
    */
   function get_token_objects() {
-    module_load_include('inc', 'invite', 'includes/invite.token');
+    includes('invite.token');
     return array('user' => $this->inviter, 'invite' => $this);
   }
 }

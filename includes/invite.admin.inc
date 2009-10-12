@@ -6,7 +6,7 @@
  * Administration functions for the Invite module.
  */
 
-module_load_include('inc', 'invite', 'includes/invite');
+invite_load_include('invite');
 
 /**
  * Display module help.
