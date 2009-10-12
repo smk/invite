@@ -9,6 +9,42 @@
 module_load_include('inc', 'invite');
 
 /**
+ * Display module help.
+ */
+function invite_module_help() {
+  $file = drupal_get_path('module', 'invite') .'/README.txt';
+  if (file_exists($file)) {
+    return _filter_autop(check_plain(file_get_contents($file)));
+  }
+}
+
+/**
+ * Display help text on user profile pages.
+ */
+function invite_user_help($path) {
+  switch ($path) {
+    case 'user/%/invites':
+    case 'user/%/invites/accepted':
+      $output = '<p>'. t("The invitations shown on this page have been used to join the site. Clicking on an e-mail address takes you to the user's profile page.");
+      break;
+    case 'user/%/invites/pending':
+      $output = '<p>'. t("The invitations shown on this page haven't been accepted yet.");
+      break;
+    case 'user/%/invites/expired':
+      $output = '<p>'. t('The invitations shown on this page have not been used to register on the site within the expiration period of @count days.', array('@count' => variable_get('invite_expiry', 30)));
+      break;
+
+    default:
+      return;
+  }
+  $output .= ' '. t('The status <em>deleted</em> means the user account has been terminated.') .'</p>';
+  if (!user_access('withdraw accepted invitations')) {
+    $output .= '<p>'. t("At any time, you may withdraw either pending or expired invitations. Accepted invitations can't be withdrawn and count permanently toward your invitation allotment.") .'</p>';
+  }
+  return $output;
+}
+
+/**
  * Form builder; display invite settings form.
  *
  * @ingroup forms
@@ -208,7 +244,7 @@ function invite_admin_overview() {
     $cells[] = invite_count($row->uid, 'accepted');
     $cells[] = invite_count($row->uid, 'pending');
     $cells[] = invite_count($row->uid, 'expired');
-    $remaining = invite_get_remaining_invites($row);
+    $remaining = invite_get_remaining($row);
     $cells[] = ($remaining == INVITE_UNLIMITED) ? '&infin;' : $remaining;
     $cells[] = l(t('details'), "admin/user/invite/details/$row->uid", array('query' => $query));
     $rows[] = $cells;

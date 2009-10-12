@@ -9,6 +9,125 @@
 module_load_include('inc', 'invite');
 
 /**
+ * Implementation of hook_menu().
+ */
+function _invite_menu() {
+  // Administration menu items.
+  $items['admin/user/invite'] = array(
+    'title' => 'Invites',
+    'page callback' => 'invite_admin_overview',
+    'access arguments' => array('administer site configuration'),
+    'file' => 'invite.admin.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['admin/user/invite/list'] = array(
+    'title' => 'Inviters',
+    'weight' => -5,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['admin/user/invite/details/%user'] = array(
+    'title callback' => 'invite_admin_details_page_title',
+    'title arguments' => array(4),
+    'page callback' => 'invite_admin_details',
+    'page arguments' => array(4),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'invite.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 5,
+  );
+  $items['admin/user/invite/settings'] = array(
+    'title' => 'Settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('invite_settings'),
+    'access arguments' => array('administer site configuration'),
+    'file' => 'invite.admin.inc',
+    'weight' => 10,
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  // Front-end menu items.
+  $items['invite'] = array(
+    'title' => 'Invite a friend',
+    'title callback' => 'invite_page_title',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('invite_page_form', array()),
+    'access arguments' => array('send invitations'),
+    'file' => 'invite.pages.inc',
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['invite/accept/%invite'] = array(
+    'page callback' => 'invite_accept',
+    'page arguments' => array(2),
+    'access callback' => TRUE,
+    'file' => 'invite.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
+  $items['invite/withdraw'] = array(
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('invite_cancel_form'),
+    'access arguments' => array('track invitations'),
+    'file' => 'invite.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
+  $items['invite/resend/%invite'] = array(
+    'title' => 'Resend invitation',
+    'page callback' => 'invite_resend',
+    'page arguments' => array(2),
+    'access arguments' => array('send invitations'),
+    'file' => 'invite.pages.inc',
+    'type' => MENU_CALLBACK,
+  );
+
+  // Tabs on user profile.
+  $items['user/%user/invites'] = array(
+    'title' => 'Invitations',
+    'page callback' => 'invite_user_overview',
+    'page arguments' => array(1, 'accepted'),
+    'access callback' => 'invite_user_access',
+    'access arguments' => array('track invitations', 1),
+    'file' => 'invite.admin.inc',
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['user/%user/invites/accepted'] = array(
+    'title' => 'Accepted',
+    'weight' => -5,
+    'type' => MENU_DEFAULT_LOCAL_TASK,
+  );
+  $items['user/%user/invites/pending'] = array(
+    'title' => 'Pending',
+    'page callback' => 'invite_user_overview',
+    'page arguments' => array(1, 'pending'),
+    'access callback' => 'invite_user_access',
+    'access arguments' => array('track invitations', 1),
+    'file' => 'invite.admin.inc',
+    'weight' => 5,
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['user/%user/invites/expired'] = array(
+    'title' => 'Expired',
+    'page callback' => 'invite_user_overview',
+    'page arguments' => array(1, 'expired'),
+    'access callback' => 'invite_user_access',
+    'access arguments' => array('track invitations', 1),
+    'file' => 'invite.admin.inc',
+    'weight' => 10,
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['user/%user/invites/new'] = array(
+    'title' => 'New invitation',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('invite_page_form', array()),
+    'access callback' => 'invite_user_access',
+    'access arguments' => array('send invitations', 1),
+    'file' => 'invite.pages.inc',
+    'weight' => 15,
+    'type' => MENU_LOCAL_TASK,
+  );
+
+  return $items;
+}
+
+/**
  * Form builder; generate the invite page form.
  *
  * @param $edit
@@ -22,7 +141,7 @@ module_load_include('inc', 'invite');
 function invite_page_form(&$form_state, $edit = array()) {
   global $user;
 
-  $remaining_invites = invite_get_remaining_invites($user);
+  $remaining_invites = invite_get_remaining($user);
 
   if ($remaining_invites == 0 && !$edit) {
     // Deny access when NOT resending an invite.
@@ -409,7 +528,7 @@ function invite_accept($invite) {
   }
 
   // Save invite code to session and redirect to user register form.
-  $_SESSION[INVITE_SESSION] = $invite->code;
+  $_SESSION[INVITE_SESSION_CODE] = $invite->code;
   drupal_goto('user/register');
 }
 

@@ -248,6 +248,26 @@ class invite {
 }
 
 /**
+ * Implementation of hook_mail().
+ */
+function invite_mail($key, &$message, $params) {
+  global $user;
+
+  $invite = $params['invite'];
+
+  // Set Reply-To to either the inviting user's e-mail, or a manually
+  // configured address.
+  $reply_to = (variable_get('invite_use_users_email_replyto', FALSE) && $user->uid) ? $user->mail : variable_get('invite_manual_reply_to', '');
+  if (valid_email_address($reply_to)) {
+    $message['headers']['Reply-To'] = $reply_to;
+  }
+
+  // Generate the e-mail message.
+  $message['subject'] = $invite->get_message_subject();
+  $message['body'][] = $invite->get_message_body();
+}
+
+/**
  * Return the invite e-mail subject.
  *
  * @param $substitutions
