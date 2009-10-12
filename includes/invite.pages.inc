@@ -6,7 +6,7 @@
  * Front-end functions for the Invite module.
  */
 
-module_load_include('inc', 'invite');
+module_load_include('inc', 'invite', 'includes/invite');
 
 /**
  * Implementation of hook_menu().

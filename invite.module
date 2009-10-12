@@ -35,11 +35,11 @@ function invite_invoke_all($invite, $op) {
  */
 function invite_help($path, $arg) {
   if ($path == 'admin/help#invite') {
-    module_load_include('inc', 'invite', 'invite.admin');
+    module_load_include('inc', 'invite', 'includes/invite.admin');
     return invite_module_help();
   }
   else if (strncmp($path, 'user/%/invites', 14)) {
-    module_load_include('inc', 'invite', 'invite.admin');
+    module_load_include('inc', 'invite', 'includes/invite.admin');
     return invite_user_help($path);
   }
 }
@@ -92,7 +92,7 @@ function invite_init() {
  * Implementation of hook_menu().
  */
 function invite_menu() {
-  module_load_include('inc', 'invite', 'invite.pages');
+  module_load_include('inc', 'invite', 'includes/invite.pages');
   return _invite_menu();
 }
 
@@ -499,7 +499,7 @@ function invite_default_validators() {
  * @see invite_block_form()
  */
 function invite_form_validate($form, &$form_state) {
-  module_load_include('inc', 'invite', 'invite.pages');
+  module_load_include('inc', 'invite', 'includes/invite.pages');
 
   // Extract valid e-mail addresses from text and save them to $form_state.
   $form_state['emails'] = invite_extract_emails($form_state['values']['email']);
@@ -521,7 +521,7 @@ function invite_form_validate($form, &$form_state) {
  *   Result code from drupal_mail().
  */
 function invite_send($to, array $options = array()) {
-  module_load_include('inc', 'invite');
+  module_load_include('inc', 'invite', 'includes/invite');
 
   // Create and send the invite.
   $options['email'] = $to;
