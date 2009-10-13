@@ -48,7 +48,7 @@ function invite_help($path, $arg) {
     invite_load_include('invite.admin');
     return invite_module_help();
   }
-  else if (strncmp($path, 'user/%/invites', 14)) {
+  else if (!strncmp($path, 'user/%/invites', 14)) {
     invite_load_include('invite.admin');
     return invite_user_help($path);
   }
