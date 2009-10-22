@@ -144,6 +144,15 @@ function invite_uninstall() {
 }
 
 /**
+ * Implementation of hook_update_last_removed().
+ */
+function invite_update_last_removed() {
+  // Removed 1.x version updates. The next update function is
+  // invite_update_200().
+  return 12;
+}
+
+/**
  * Helper function to update a variable name using role name to role id.
  */
 function _invite_update_role_name_to_id($variable) {
