@@ -21,7 +21,7 @@ Added API documentation.
   the menu callback level, not at the form level, for better compatibility with
   other modules.
 #467486 by neilnz: Grammar fix.
-#330233 by Bevan, smk-ka: Escalation to target role fails.
+#330233 by Bevan, smk-ka: Fixed escalation to target role failed.
 #633280 by tobiasb: Removed t() in schema definitions.
 
 
