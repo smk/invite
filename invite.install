@@ -15,68 +15,68 @@ function invite_install() {
 
 function invite_schema() {
   $schema['invite'] = array(
-    'description' => t('The base table for invites.'),
+    'description' => 'The base table for invites.',
     'fields' => array(
       'code' => array(
-        'description' => t('Stores the issued registration code and is the primary identifier for an invite.'),
+        'description' => 'Stores the issued registration code and is the primary identifier for an invite.',
         'type' => 'varchar',
         'length' => 8,
         'not null' => TRUE,
         'default' => '',
       ),
       'email' => array(
-        'description' => t('Stores the e-mail the invite has been addressed to.'),
+        'description' => 'Stores the e-mail the invite has been addressed to.',
         'type' => 'varchar',
         'length' => 100,
         'not null' => TRUE,
         'default' => '',
       ),
       'uid' => array(
-        'description' => t('Stores the user id of the inviter.'),
+        'description' => 'Stores the user id of the inviter.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
       ),
       'invitee' => array(
-        'description' => t('Stores the user id of the invitee upon registration.'),
+        'description' => 'Stores the user id of the invitee upon registration.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
       ),
       'created' => array(
-        'description' => t('Stores the creation time of the invite.'),
+        'description' => 'Stores the creation time of the invite.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
       ),
       'expiry' => array(
-        'description' => t('Stores the expiry time of the invite.'),
+        'description' => 'Stores the expiry time of the invite.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
       ),
       'joined' => array(
-        'description' => t('Will be filled with the time the invite was accepted upon registration.'),
+        'description' => 'Will be filled with the time the invite was accepted upon registration.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
       ),
       'canceled' => array(
-        'description' => t('Stores whether the invite has been withdrawn.'),
+        'description' => 'Stores whether the invite has been withdrawn.',
         'type' => 'int',
         'size' => 'tiny',
         'not null' => TRUE,
         'default' => 0,
       ),
       'sent' => array(
-        'description' => t('How many times the invite has been (re-)sent.'),
+        'description' => 'How many times the invite has been (re-)sent.',
         'type' => 'int',
         'size' => 'tiny',
         'not null' => TRUE,
         'default' => 1,
       ),
       'data' => array(
-        'description' => t('Stores auxiliary data.'),
+        'description' => 'Stores auxiliary data.',
         'type' => 'text',
         'not null' => TRUE,
       ),
@@ -91,16 +91,16 @@ function invite_schema() {
   );
 
   $schema['invite_notifications'] = array(
-    'description' => t('Stores notifications of inviters.'),
+    'description' => 'Stores notifications of inviters.',
     'fields' => array(
       'uid' => array(
-        'description' => t('Stores the user id to be notified (inviter).'),
+        'description' => 'Stores the user id to be notified (inviter).',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
       ),
       'invitee' => array(
-        'description' => t('Stores the user id of the invitee.'),
+        'description' => 'Stores the user id of the invitee.',
         'type' => 'int',
         'not null' => TRUE,
         'default' => 0,
@@ -202,17 +202,17 @@ function invite_update_200() {
 function invite_update_201() {
   $ret = array();
   db_create_table($ret, 'invite_notifications', array(
-    'description' => t('Stores notifications of inviters.'),
+    'description' => 'Stores notifications of inviters.',
     'fields' => array(
       'uid' => array(
-        'description' => t('Stores the user id to be notified (inviter).'),
+        'description' => 'Stores the user id to be notified (inviter).',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
         'default' => 0,
       ),
       'invitee' => array(
-        'description' => t('Stores the user id of the invitee.'),
+        'description' => 'Stores the user id of the invitee.',
         'type' => 'int',
         'unsigned' => TRUE,
         'not null' => TRUE,
