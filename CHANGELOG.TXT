@@ -22,6 +22,7 @@ Added API documentation.
   other modules.
 #467486 by neilnz: Grammar fix.
 #330233 by Bevan, smk-ka: Escalation to target role fails.
+#633280 by tobiasb: Removed t() in schema definitions.
 
 
 Invite 6.x-2.0-ALPHA-1, 2009-04-19
