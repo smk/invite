@@ -14,6 +14,8 @@ Invite is now able to persist arbitrary data from the invite form and make
 it available again when the invitee registers.
 Added API documentation.
 
+#695034 by smk-ka: Added a new permission to restrict access to administrative
+  pages.
 #364971 by jaydub: Fixed administrative overview query for PostgreSQL.
 #322748: Fixed only administrator can send invitations on multilingual
   installation.

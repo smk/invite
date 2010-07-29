@@ -25,6 +25,9 @@ Bug reports, feature suggestions and latest developments:
 2. Give some roles permission to send invites at the Access control page
    (admin/user/access). The following permissions can be controlled:
 
+   administer invitations - Allows users to access the administrative overview
+     and settings pages.
+
    send mass invitations - Allows users to send an invitation to multiple
      recipients (this was formerly a setting known as "limit per turn").
 
