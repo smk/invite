@@ -580,7 +580,6 @@ function invite_cancel_form(&$form_state, $invite) {
   if ($invite->inviter->uid == $user->uid) {
     // Verify the invitation may be deleted.
     if (!$invite->joined || user_access('withdraw accepted invitations')) {
-      $form['#redirect'] = "user/$user->uid/invites/$origin";
       $form['invite'] = array(
         '#type' => 'value',
         '#value' => $invite,
