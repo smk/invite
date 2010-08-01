@@ -467,7 +467,7 @@ function invite_extract_emails($string) {
   $ipv6 = '[0-9a-fA-F]{1,4}(\:[0-9a-fA-F]{1,4}){7}';
   $rx = "/($user@($domain|(\[($ipv4|$ipv6)\])))>?$/";
 
-  $emails = array_unique(split("[,\n\r]", $string));
+  $emails = array_unique(split("[,\n\r]", drupal_strtolower($string)));
   foreach ($emails as $email) {
     $email = preg_replace('/^.*<(.*)>$/', '${1}', trim($email));
     if ($email) {
