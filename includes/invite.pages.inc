@@ -68,9 +68,9 @@ function _invite_menu() {
     'file path' => $path,
     'type' => MENU_CALLBACK,
   );
-  $items['invite/withdraw'] = array(
+  $items['invite/withdraw/%invite'] = array(
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('invite_cancel_form'),
+    'page arguments' => array('invite_cancel_form', 2),
     'access arguments' => array('track invitations'),
     'file' => 'invite.pages.inc',
     'file path' => $path,
@@ -569,16 +569,12 @@ function invite_resend($invite) {
  * @param $origin
  *   A string denoting the orginating status page to return the user to
  *   afterwards.
- * @param $code
- *   A registration code to remove the invitation for.
  *
  * @ingroup forms
  * @see invite_cancel_form_submit()
  */
-function invite_cancel_form(&$form_state, $origin, $code) {
+function invite_cancel_form(&$form_state, $invite) {
   global $user;
-
-  $invite = invite_load($code);
 
   // Inviter must be the current user.
   if ($invite->inviter->uid == $user->uid) {
@@ -594,7 +590,7 @@ function invite_cancel_form(&$form_state, $origin, $code) {
       return confirm_form(
         $form,
         t('Are you sure you want to withdraw the invitation to %email?', array('%email' => $invite->email)),
-        "user/$user->uid/invites/{$origin}",
+        $_REQUEST['destination'],
         $description .' '. t('This action cannot be undone.'),
         t('Withdraw'),
         t('Cancel')
@@ -608,8 +604,7 @@ function invite_cancel_form(&$form_state, $origin, $code) {
     watchdog('invite', 'Detected malicious attempt to delete an invitation.', array(), WATCHDOG_WARNING, l(t('view'), 'user/'. $user->uid));
     return drupal_access_denied();
   }
-
-  drupal_goto("user/$user->uid/invites/$origin");
+  drupal_goto();
 }
 
 /**

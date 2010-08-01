@@ -439,7 +439,7 @@ function invite_user_overview($account, $page = 'accepted') {
           $row[] = check_plain($invite->email);
         }
         $row[] = $account_exists ? t('Accepted') : t('Deleted');
-        $row[] = $allow_delete ? l(t('withdraw'), "invite/withdraw/$page/$invite->code") : '';
+        $row[] = $allow_delete ? l(t('withdraw'), "invite/withdraw/$invite->code", array('query' => drupal_get_destination())) : '';
         $row[] = '';
         break;
 
@@ -449,7 +449,7 @@ function invite_user_overview($account, $page = 'accepted') {
 
         $row[] = check_plain($invite->email);
         $row[] = $expired ? t('Expired') : t('Pending');
-        $row[] = l(t('withdraw'), "invite/withdraw/$page/$invite->code");
+        $row[] = l(t('withdraw'), "invite/withdraw/$invite->code", array('query' => drupal_get_destination()));
         $row[] = $expired ? l(t('resend'), "invite/resend/$invite->code") : '';
         break;
     }
