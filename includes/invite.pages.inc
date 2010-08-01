@@ -541,7 +541,7 @@ function invite_accept($invite) {
 
   // Save invite code to session and redirect to user register form.
   $_SESSION[INVITE_SESSION_CODE] = $invite->code;
-  drupal_goto('user/register');
+  drupal_goto(variable_get('invite_registration_path', 'user/register'));
 }
 
 /**

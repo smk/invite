@@ -80,6 +80,12 @@ function invite_settings() {
     '#multiple' => FALSE,
     '#required' => TRUE,
   );
+  $form['general']['invite_registration_path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Path to registration page'),
+    '#default_value' => variable_get('invite_registration_path', 'user/register'),
+    '#description' => t('Path to the registration page for invited users. Useful when using the <em>Assign from Path</em> option of <a href="@url">Auto Assign Roles</a> module.', array('@url' => 'http://drupal.org/project/autoassignrole')),
+  );
 
   // Role settings.
   $form['role'] = array(
