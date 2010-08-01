@@ -62,6 +62,7 @@ function invite_settings() {
     '#title' => t('General settings'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
+    '#group' => 'additional_settings',
   );
   $form['general']['invite_target_role_default'] = array(
     '#type' => 'select',
@@ -94,6 +95,7 @@ function invite_settings() {
     '#description' => t('Note: Permission related settings can be found at the <a href="!permissions-url">Permissions page</a>.', array('!permissions-url' => url('admin/user/permissions'))),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
+    '#group' => 'additional_settings',
   );
 
   foreach ($roles as $rid => $role) {
@@ -128,6 +130,7 @@ function invite_settings() {
     '#title' => t('E-mail settings'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
+    '#group' => 'additional_settings',
   );
   $form['email']['invite_subject'] = array(
     '#type' => 'textfield',
@@ -200,6 +203,7 @@ function invite_settings() {
     '#title' => t('Invite page customization'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
+    '#group' => 'additional_settings',
   );
   $form['custom']['invite_page_title'] = array(
     '#type' => 'textfield',
@@ -208,6 +212,9 @@ function invite_settings() {
     '#description' => t('The title of the page where users invite friends.'),
     '#required' => TRUE,
   );
+
+  // Add vertical tabs display if available.
+  $form['#pre_render'][] = 'vertical_tabs_form_pre_render';
 
   return system_settings_form($form);
 }
