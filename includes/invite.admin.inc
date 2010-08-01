@@ -80,6 +80,12 @@ function invite_settings() {
     '#multiple' => FALSE,
     '#required' => TRUE,
   );
+  $form['general']['invite_registration_path'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Path to registration page'),
+    '#default_value' => variable_get('invite_registration_path', 'user/register'),
+    '#description' => t('Path to the registration page for invited users. Useful when using the <em>Assign from Path</em> option of <a href="@url">Auto Assign Roles</a> module.', array('@url' => 'http://drupal.org/project/autoassignrole')),
+  );
 
   // Role settings.
   $form['role'] = array(
@@ -433,7 +439,7 @@ function invite_user_overview($account, $page = 'accepted') {
           $row[] = check_plain($invite->email);
         }
         $row[] = $account_exists ? t('Accepted') : t('Deleted');
-        $row[] = $allow_delete ? l(t('withdraw'), "invite/withdraw/$page/$invite->code") : '';
+        $row[] = $allow_delete ? l(t('withdraw'), "invite/withdraw/$invite->code", array('query' => drupal_get_destination())) : '';
         $row[] = '';
         break;
 
@@ -443,7 +449,7 @@ function invite_user_overview($account, $page = 'accepted') {
 
         $row[] = check_plain($invite->email);
         $row[] = $expired ? t('Expired') : t('Pending');
-        $row[] = l(t('withdraw'), "invite/withdraw/$page/$invite->code");
+        $row[] = l(t('withdraw'), "invite/withdraw/$invite->code", array('query' => drupal_get_destination()));
         $row[] = $expired ? l(t('resend'), "invite/resend/$invite->code") : '';
         break;
     }

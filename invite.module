@@ -83,6 +83,7 @@ function invite_theme() {
  */
 function invite_perm() {
   return array(
+    'administer invitations',
     'send invitations',
     'send mass invitations',
     'track invitations',

@@ -17,7 +17,7 @@ function _invite_menu() {
   $items['admin/user/invite'] = array(
     'title' => 'Invites',
     'page callback' => 'invite_admin_overview',
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer invitations'),
     'file' => 'invite.admin.inc',
     'file path' => $path,
     'type' => MENU_NORMAL_ITEM,
@@ -32,7 +32,7 @@ function _invite_menu() {
     'title arguments' => array(4),
     'page callback' => 'invite_admin_details',
     'page arguments' => array(4),
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer invitations'),
     'file' => 'invite.admin.inc',
     'file path' => $path,
     'type' => MENU_LOCAL_TASK,
@@ -42,7 +42,7 @@ function _invite_menu() {
     'title' => 'Settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('invite_settings'),
-    'access arguments' => array('administer site configuration'),
+    'access arguments' => array('administer invitations'),
     'file' => 'invite.admin.inc',
     'file path' => $path,
     'weight' => 10,
@@ -68,9 +68,9 @@ function _invite_menu() {
     'file path' => $path,
     'type' => MENU_CALLBACK,
   );
-  $items['invite/withdraw'] = array(
+  $items['invite/withdraw/%invite'] = array(
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('invite_cancel_form'),
+    'page arguments' => array('invite_cancel_form', 2),
     'access arguments' => array('track invitations'),
     'file' => 'invite.pages.inc',
     'file path' => $path,
@@ -467,7 +467,7 @@ function invite_extract_emails($string) {
   $ipv6 = '[0-9a-fA-F]{1,4}(\:[0-9a-fA-F]{1,4}){7}';
   $rx = "/($user@($domain|(\[($ipv4|$ipv6)\])))>?$/";
 
-  $emails = array_unique(split("[,\n\r]", $string));
+  $emails = array_unique(split("[,\n\r]", drupal_strtolower($string)));
   foreach ($emails as $email) {
     $email = preg_replace('/^.*<(.*)>$/', '${1}', trim($email));
     if ($email) {
@@ -541,7 +541,7 @@ function invite_accept($invite) {
 
   // Save invite code to session and redirect to user register form.
   $_SESSION[INVITE_SESSION_CODE] = $invite->code;
-  drupal_goto('user/register');
+  drupal_goto(variable_get('invite_registration_path', 'user/register'));
 }
 
 /**
@@ -569,16 +569,12 @@ function invite_resend($invite) {
  * @param $origin
  *   A string denoting the orginating status page to return the user to
  *   afterwards.
- * @param $code
- *   A registration code to remove the invitation for.
  *
  * @ingroup forms
  * @see invite_cancel_form_submit()
  */
-function invite_cancel_form(&$form_state, $origin, $code) {
+function invite_cancel_form(&$form_state, $invite) {
   global $user;
-
-  $invite = invite_load($code);
 
   // Inviter must be the current user.
   if ($invite->inviter->uid == $user->uid) {
@@ -594,7 +590,7 @@ function invite_cancel_form(&$form_state, $origin, $code) {
       return confirm_form(
         $form,
         t('Are you sure you want to withdraw the invitation to %email?', array('%email' => $invite->email)),
-        "user/$user->uid/invites/{$origin}",
+        $_REQUEST['destination'],
         $description .' '. t('This action cannot be undone.'),
         t('Withdraw'),
         t('Cancel')
@@ -608,8 +604,7 @@ function invite_cancel_form(&$form_state, $origin, $code) {
     watchdog('invite', 'Detected malicious attempt to delete an invitation.', array(), WATCHDOG_WARNING, l(t('view'), 'user/'. $user->uid));
     return drupal_access_denied();
   }
-
-  drupal_goto("user/$user->uid/invites/$origin");
+  drupal_goto();
 }
 
 /**
