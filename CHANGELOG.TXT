@@ -14,6 +14,7 @@ Invite is now able to persist arbitrary data from the invite form and make
 it available again when the invitee registers.
 Added API documentation.
 
+#871090 by smk-ka: Fixed registration message appears on password reset form.
 by smk-ka: Easier access to permissions page from invite settings.
 #870930 by jcmarco: Added support for Vertical Tabs.
 by smk-ka: Fixed invite stats don't display rank.
