@@ -256,7 +256,6 @@ function invite_page_form(&$form_state, $edit = array()) {
       '#type' => 'textfield',
       '#title' => t('Subject'),
       '#default_value' => $subject,
-      '#maxlength' => 64,
       '#description' => t('Type the subject of the invitation e-mail.'),
       '#required' => TRUE,
     );

@@ -138,8 +138,6 @@ function invite_settings() {
     '#type' => 'textfield',
     '#title' => t('Subject'),
     '#default_value' => variable_get('invite_subject', t('[inviter-raw] has sent you an invite!')),
-    '#size' => 30,
-    '#maxlength' => 64,
     '#description' => t('Type the default subject of the invitation e-mail.') .' '. t('Use the syntax [token] if you want to insert a replacement pattern.'),
     '#required' => TRUE,
   );
