@@ -50,9 +50,11 @@ function invite_user_help($path) {
  * @ingroup forms
  */
 function invite_settings() {
+  $permissions_url = url('admin/user/permissions', array('query' => drupal_get_destination(), 'fragment' => 'module-invite'));
+
   $roles = user_roles(FALSE, 'send invitations');
   if (count($roles) == 0) {
-    drupal_set_message(t('Please enable the <em>send invitations</em> permission for at least one role. This can be done on the <a href="!permissions-url">Permissions page</a>.', array('!permissions-url' => url('admin/user/permissions'))));
+    drupal_set_message(t('Please enable the <em>send invitations</em> permission for at least one role on the <a href="@url">permissions page</a>.', array('@url' => $permissions_url)), 'warning');
   }
   $target_roles = user_roles(TRUE);
 
@@ -92,7 +94,7 @@ function invite_settings() {
   $form['role'] = array(
     '#type' => 'fieldset',
     '#title' => t('Role settings'),
-    '#description' => t('Note: Permission related settings can be found at the <a href="!permissions-url">Permissions page</a>.', array('!permissions-url' => url('admin/user/permissions'))),
+    '#description' => t('To control which roles may send invitations visit the <a href="@url">permissions page</a>.', array('@url' => $permissions_url)),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
     '#group' => 'additional_settings',
