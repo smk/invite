@@ -14,6 +14,7 @@ Invite is now able to persist arbitrary data from the invite form and make
 it available again when the invitee registers.
 Added API documentation.
 
+by smk-ka: Cleaned up README.
 #496894 by seutje, smk-ka: Increased size of e-mail subject field.
 #871090 by smk-ka: Fixed registration message appears on password reset form.
 by smk-ka: Easier access to permissions page from invite settings.
